@@ -2,6 +2,7 @@ i32 main()
 {
     i32 x;
     x = 32;
+    x = x;
 
     i32 value;
     value = 32 + 2 * x / 2;
