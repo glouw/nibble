@@ -519,6 +519,9 @@ file_read_ret_statement(file_t* self)
 static bool
 file_read_block(file_t* self);
 
+static bool
+file_read_statement(file_t* self);
+
 static void
 file_read_if_else_statement(file_t* self)
 {
@@ -531,7 +534,7 @@ file_read_if_else_statement(file_t* self)
     file_match(self, g_rite_paren);
     file_emit(self, g_branch_if_else, value.slot, l0, l1);
     file_emit(self, g_label, l0 );
-    auto terminated = file_read_block(self);
+    auto terminated = file_read_statement(self);
     if(!terminated)
     {
         file_emit(self, g_branch, l2);
@@ -541,7 +544,7 @@ file_read_if_else_statement(file_t* self)
     if(string_equal(keyword.begin, g_else))
     {
         file_read_alnum(self);
-        auto terminated = file_read_block(self);
+        auto terminated = file_read_statement(self);
         if(!terminated)
         {
             file_emit(self, g_branch, l2);
@@ -576,8 +579,16 @@ file_read_statement(file_t* self)
     }
     else
     {
-        file_read_expression(self);
-        file_match(self, g_semicolon);
+        file_read_space(self);
+        if(file_peek(self) == *g_left_curl)
+        {
+            terminated = file_read_block(self);
+        }
+        else
+        {
+            file_read_expression(self);
+            file_match(self, g_semicolon);
+        }
     }
     return terminated;
 }
@@ -585,6 +596,7 @@ file_read_statement(file_t* self)
 static bool
 file_read_block(file_t* self)
 {
+    auto values = self->values.size;
     bool terminated = false;
     self->tabs += 1;
     file_match(self, g_left_curl);
@@ -603,6 +615,7 @@ file_read_block(file_t* self)
     }
     file_match(self, g_rite_curl);
     self->tabs -= 1;
+    self->values.size = values;
     return terminated;
 }
 
