@@ -16,7 +16,21 @@ i32 main()
     i32*** ppp;
     ppp = &pp;
 
-    ***ppp = value - 64;
+    ***ppp = value - 61;
 
-    ret value;
+    if(value == 3)
+    {
+        ret 0;
+    }
+
+    if(value == 4)
+    {
+        ret 1;
+    }
+    else
+    {
+        ret 2;
+    }
+
+    ret 0;
 }

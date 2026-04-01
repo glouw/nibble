@@ -70,6 +70,7 @@ typedef struct
     size_t line;
     size_t slot;
     size_t tabs;
+    size_t label;
 }
 file_t;
 
@@ -92,14 +93,21 @@ static constexpr chars_t g_minus = "-";
 static constexpr chars_t g_forward_slash = "/";
 static constexpr chars_t g_asterisk = "*";
 static constexpr chars_t g_equals = "=";
+static constexpr chars_t g_equal_to = "==";
 static constexpr chars_t g_i32 = "i32";
 static constexpr chars_t g_ret = "ret";
 static constexpr chars_t g_ptr = "ptr";
+static constexpr chars_t g_if = "if";
+static constexpr chars_t g_else = "else";
 static constexpr chars_t g_ampersand = "&";
+static constexpr chars_t g_label = "L%lu:";
+static constexpr chars_t g_branch_if_else = "br i1 %%%llu, label %%L%lu, label %%L%lu";
+static constexpr chars_t g_branch = "br label %%L%lu";
 static constexpr chars_t g_opcode_mul = "%%%lu = mul %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_sdiv = "%%%lu = sdiv %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_add = "%%%lu = add %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_sub = "%%%lu = sub %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_equal_to = "%%%lu = icmp eq %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_alloca = "%%%lu = alloca %s";
 static constexpr chars_t g_opcode_target = "target triple = \"x86_64-pc-linux-gnu\"";
 static constexpr chars_t g_opcode_gep = "%%%lu = getelementptr ptr, ptr %%%lu, %s %lu";
@@ -114,7 +122,7 @@ static const char* const g_type_keywords[] = {
 };
 
 static const char* const g_control_keywords[] = {
-    g_ret, nullptr
+    g_ret, g_if, g_else, nullptr
 };
 
 static const char* const g_operator_chars[] = {
@@ -126,7 +134,7 @@ static const char* const g_operators_by_precedence[g_precedence_count][g_operato
     [ g_precedence_arithmetic_1 ]  = { g_plus, g_minus             },
     [ g_precedence_shift        ]  = {                             },
     [ g_precedence_relational_0 ]  = {                             },
-    [ g_precedence_relational_1 ]  = {                             },
+    [ g_precedence_relational_1 ]  = { g_equal_to                  },
     [ g_precedence_bitwise_and  ]  = {                             },
     [ g_precedence_bitwise_xor  ]  = {                             },
     [ g_precedence_bitwise_or   ]  = {                             },
@@ -465,6 +473,13 @@ file_get_slot(file_t* self)
     return self->slot;
 }
 
+static size_t
+file_get_label(file_t* self)
+{
+    self->label += 1;
+    return self->label;
+}
+
 static value_t
 file_read_value_declaration(file_t* self, bool is_function_declaration)
 {
@@ -491,19 +506,67 @@ file_read_value_declaration(file_t* self, bool is_function_declaration)
 static value_t
 file_read_expression(file_t*);
 
+static value_t
+file_read_ret_statement(file_t* self)
+{
+    file_read_alnum(self);
+    auto value = file_read_expression(self);
+    file_match(self, g_semicolon);
+    file_emit(self, g_opcode_ret, file_value_to_type_name(self, value).begin, value.slot);
+    return value;
+}
+
+static bool
+file_read_block(file_t* self);
+
 static void
+file_read_if_else_statement(file_t* self)
+{
+    auto l0 = file_get_label(self);
+    auto l1 = file_get_label(self);
+    auto l2 = file_get_label(self);
+    file_read_alnum(self);
+    file_match(self, g_left_paren);
+    auto value = file_read_expression(self);
+    file_match(self, g_rite_paren);
+    file_emit(self, g_branch_if_else, value.slot, l0, l1);
+    file_emit(self, g_label, l0 );
+    auto terminated = file_read_block(self);
+    if(!terminated)
+    {
+        file_emit(self, g_branch, l2);
+    }
+    file_emit(self, g_label, l1);
+    auto keyword = file_peek_alnum(self);
+    if(string_equal(keyword.begin, g_else))
+    {
+        file_read_alnum(self);
+        auto terminated = file_read_block(self);
+        if(!terminated)
+        {
+            file_emit(self, g_branch, l2);
+        }
+        file_emit(self, g_label, l2);
+    }
+}
+
+static bool
 file_read_statement(file_t* self)
 {
+    bool terminated = false;
     auto keyword = file_peek_alnum(self);
     if(string_in(keyword, g_control_keywords))
     {
-        keyword = file_read_alnum(self);
-        auto value = file_read_expression(self);
         if(string_equal(keyword.begin, g_ret))
         {
-            file_emit(self, g_opcode_ret, file_value_to_type_name(self, value).begin, value.slot);
+            file_read_ret_statement(self);
+            terminated = true;
         }
-        file_match(self, g_semicolon);
+        else
+        if(string_equal(keyword.begin, g_if))
+        {
+            file_read_if_else_statement(self);
+        }
     }
     else
     if(string_in(keyword, g_type_keywords))
@@ -516,11 +579,13 @@ file_read_statement(file_t* self)
         file_read_expression(self);
         file_match(self, g_semicolon);
     }
+    return terminated;
 }
 
-static void
+static bool
 file_read_block(file_t* self)
 {
+    bool terminated = false;
     self->tabs += 1;
     file_match(self, g_left_curl);
     while(true)
@@ -530,10 +595,15 @@ file_read_block(file_t* self)
         {
             break;
         }
-        file_read_statement(self);
+        if(terminated)
+        {
+            file_quit(self, "block was terminated");
+        }
+        terminated = file_read_statement(self);
     }
     file_match(self, g_rite_curl);
     self->tabs -= 1;
+    return terminated;
 }
 
 static void
@@ -618,7 +688,6 @@ file_value_to_rvalue(file_t* self, value_t value)
     return value;
 }
 
-
 static value_t
 file_operate_assignment(file_t* self, value_t left, value_t rite, string_t operator)
 {
@@ -656,6 +725,11 @@ file_operate_binary(file_t* self, value_t left, value_t rite, string_t operator)
     if(string_equal(operator.begin, g_minus))
     {
         file_emit(self, g_opcode_sub, out.slot, left.type.name.begin, left.slot, rite.slot);
+    }
+    else
+    if(string_equal(operator.begin, g_equal_to))
+    {
+        file_emit(self, g_opcode_equal_to, out.slot, left.type.name.begin, left.slot, rite.slot);
     }
     else
     {
