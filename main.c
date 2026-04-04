@@ -273,8 +273,12 @@ file_list_append(file_t* self, list_t* list, value_t value)
 }
 
 static value_t
-list_top(list_t* list)
+list_top(file_t* self, list_t* list)
 {
+    if(list->size == 0)
+    {
+        file_quit(self, "list underflow");
+    }
     return list->begin[list->size - 1];
 }
 
@@ -640,7 +644,11 @@ file_read_continue_statement(file_t* self)
 {
     file_read_alnum(self);
     file_match(self, g_semicolon);
-    auto to = list_top(&self->loop_again);
+    if(self->loop_again.size == 0)
+    {
+        file_quit(self, "'continue' statement not within a loop");
+    }
+    auto to = list_top(self, &self->loop_again);
     file_emit(self, g_branch, to.slot);
 }
 
@@ -649,7 +657,11 @@ file_read_break_statement(file_t* self)
 {
     file_read_alnum(self);
     file_match(self, g_semicolon);
-    auto to = list_top(&self->loop_end);
+    if(self->loop_end.size == 0)
+    {
+        file_quit(self, "'break' statement not within a loop");
+    }
+    auto to = list_top(self, &self->loop_end);
     file_emit(self, g_branch, to.slot);
 }
 
