@@ -32,8 +32,17 @@ i32 main()
 
     ***ppp = value - 61;
 
-    if(value == 3)
-        ret 0;
+    i32 i;
+    i = 0;
+    while(i < 3)
+    {
+        value = value - 1;
+        i = i + 1;
+    }
+
+    value = value + 3;
+
+    if(value == 3) ret 0;
 
     if(value == 4)
     {
@@ -46,7 +55,7 @@ i32 main()
     }
     else
     {
-        ret 3;
+        if(value == 5) ret 3; else ret 4;
     }
 
     ret 0;

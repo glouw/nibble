@@ -88,17 +88,25 @@ static constexpr chars_t g_upper_begin = "A";
 static constexpr chars_t g_upper_end = "Z";
 static constexpr chars_t g_digit_begin = "0";
 static constexpr chars_t g_digit_end = "9";
-static constexpr chars_t g_plus = "+";
-static constexpr chars_t g_minus = "-";
-static constexpr chars_t g_forward_slash = "/";
-static constexpr chars_t g_asterisk = "*";
+static constexpr chars_t g_add = "+";
+static constexpr chars_t g_subtract = "-";
+static constexpr chars_t g_divide = "/";
+static constexpr chars_t g_multiply = "*";
+static constexpr chars_t g_not = "!";
 static constexpr chars_t g_equals = "=";
 static constexpr chars_t g_equal_to = "==";
+static constexpr chars_t g_not_equal_to = "!=";
+static constexpr chars_t g_less_than_equal_to = "<=";
+static constexpr chars_t g_less_than = "<";
+static constexpr chars_t g_greater_than_equal_to = ">=";
+static constexpr chars_t g_greater_than = ">";
+static constexpr chars_t g_i1 = "i1";
 static constexpr chars_t g_i32 = "i32";
 static constexpr chars_t g_ret = "ret";
 static constexpr chars_t g_ptr = "ptr";
 static constexpr chars_t g_if = "if";
 static constexpr chars_t g_else = "else";
+static constexpr chars_t g_while = "while";
 static constexpr chars_t g_ampersand = "&";
 static constexpr chars_t g_label = "L%lu:";
 static constexpr chars_t g_branch_if_else = "br i1 %%%llu, label %%L%lu, label %%L%lu";
@@ -108,6 +116,11 @@ static constexpr chars_t g_opcode_sdiv = "%%%lu = sdiv %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_add = "%%%lu = add %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_sub = "%%%lu = sub %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_equal_to = "%%%lu = icmp eq %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_not_equal_to = "%%%lu = icmp ne %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_less_than = "%%%lu = icmp slt %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_less_than_equal_to = "%%%lu = icmp sle %s %%%lu, %%%lu"; // TODO: UNSIGNED COMPARE
+static constexpr chars_t g_opcode_greater_than = "%%%lu = icmp sgt %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_greater_than_equal_to = "%%%lu = icmp sge %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_alloca = "%%%lu = alloca %s";
 static constexpr chars_t g_opcode_target = "target triple = \"x86_64-pc-linux-gnu\"";
 static constexpr chars_t g_opcode_gep = "%%%lu = getelementptr ptr, ptr %%%lu, %s %lu";
@@ -116,29 +129,30 @@ static constexpr chars_t g_opcode_ret = "ret %s %%%d";
 static constexpr chars_t g_opcode_define = "define %s @%s()";
 static constexpr chars_t g_opcode_load = "%%%lu = load %s, ptr %%%lu";
 static constexpr chars_t g_opcode_store = "store %s %%%lu, ptr %%%lu";
+static constexpr chars_t g_entry = "entry:";
 
 static const char* const g_type_keywords[] = {
-    g_i32, nullptr
+    g_i1, g_i32, nullptr
 };
 
 static const char* const g_control_keywords[] = {
-    g_ret, g_if, g_else, nullptr
+    g_ret, g_if, g_else, g_while, nullptr
 };
 
 static const char* const g_operator_chars[] = {
-    g_ampersand, g_asterisk, g_forward_slash, g_plus, g_minus, g_equals, nullptr
+    g_ampersand, g_multiply, g_divide, g_add, g_subtract, g_equals, g_not, g_less_than, g_greater_than, nullptr
 };
 
 static const char* const g_operators_by_precedence[g_precedence_count][g_operators_per_precedence + 1] = {
-    [ g_precedence_arithmetic_0 ]  = { g_asterisk, g_forward_slash },
-    [ g_precedence_arithmetic_1 ]  = { g_plus, g_minus             },
-    [ g_precedence_shift        ]  = {                             },
-    [ g_precedence_relational_0 ]  = {                             },
-    [ g_precedence_relational_1 ]  = { g_equal_to                  },
-    [ g_precedence_bitwise_and  ]  = {                             },
-    [ g_precedence_bitwise_xor  ]  = {                             },
-    [ g_precedence_bitwise_or   ]  = {                             },
-    [ g_precedence_assignment   ]  = { g_equals                    },
+    [ g_precedence_arithmetic_0 ]  = { g_multiply, g_divide                                                       },
+    [ g_precedence_arithmetic_1 ]  = { g_add, g_subtract                                                          },
+    [ g_precedence_shift        ]  = {                                                                            },
+    [ g_precedence_relational_0 ]  = { g_less_than, g_less_than_equal_to, g_greater_than, g_greater_than_equal_to },
+    [ g_precedence_relational_1 ]  = { g_equal_to, g_not_equal_to                                                 },
+    [ g_precedence_bitwise_and  ]  = {                                                                            },
+    [ g_precedence_bitwise_xor  ]  = {                                                                            },
+    [ g_precedence_bitwise_or   ]  = {                                                                            },
+    [ g_precedence_assignment   ]  = { g_equals                                                                   },
 };
 
 static bool
@@ -264,6 +278,20 @@ code_init(const char* path)
     return self;
 }
 
+static size_t
+file_get_slot(file_t* self)
+{
+    self->slot += 1;
+    return self->slot;
+}
+
+static size_t
+file_get_label(file_t* self)
+{
+    self->label += 1;
+    return self->label;
+}
+
 static file_t
 file_init(const char* path)
 {
@@ -286,6 +314,42 @@ file_step(file_t* self)
     if(self->code.at == g_code_size - 1)
     {
         file_quit(self, "unexpected end of file");
+    }
+}
+
+static void
+file_value_types_must_match(file_t* self, value_t left, value_t rite, string_t operator)
+{
+    if(!string_equal(left.type.name.begin, rite.type.name.begin))
+    {
+        file_quit(self, "type mismatch with '%s'", operator.begin);
+    }
+}
+
+static void
+file_value_pointer_levels_must_match(file_t* self, value_t left, value_t rite, string_t operator)
+{
+    if(left.type.stars != rite.type.stars)
+    {
+        file_quit(self, "pointer level mismatch with '%s'", operator.begin);
+    }
+}
+
+static void
+file_values_must_be_scalar(file_t* self, value_t left, value_t rite, string_t operator)
+{
+    if(value_is_pointer(left) || value_is_pointer(rite))
+    {
+        file_quit(self, "expected scalars with '%s'", operator.begin);
+    }
+}
+
+static void
+file_assert_lvalue(file_t* self, value_t left, string_t operator)
+{
+    if(!left.is_lvalue)
+    {
+        file_quit(self, "expected lvalue with '%s'", operator.begin);
     }
 }
 
@@ -444,7 +508,7 @@ file_read_stars(file_t* self)
     while(true)
     {
         file_read_space(self);
-        if(file_peek(self) == *g_asterisk)
+        if(file_peek(self) == *g_multiply)
         {
             stars += 1;
             file_step(self);
@@ -464,20 +528,6 @@ file_read_type(file_t* self)
     type.name = file_read_alnum(self);
     type.stars = file_read_stars(self);
     return type;
-}
-
-static size_t
-file_get_slot(file_t* self)
-{
-    self->slot += 1;
-    return self->slot;
-}
-
-static size_t
-file_get_label(file_t* self)
-{
-    self->label += 1;
-    return self->label;
 }
 
 static value_t
@@ -517,58 +567,112 @@ file_read_ret_statement(file_t* self)
 }
 
 static bool
-file_read_block(file_t* self);
+file_read_block(file_t*, value_t);
 
 static bool
-file_read_statement(file_t* self);
+file_read_statement(file_t*, value_t);
 
 static void
-file_read_if_else_statement(file_t* self)
+file_read_if_statement(file_t* self, value_t ret_value, size_t if_label, size_t else_label, size_t end_label)
 {
-    auto l0 = file_get_label(self);
-    auto l1 = file_get_label(self);
-    auto l2 = file_get_label(self);
     file_read_alnum(self);
     file_match(self, g_left_paren);
     auto value = file_read_expression(self);
+    value_t expected = { .type.name = file_string_init(self, g_i1) };
+    file_value_types_must_match(self, value, expected, file_string_init(self, g_if));
     file_match(self, g_rite_paren);
-    file_emit(self, g_branch_if_else, value.slot, l0, l1);
-    file_emit(self, g_label, l0 );
-    auto terminated = file_read_statement(self);
+    file_emit(self, g_branch_if_else, value.slot, if_label, else_label);
+    file_emit(self, g_label, if_label);
+    auto terminated = file_read_statement(self, ret_value);
     if(!terminated)
     {
-        file_emit(self, g_branch, l2);
+        file_emit(self, g_branch, end_label);
     }
-    file_emit(self, g_label, l1);
+}
+
+static void
+file_read_else_statement(file_t* self, value_t ret_value, size_t else_label, size_t end_label)
+{
+    file_emit(self, g_label, else_label);
     auto keyword = file_peek_alnum(self);
     if(string_equal(keyword.begin, g_else))
     {
         file_read_alnum(self);
-        auto terminated = file_read_statement(self);
+        auto terminated = file_read_statement(self, ret_value);
         if(!terminated)
         {
-            file_emit(self, g_branch, l2);
+            file_emit(self, g_branch, end_label);
         }
-        file_emit(self, g_label, l2);
+    }
+    else
+    {
+        file_emit(self, g_branch, end_label);
     }
 }
 
-static bool
-file_read_statement(file_t* self)
+static void
+file_read_if_else_statement(file_t* self, value_t ret_value)
 {
-    bool terminated = false;
+    auto if_label = file_get_label(self);
+    auto else_label = file_get_label(self);
+    auto end_label = file_get_label(self);
+    file_read_if_statement(self, ret_value, if_label, else_label, end_label);
+    file_read_else_statement(self, ret_value, else_label, end_label);
+    file_emit(self, g_label, end_label);
+}
+
+static void
+file_read_while_statement(file_t* self, value_t ret_value)
+{
+    auto again_label = file_get_label(self);
+    auto while_label = file_get_label(self);
+    auto end_label = file_get_label(self);
+    file_emit(self, g_branch, again_label);
+    file_emit(self, g_label, again_label);
+    file_read_alnum(self);
+    file_match(self, g_left_paren);
+    auto value = file_read_expression(self);
+    file_match(self, g_rite_paren);
+    value_t expected = { .type.name = file_string_init(self, g_i1) };
+    file_value_types_must_match(self, value, expected, file_string_init(self, g_while));
+    file_emit(self, g_branch_if_else, value.slot, while_label, end_label);
+    file_emit(self, g_label, while_label);
+    auto terminated = file_read_statement(self, ret_value);
+    if(!terminated)
+    {
+        file_emit(self, g_branch, again_label);
+    }
+    file_emit(self, g_label, end_label);
+}
+
+static bool
+file_read_statement(file_t* self, value_t ret_value)
+{
     auto keyword = file_peek_alnum(self);
     if(string_in(keyword, g_control_keywords))
     {
         if(string_equal(keyword.begin, g_ret))
         {
-            file_read_ret_statement(self);
-            terminated = true;
+            auto operator = file_string_init(self, g_ret);
+            auto value = file_read_ret_statement(self);
+            file_value_types_must_match(self, value, ret_value, operator);
+            file_value_pointer_levels_must_match(self, value, ret_value, operator);
+            return true;
         }
         else
         if(string_equal(keyword.begin, g_if))
         {
-            file_read_if_else_statement(self);
+            file_read_if_else_statement(self, ret_value);
+        }
+        else
+        if(string_equal(keyword.begin, g_else))
+        {
+            file_quit(self, "missing binding '%s'", g_if);
+        }
+        else
+        if(string_equal(keyword.begin, g_while))
+        {
+            file_read_while_statement(self, ret_value);
         }
     }
     else
@@ -582,7 +686,7 @@ file_read_statement(file_t* self)
         file_read_space(self);
         if(file_peek(self) == *g_left_curl)
         {
-            terminated = file_read_block(self);
+            return file_read_block(self, ret_value);
         }
         else
         {
@@ -590,11 +694,11 @@ file_read_statement(file_t* self)
             file_match(self, g_semicolon);
         }
     }
-    return terminated;
+    return false;
 }
 
 static bool
-file_read_block(file_t* self)
+file_read_block(file_t* self, value_t ret_value)
 {
     auto values = self->values.size;
     bool terminated = false;
@@ -611,7 +715,7 @@ file_read_block(file_t* self)
         {
             file_quit(self, "block was terminated");
         }
-        terminated = file_read_statement(self);
+        terminated = file_read_statement(self, ret_value);
     }
     file_match(self, g_rite_curl);
     self->tabs -= 1;
@@ -622,12 +726,13 @@ file_read_block(file_t* self)
 static void
 file_read_function(file_t* self)
 {
-    auto value = file_read_value_declaration(self, true);
+    auto ret_value = file_read_value_declaration(self, true);
     file_match(self, g_left_paren);
     file_match(self, g_rite_paren);
-    file_emit(self, g_opcode_define, file_value_to_type_name(self, value).begin, value.name.begin);
+    file_emit(self, g_opcode_define, file_value_to_type_name(self, ret_value).begin, ret_value.name.begin);
     file_emit(self, g_left_curl);
-    file_read_block(self);
+    file_emit(self, g_entry);
+    file_read_block(self, ret_value);
     file_emit(self, g_rite_curl);
 }
 
@@ -652,42 +757,6 @@ file_read_program(file_t* self)
     }
 }
 
-static void
-file_value_types_must_match(file_t* self, value_t left, value_t rite, string_t operator)
-{
-    if(!string_equal(left.type.name.begin, rite.type.name.begin))
-    {
-        file_quit(self, "type mismatch with '%s'", operator.begin);
-    }
-}
-
-static void
-file_value_pointer_levels_must_match(file_t* self, value_t left, value_t rite, string_t operator)
-{
-    if(left.type.stars != rite.type.stars)
-    {
-        file_quit(self, "pointer level mismatch with '%s'", operator.begin);
-    }
-}
-
-static void
-file_values_must_be_scalar(file_t* self, value_t left, value_t rite, string_t operator)
-{
-    if(value_is_pointer(left) || value_is_pointer(rite))
-    {
-        file_quit(self, "expected scalars with '%s'", operator.begin);
-    }
-}
-
-static void
-file_assert_lvalue(file_t* self, value_t left, string_t operator)
-{
-    if(!left.is_lvalue)
-    {
-        file_quit(self, "expected lvalue with '%s'", operator.begin);
-    }
-}
-
 static value_t
 file_value_to_rvalue(file_t* self, value_t value)
 {
@@ -701,63 +770,6 @@ file_value_to_rvalue(file_t* self, value_t value)
     return value;
 }
 
-static value_t
-file_operate_assignment(file_t* self, value_t left, value_t rite, string_t operator)
-{
-    file_value_pointer_levels_must_match(self, left, rite, operator);
-    file_assert_lvalue(self, left, operator);
-    rite = file_value_to_rvalue(self, rite);
-    file_emit(self, g_opcode_store, file_value_to_type_name(self, rite).begin, rite.slot, left.slot, left.slot);
-    return file_value_to_rvalue(self, left);
-}
-
-static value_t
-file_operate_binary(file_t* self, value_t left, value_t rite, string_t operator)
-{
-    file_values_must_be_scalar(self, left, rite, operator);
-    left = file_value_to_rvalue(self, left);
-    rite = file_value_to_rvalue(self, rite);
-    value_t out = {};
-    out.slot = file_get_slot(self);
-    out.type = left.type;
-    if(string_equal(operator.begin, g_asterisk))
-    {
-        file_emit(self, g_opcode_mul, out.slot, left.type.name.begin, left.slot, rite.slot);
-    }
-    else
-    if(string_equal(operator.begin, g_forward_slash))
-    {
-        file_emit(self, g_opcode_sdiv, out.slot, left.type.name.begin, left.slot, rite.slot);
-    }
-    else
-    if(string_equal(operator.begin, g_plus))
-    {
-        file_emit(self, g_opcode_add, out.slot, left.type.name.begin, left.slot, rite.slot);
-    }
-    else
-    if(string_equal(operator.begin, g_minus))
-    {
-        file_emit(self, g_opcode_sub, out.slot, left.type.name.begin, left.slot, rite.slot);
-    }
-    else
-    if(string_equal(operator.begin, g_equal_to))
-    {
-        file_emit(self, g_opcode_equal_to, out.slot, left.type.name.begin, left.slot, rite.slot);
-    }
-    else
-    {
-        file_quit(self, "unknown operator '%s'", operator.begin);
-    }
-    return out;
-}
-
-static value_t
-file_operate(file_t* self, value_t left, value_t rite, string_t operator)
-{
-    file_value_types_must_match(self, left, rite, operator);
-    return (string_equal(operator.begin, g_equals) ? file_operate_assignment : file_operate_binary)(self, left, rite, operator);
-}
-
 static const char* const*
 file_get_operators_by_precedence(file_t* self, precedence_t precedence)
 {
@@ -766,6 +778,51 @@ file_get_operators_by_precedence(file_t* self, precedence_t precedence)
         file_quit(self, "unknown precedence level");
     }
     return g_operators_by_precedence[precedence];
+}
+
+static value_t
+file_operate(file_t* self, value_t left, value_t rite, string_t operator)
+{
+    file_value_types_must_match(self, left, rite, operator);
+    if(string_in(operator, file_get_operators_by_precedence(self, g_precedence_assignment)))
+    {
+        file_value_pointer_levels_must_match(self, left, rite, operator);
+        file_assert_lvalue(self, left, operator);
+        rite = file_value_to_rvalue(self, rite);
+        file_emit(self, g_opcode_store, file_value_to_type_name(self, rite).begin, rite.slot, left.slot, left.slot);
+        return file_value_to_rvalue(self, left);
+    }
+    else
+    {
+        file_values_must_be_scalar(self, left, rite, operator);
+        left = file_value_to_rvalue(self, left);
+        rite = file_value_to_rvalue(self, rite);
+        value_t out = {};
+        out.slot = file_get_slot(self);
+        out.type = left.type;
+        const char* const format =
+            string_equal(operator.begin, g_multiply)              ? g_opcode_mul                   :
+            string_equal(operator.begin, g_divide)                ? g_opcode_sdiv                  :
+            string_equal(operator.begin, g_add)                   ? g_opcode_add                   :
+            string_equal(operator.begin, g_subtract)              ? g_opcode_sub                   :
+            string_equal(operator.begin, g_equal_to)              ? g_opcode_equal_to              :
+            string_equal(operator.begin, g_not_equal_to)          ? g_opcode_not_equal_to          :
+            string_equal(operator.begin, g_less_than)             ? g_opcode_less_than             :
+            string_equal(operator.begin, g_less_than_equal_to)    ? g_opcode_less_than_equal_to    :
+            string_equal(operator.begin, g_greater_than)          ? g_opcode_greater_than          :
+            string_equal(operator.begin, g_greater_than_equal_to) ? g_opcode_greater_than_equal_to : nullptr;
+        if(format == nullptr)
+        {
+            file_quit(self, "unknown operator '%s'", operator.begin);
+        }
+        file_emit(self, format, out.slot, left.type.name.begin, left.slot, rite.slot);
+        if(string_in(operator, file_get_operators_by_precedence(self, g_precedence_relational_0))
+        || string_in(operator, file_get_operators_by_precedence(self, g_precedence_relational_1)))
+        {
+            out.type.name = file_string_init(self, g_i1);
+        }
+        return out;
+    }
 }
 
 static value_t
@@ -836,7 +893,7 @@ file_get_address_of_value(file_t* self, value_t value)
 static value_t
 file_dereference_value(file_t* self, value_t value)
 {
-    file_assert_lvalue(self, value, file_string_init(self, g_asterisk));
+    file_assert_lvalue(self, value, file_string_init(self, g_multiply));
     auto slot = file_get_slot(self);
     file_emit(self, g_opcode_load, slot, file_value_to_type_name(self, value).begin, value.slot);
     value.slot = slot;
@@ -845,7 +902,7 @@ file_dereference_value(file_t* self, value_t value)
 }
 
 static value_t
-file_p0(file_t* self);
+file_p0(file_t*);
 
 static value_t
 file_read_unary_expression(file_t* self)
@@ -857,9 +914,9 @@ file_read_unary_expression(file_t* self)
         auto value = file_p0(self);
         return file_get_address_of_value(self, value);
     }
-    if(peek == *g_asterisk)
+    if(peek == *g_multiply)
     {
-        file_match(self, g_asterisk);
+        file_match(self, g_multiply);
         auto value = file_p0(self);
         return file_dereference_value(self, value);
     }
