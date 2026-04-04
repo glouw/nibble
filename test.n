@@ -34,10 +34,15 @@ i32 main()
 
     i32 i;
     i = 0;
-    while(i < 3)
+    while(i < 10)
     {
+        if(i == 3)
+        {
+            break;
+        }
         value = value - 1;
         i = i + 1;
+        continue;
     }
 
     value = value + 3;

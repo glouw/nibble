@@ -67,6 +67,8 @@ typedef struct
 {
     code_t code;
     list_t values;
+    list_t loop_again;
+    list_t loop_end;
     size_t line;
     size_t slot;
     size_t tabs;
@@ -107,6 +109,8 @@ static constexpr chars_t g_ptr = "ptr";
 static constexpr chars_t g_if = "if";
 static constexpr chars_t g_else = "else";
 static constexpr chars_t g_while = "while";
+static constexpr chars_t g_break = "break";
+static constexpr chars_t g_continue = "continue";
 static constexpr chars_t g_ampersand = "&";
 static constexpr chars_t g_label = "L%lu:";
 static constexpr chars_t g_branch_if_else = "br i1 %%%llu, label %%L%lu, label %%L%lu";
@@ -136,7 +140,7 @@ static const char* const g_type_keywords[] = {
 };
 
 static const char* const g_control_keywords[] = {
-    g_ret, g_if, g_else, g_while, nullptr
+    g_ret, g_if, g_else, g_while, g_break, g_continue, nullptr
 };
 
 static const char* const g_operator_chars[] = {
@@ -266,6 +270,12 @@ file_list_append(file_t* self, list_t* list, value_t value)
         file_quit(self, "list overflow");
     }
     list->begin[list->size++] = value;
+}
+
+static value_t
+list_top(list_t* list)
+{
+    return list->begin[list->size - 1];
 }
 
 static code_t
@@ -524,19 +534,21 @@ file_read_stars(file_t* self)
 static type_t
 file_read_type(file_t* self)
 {
-    type_t type = {};
-    type.name = file_read_alnum(self);
-    type.stars = file_read_stars(self);
+    type_t type = {
+        .name = file_read_alnum(self),
+        .stars = file_read_stars(self),
+    };
     return type;
 }
 
 static value_t
 file_read_value_declaration(file_t* self, bool is_function_declaration)
 {
-    value_t value = {};
-    value.type = file_read_type(self);
-    value.name = file_read_alnum(self);
-    value.slot = file_get_slot(self);
+    value_t value = {
+        .type = file_read_type(self),
+        .name = file_read_alnum(self),
+        .slot = file_get_slot(self),
+    };
     if(is_function_declaration)
     {
         /* for function pointers one day */
@@ -578,7 +590,9 @@ file_read_if_statement(file_t* self, value_t ret_value, size_t if_label, size_t 
     file_read_alnum(self);
     file_match(self, g_left_paren);
     auto value = file_read_expression(self);
-    value_t expected = { .type.name = file_string_init(self, g_i1) };
+    value_t expected = {
+        .type.name = file_string_init(self, g_i1)
+    };
     file_value_types_must_match(self, value, expected, file_string_init(self, g_if));
     file_match(self, g_rite_paren);
     file_emit(self, g_branch_if_else, value.slot, if_label, else_label);
@@ -622,18 +636,40 @@ file_read_if_else_statement(file_t* self, value_t ret_value)
 }
 
 static void
+file_read_continue_statement(file_t* self)
+{
+    file_read_alnum(self);
+    file_match(self, g_semicolon);
+    auto to = list_top(&self->loop_again);
+    file_emit(self, g_branch, to.slot);
+}
+
+static void
+file_read_break_statement(file_t* self)
+{
+    file_read_alnum(self);
+    file_match(self, g_semicolon);
+    auto to = list_top(&self->loop_end);
+    file_emit(self, g_branch, to.slot);
+}
+
+static void
 file_read_while_statement(file_t* self, value_t ret_value)
 {
     auto again_label = file_get_label(self);
     auto while_label = file_get_label(self);
     auto end_label = file_get_label(self);
+    file_list_append(self, &self->loop_again, (value_t) {.slot = again_label});
+    file_list_append(self, &self->loop_end, (value_t) {.slot = end_label});
     file_emit(self, g_branch, again_label);
     file_emit(self, g_label, again_label);
     file_read_alnum(self);
     file_match(self, g_left_paren);
     auto value = file_read_expression(self);
     file_match(self, g_rite_paren);
-    value_t expected = { .type.name = file_string_init(self, g_i1) };
+    value_t expected = {
+        .type.name = file_string_init(self, g_i1)
+    };
     file_value_types_must_match(self, value, expected, file_string_init(self, g_while));
     file_emit(self, g_branch_if_else, value.slot, while_label, end_label);
     file_emit(self, g_label, while_label);
@@ -643,6 +679,8 @@ file_read_while_statement(file_t* self, value_t ret_value)
         file_emit(self, g_branch, again_label);
     }
     file_emit(self, g_label, end_label);
+    self->loop_again.size -= 1;
+    self->loop_end.size -= 1;
 }
 
 static bool
@@ -657,6 +695,18 @@ file_read_statement(file_t* self, value_t ret_value)
             auto value = file_read_ret_statement(self);
             file_value_types_must_match(self, value, ret_value, operator);
             file_value_pointer_levels_must_match(self, value, ret_value, operator);
+            return true;
+        }
+        else
+        if(string_equal(keyword.begin, g_continue))
+        {
+            file_read_continue_statement(self);
+            return true;
+        }
+        else
+        if(string_equal(keyword.begin, g_break))
+        {
+            file_read_break_statement(self);
             return true;
         }
         else
@@ -780,6 +830,13 @@ file_get_operators_by_precedence(file_t* self, precedence_t precedence)
     return g_operators_by_precedence[precedence];
 }
 
+static bool
+file_is_operator_relational(file_t* self, string_t operator)
+{
+    return string_in(operator, file_get_operators_by_precedence(self, g_precedence_relational_0))
+        || string_in(operator, file_get_operators_by_precedence(self, g_precedence_relational_1));
+}
+
 static value_t
 file_operate(file_t* self, value_t left, value_t rite, string_t operator)
 {
@@ -797,10 +854,11 @@ file_operate(file_t* self, value_t left, value_t rite, string_t operator)
         file_values_must_be_scalar(self, left, rite, operator);
         left = file_value_to_rvalue(self, left);
         rite = file_value_to_rvalue(self, rite);
-        value_t out = {};
-        out.slot = file_get_slot(self);
-        out.type = left.type;
-        const char* const format =
+        value_t out = {
+            .slot = file_get_slot(self),
+            .type = left.type,
+        };
+        if(auto format =
             string_equal(operator.begin, g_multiply)              ? g_opcode_mul                   :
             string_equal(operator.begin, g_divide)                ? g_opcode_sdiv                  :
             string_equal(operator.begin, g_add)                   ? g_opcode_add                   :
@@ -810,18 +868,17 @@ file_operate(file_t* self, value_t left, value_t rite, string_t operator)
             string_equal(operator.begin, g_less_than)             ? g_opcode_less_than             :
             string_equal(operator.begin, g_less_than_equal_to)    ? g_opcode_less_than_equal_to    :
             string_equal(operator.begin, g_greater_than)          ? g_opcode_greater_than          :
-            string_equal(operator.begin, g_greater_than_equal_to) ? g_opcode_greater_than_equal_to : nullptr;
-        if(format == nullptr)
+            string_equal(operator.begin, g_greater_than_equal_to) ? g_opcode_greater_than_equal_to : nullptr)
         {
-            file_quit(self, "unknown operator '%s'", operator.begin);
+            file_emit(self, format, out.slot, left.type.name.begin, left.slot, rite.slot);
+            if(file_is_operator_relational(self, operator))
+            {
+                out.type.name = file_string_init(self, g_i1);
+            }
+            return out;
         }
-        file_emit(self, format, out.slot, left.type.name.begin, left.slot, rite.slot);
-        if(string_in(operator, file_get_operators_by_precedence(self, g_precedence_relational_0))
-        || string_in(operator, file_get_operators_by_precedence(self, g_precedence_relational_1)))
-        {
-            out.type.name = file_string_init(self, g_i1);
-        }
-        return out;
+        file_quit(self, "unknown operator '%s'", operator.begin);
+        return (value_t) {};
     }
 }
 
@@ -856,9 +913,10 @@ file_read_expression_rite_to_left(file_t* self, value_t with(file_t*), precedenc
 static value_t
 file_direct_load(file_t* self)
 {
-    value_t value = {};
-    value.type.name = file_string_init(self, g_i32);
-    value.slot = file_get_slot(self);
+    value_t value = {
+        .type.name = file_string_init(self, g_i32),
+        .slot = file_get_slot(self),
+    };
     auto name = file_read_digit(self);
     file_emit(self, g_opcode_load_immediate, self->slot, value.type.name.begin, name.begin);
     return value;
@@ -873,10 +931,11 @@ file_indirect_load(file_t* self)
     {
         file_quit(self, "'%s' not declared", name.begin);
     }
-    value_t value = {};
-    value.is_lvalue = true;
-    value.slot = file_get_slot(self);
-    value.type = found->type;
+    value_t value = {
+        .is_lvalue = true,
+        .slot = file_get_slot(self),
+        .type = found->type,
+    };
     file_emit(self, g_opcode_gep, value.slot, found->slot, g_i32, 0);
     return value;
 }
