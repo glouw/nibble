@@ -4,7 +4,8 @@
 #include <stdarg.h>
 
 static constexpr size_t g_string_size = 64;
-static constexpr size_t g_list_size = 16;
+static constexpr size_t g_value_list_size = 1024;
+static constexpr size_t g_argument_list_size = 8;
 static constexpr size_t g_code_size = 65536;
 
 typedef char chars_t[g_string_size];
@@ -40,14 +41,14 @@ type_t;
 
 typedef struct
 {
-    size_t begin[g_list_size];
+    size_t begin[g_argument_list_size];
     size_t size;
 }
 slot_list_t;
 
 typedef struct
 {
-    type_t begin[g_list_size];
+    type_t begin[g_argument_list_size];
     size_t size;
 }
 type_list_t;
@@ -64,7 +65,7 @@ value_t;
 
 typedef struct
 {
-    value_t begin[g_list_size];
+    value_t begin[g_value_list_size];
     size_t size;
 }
 value_list_t;
@@ -90,91 +91,160 @@ typedef struct
 }
 file_t;
 
-static constexpr chars_t g_left_curl = "{";
-static constexpr chars_t g_rite_curl = "}";
-static constexpr chars_t g_left_paren = "(";
-static constexpr chars_t g_rite_paren = ")";
-static constexpr chars_t g_semicolon = ";";
-static constexpr chars_t g_newline = "\n";
-static constexpr chars_t g_space = " ";
-static constexpr chars_t g_tab = "\t";
+//
+// Terminal colors
+//
+
+static constexpr chars_t g_red    = "\033[31m";
+static constexpr chars_t g_white  = "\033[1;37m";
+static constexpr chars_t g_normal = "\033[0m";
+
+//
+// Characters
+//
+
+static constexpr chars_t g_underscore  = "_";
+static constexpr chars_t g_left_curl   = "{";
+static constexpr chars_t g_rite_curl   = "}";
+static constexpr chars_t g_left_paren  = "(";
+static constexpr chars_t g_rite_paren  = ")";
+static constexpr chars_t g_semicolon   = ";";
+static constexpr chars_t g_newline     = "\n";
+static constexpr chars_t g_space       = " ";
+static constexpr chars_t g_tab         = "\t";
 static constexpr chars_t g_lower_begin = "a";
-static constexpr chars_t g_lower_end = "z";
+static constexpr chars_t g_lower_end   = "z";
 static constexpr chars_t g_upper_begin = "A";
-static constexpr chars_t g_upper_end = "Z";
+static constexpr chars_t g_upper_end   = "Z";
 static constexpr chars_t g_digit_begin = "0";
-static constexpr chars_t g_digit_end = "9";
-static constexpr chars_t g_add = "+";
-static constexpr chars_t g_subtract = "-";
-static constexpr chars_t g_divide = "/";
-static constexpr chars_t g_multiply = "*";
-static constexpr chars_t g_not = "!";
-static constexpr chars_t g_equals = "=";
-static constexpr chars_t g_equal_to = "==";
-static constexpr chars_t g_not_equal_to = "!=";
-static constexpr chars_t g_less_than_equal_to = "<=";
-static constexpr chars_t g_less_than = "<";
+static constexpr chars_t g_digit_end   = "9";
+
+//
+// Operators
+//
+
+static constexpr chars_t g_add                   = "+";
+static constexpr chars_t g_subtract              = "-";
+static constexpr chars_t g_divide                = "/";
+static constexpr chars_t g_multiply              = "*";
+static constexpr chars_t g_not                   = "!";
+static constexpr chars_t g_equals                = "=";
+static constexpr chars_t g_equal_to              = "==";
+static constexpr chars_t g_not_equal_to          = "!=";
+static constexpr chars_t g_less_than_equal_to    = "<=";
+static constexpr chars_t g_less_than             = "<";
 static constexpr chars_t g_greater_than_equal_to = ">=";
-static constexpr chars_t g_greater_than = ">";
-static constexpr chars_t g_bitwise_or = "|";
-static constexpr chars_t g_comma = ",";
-static constexpr chars_t g_i1 = "i1";
-static constexpr chars_t g_i32 = "i32";
-static constexpr chars_t g_ret = "ret";
-static constexpr chars_t g_ptr = "ptr";
-static constexpr chars_t g_if = "if";
-static constexpr chars_t g_else = "else";
-static constexpr chars_t g_while = "while";
-static constexpr chars_t g_break = "break";
-static constexpr chars_t g_continue = "continue";
-static constexpr chars_t g_arguments = "arguments";
-static constexpr chars_t g_ampersand = "&";
-static constexpr chars_t g_label = "L%lu:";
-static constexpr chars_t g_branch_if_else = "br i1 %%%llu, label %%L%lu, label %%L%lu";
-static constexpr chars_t g_branch = "br label %%L%lu";
-static constexpr chars_t g_opcode_mul = "%%%lu = mul %s %%%lu, %%%lu";
-static constexpr chars_t g_opcode_sdiv = "%%%lu = sdiv %s %%%lu, %%%lu";
-static constexpr chars_t g_opcode_add = "%%%lu = add %s %%%lu, %%%lu";
-static constexpr chars_t g_opcode_sub = "%%%lu = sub %s %%%lu, %%%lu";
-static constexpr chars_t g_opcode_equal_to = "%%%lu = icmp eq %s %%%lu, %%%lu";
-static constexpr chars_t g_opcode_not_equal_to = "%%%lu = icmp ne %s %%%lu, %%%lu";
-static constexpr chars_t g_opcode_less_than = "%%%lu = icmp slt %s %%%lu, %%%lu";
-static constexpr chars_t g_opcode_less_than_equal_to = "%%%lu = icmp sle %s %%%lu, %%%lu"; // TODO: UNSIGNED COMPARE
-static constexpr chars_t g_opcode_greater_than = "%%%lu = icmp sgt %s %%%lu, %%%lu";
-static constexpr chars_t g_opcode_greater_than_equal_to = "%%%lu = icmp sge %s %%%lu, %%%lu";
-static constexpr chars_t g_opcode_bitwise_or = "%%%lu = or %s %%%lu, %%%lu";
-static constexpr chars_t g_opcode_alloca = "%%%lu = alloca %s";
-static constexpr chars_t g_opcode_target = "target triple = \"x86_64-pc-linux-gnu\"";
-static constexpr chars_t g_opcode_gep = "%%%lu = getelementptr ptr, ptr %%%lu, %s %lu";
-static constexpr chars_t g_opcode_load_immediate = "%%%lu = add %s %s, 0";
-static constexpr chars_t g_opcode_ret = "ret %s %%%d";
-static constexpr chars_t g_opcode_define = "define %s @%s";
-static constexpr chars_t g_opcode_load = "%%%lu = load %s, ptr %%%lu";
-static constexpr chars_t g_opcode_store = "store %s %%%lu, ptr %%%lu";
-static constexpr chars_t g_opcode_ptr = "ptr %%%lu";
-static constexpr chars_t g_opcode_function_call = "%%%lu = call %s @%s";
-static constexpr chars_t g_entry = "entry:";
-
-static const char* const g_type_keywords[] = {
-    g_i1, g_i32, nullptr
-};
-
-static const char* const g_control_keywords[] = {
-    g_ret, g_if, g_else, g_while, g_break, g_continue, nullptr
-};
+static constexpr chars_t g_greater_than          = ">";
+static constexpr chars_t g_shift_rite            = ">>";
+static constexpr chars_t g_shift_left            = "<<";
+static constexpr chars_t g_bitwise_or            = "|";
+static constexpr chars_t g_bitwise_xor           = "^";
+static constexpr chars_t g_bitwise_and           = "&";
+static constexpr chars_t g_comma                 = ",";
+static constexpr chars_t g_ampersand             = "&";
 
 static const char* const g_operator_chars[] = {
-    g_ampersand, g_multiply, g_divide, g_add, g_subtract, g_equals, g_not, g_less_than, g_greater_than, g_bitwise_or, nullptr
+    g_add,
+    g_subtract,
+    g_divide,
+    g_multiply,
+    g_not,
+    g_equals,
+    g_equal_to,
+    g_not_equal_to,
+    g_less_than_equal_to,
+    g_less_than,
+    g_greater_than_equal_to,
+    g_greater_than,
+    g_shift_rite,
+    g_shift_left,
+    g_bitwise_or,
+    g_bitwise_xor,
+    g_bitwise_and,
+    g_comma,
+    g_ampersand,
+    nullptr
 };
 
-static const char* const g_operators_by_precedence[g_precedence_count][g_list_size] = {
+//
+// Types
+//
+
+static constexpr chars_t g_i1  = "i1";
+static constexpr chars_t g_i32 = "i32";
+
+static const char* const g_type_keywords[] = {
+    g_i1,
+    g_i32,
+    nullptr
+};
+
+//
+// Keywords
+//
+
+static constexpr chars_t g_ret      = "ret";
+static constexpr chars_t g_ptr      = "ptr";
+static constexpr chars_t g_if       = "if";
+static constexpr chars_t g_else     = "else";
+static constexpr chars_t g_while    = "while";
+static constexpr chars_t g_break    = "break";
+static constexpr chars_t g_continue = "continue";
+
+static const char* const g_control_keywords[] = {
+    g_ret,
+    g_if,
+    g_else,
+    g_while,
+    g_break,
+    g_continue,
+    nullptr
+};
+
+//
+// Opcodes
+//
+
+static constexpr chars_t g_opcode_target                = "target triple = \"x86_64-pc-linux-gnu\"";
+static constexpr chars_t g_label                        = "L%lu:";
+static constexpr chars_t g_branch_if_else               = "br i1 %%%llu, label %%L%lu, label %%L%lu";
+static constexpr chars_t g_branch                       = "br label %%L%lu";
+static constexpr chars_t g_opcode_mul                   = "%%%lu = mul %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_sdiv                  = "%%%lu = sdiv %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_add                   = "%%%lu = add %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_sub                   = "%%%lu = sub %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_equal_to              = "%%%lu = icmp eq %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_not_equal_to          = "%%%lu = icmp ne %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_less_than             = "%%%lu = icmp slt %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_less_than_equal_to    = "%%%lu = icmp sle %s %%%lu, %%%lu"; // TODO: UNSIGNED COMPARE
+static constexpr chars_t g_opcode_greater_than          = "%%%lu = icmp sgt %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_greater_than_equal_to = "%%%lu = icmp sge %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_bitwise_or            = "%%%lu = or %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_bitwise_xor           = "%%%lu = xor %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_bitwise_and           = "%%%lu = and %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_shift_left            = "%%%lu = shl %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_shift_rite            = "%%%lu = ashr %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_alloca                = "%%%lu = alloca %s";
+static constexpr chars_t g_opcode_gep                   = "%%%lu = getelementptr ptr, ptr %%%lu, %s %lu";
+static constexpr chars_t g_opcode_load_immediate        = "%%%lu = add %s %s, 0";
+static constexpr chars_t g_opcode_ret                   = "ret %s %%%d";
+static constexpr chars_t g_opcode_define                = "define %s @%s";
+static constexpr chars_t g_opcode_load                  = "%%%lu = load %s, ptr %%%lu";
+static constexpr chars_t g_opcode_store                 = "store %s %%%lu, ptr %%%lu";
+static constexpr chars_t g_opcode_ptr                   = "ptr %%%lu";
+static constexpr chars_t g_opcode_function_call         = "%%%lu = call %s @%s";
+static constexpr chars_t g_entry                        = "entry:";
+
+static constexpr size_t g_max_operators_per_precedence = 8;
+
+static const char* const g_operators_by_precedence[g_precedence_count][g_max_operators_per_precedence] = {
     [ g_precedence_arithmetic_0 ]  = { g_multiply, g_divide                                                       },
     [ g_precedence_arithmetic_1 ]  = { g_add, g_subtract                                                          },
-    [ g_precedence_shift        ]  = {                                                                            },
+    [ g_precedence_shift        ]  = { g_shift_left, g_shift_rite                                                 },
     [ g_precedence_relational_0 ]  = { g_less_than, g_less_than_equal_to, g_greater_than, g_greater_than_equal_to },
     [ g_precedence_relational_1 ]  = { g_equal_to, g_not_equal_to                                                 },
-    [ g_precedence_bitwise_and  ]  = {                                                                            },
-    [ g_precedence_bitwise_xor  ]  = {                                                                            },
+    [ g_precedence_bitwise_and  ]  = { g_bitwise_and                                                              },
+    [ g_precedence_bitwise_xor  ]  = { g_bitwise_xor                                                              },
     [ g_precedence_bitwise_or   ]  = { g_bitwise_or                                                               },
     [ g_precedence_assignment   ]  = { g_equals                                                                   },
 };
@@ -182,37 +252,45 @@ static const char* const g_operators_by_precedence[g_precedence_count][g_list_si
 static bool
 is_digit_char(char c)
 {
-    return c >= *g_digit_begin && c <= *g_digit_end;
+    return c >= *g_digit_begin
+        && c <= *g_digit_end;
 }
 
 static bool
 is_lower_char(char c)
 {
-    return c >= *g_lower_begin && c <= *g_lower_end;
+    return c >= *g_lower_begin
+        && c <= *g_lower_end;
 }
 
 static bool
 is_upper_char(char c)
 {
-    return c >= *g_upper_begin && c <= *g_upper_end;
+    return c >= *g_upper_begin
+        && c <= *g_upper_end;
 }
 
 static bool
 is_alpha_char(char c)
 {
-    return is_lower_char(c) || is_upper_char(c);
+    return is_lower_char(c)
+        || is_upper_char(c);
 }
 
 static bool
 is_alnum_char(char c)
 {
-    return is_alpha_char(c) || is_digit_char(c);
+    return is_alpha_char(c)
+        || is_digit_char(c)
+        || c == *g_underscore;
 }
 
 static bool
 is_space_char(char c)
 {
-    return c == *g_space || c == *g_newline || c == *g_tab;
+    return c == *g_space
+        || c == *g_newline
+        || c == *g_tab;
 }
 
 static bool
@@ -244,13 +322,19 @@ code_rewind(code_t* self, size_t by)
     self->at -= by;
 }
 
+static bool
+type_is_pointer(type_t self)
+{
+    return self.stars > 0;
+}
+
 static void
 file_quit(file_t* self, const char* format, ...)
 {
     auto out = stderr;
     va_list args = {};
     va_start(args, format);
-    fprintf(out, "error: line %lu: ", self->line);
+    fprintf(out, "%sline %lu:%s %serror: %s", g_white, self->line, g_normal, g_red, g_normal);
     vfprintf(out, format, args);
     fprintf(out, g_newline);
     va_end(args);
@@ -292,12 +376,6 @@ file_string_init(file_t* self, const chars_t chars)
         chars += 1;
     }
     return string;
-}
-
-static bool
-type_is_pointer(type_t self)
-{
-    return self.stars > 0;
 }
 
 static string_t
@@ -350,9 +428,9 @@ value_in(string_t self, value_list_t* list)
 static void
 file_value_list_append(file_t* self, value_list_t* list, value_t value)
 {
-    if(list->size == g_list_size)
+    if(list->size == g_value_list_size)
     {
-        file_quit(self, "list overflow");
+        file_quit(self, "one file supports max %d value identifiers", g_value_list_size);
     }
     list->begin[list->size++] = value;
 }
@@ -360,9 +438,9 @@ file_value_list_append(file_t* self, value_list_t* list, value_t value)
 static void
 file_type_list_append(file_t* self, type_list_t* list, type_t type)
 {
-    if(list->size == g_list_size)
+    if(list->size == g_argument_list_size)
     {
-        file_quit(self, "list overflow");
+        file_quit(self, "functions support max %d arguments", g_argument_list_size);
     }
     list->begin[list->size++] = type;
 }
@@ -370,9 +448,9 @@ file_type_list_append(file_t* self, type_list_t* list, type_t type)
 static void
 file_slot_list_append(file_t* self, slot_list_t* list, size_t slot)
 {
-    if(list->size == g_list_size)
+    if(list->size == g_argument_list_size)
     {
-        file_quit(self, "list overflow");
+        file_quit(self, "functions support max %s arguments", g_argument_list_size);
     }
     list->begin[list->size++] = slot;
 }
@@ -382,7 +460,7 @@ file_value_list_top(file_t* self, value_list_t* list)
 {
     if(list->size == 0)
     {
-        file_quit(self, "list underflow");
+        file_quit(self, "vale list underflow");
     }
     return list->begin[list->size - 1];
 }
@@ -877,10 +955,13 @@ file_read_function(file_t* self)
     }
     file_emit(self, g_left_curl);
     file_emit(self, g_entry);
-    file_read_block(self, ret_value);
+    bool terminated = file_read_block(self, ret_value);
+    if(!terminated)
+    {
+        file_quit(self, "block missing 'ret' stastement");
+    }
     file_emit(self, g_rite_curl);
     self->values.size -= values.size;
-    // TODO: NEEDS AT LEAST ONE RET FOR THIS SCOPE.
 }
 
 static bool
@@ -966,7 +1047,11 @@ file_operate(file_t* self, value_t left, value_t rite, string_t operator)
             string_equal(operator.begin, g_less_than_equal_to)    ? g_opcode_less_than_equal_to    :
             string_equal(operator.begin, g_greater_than)          ? g_opcode_greater_than          :
             string_equal(operator.begin, g_greater_than_equal_to) ? g_opcode_greater_than_equal_to :
+            string_equal(operator.begin, g_bitwise_and)           ? g_opcode_bitwise_and           :
             string_equal(operator.begin, g_bitwise_or)            ? g_opcode_bitwise_or            :
+            string_equal(operator.begin, g_bitwise_xor)           ? g_opcode_bitwise_xor           :
+            string_equal(operator.begin, g_shift_left)            ? g_opcode_shift_left            :
+            string_equal(operator.begin, g_shift_rite)            ? g_opcode_shift_rite            :
             nullptr;
         if(format)
         {
@@ -1026,7 +1111,8 @@ static size_t
 file_push_argument(file_t* self, type_t expected)
 {
     auto argument = file_read_expression(self);
-    auto operator = file_string_init(self, g_arguments);
+    const chars_t arguments = "arguments";
+    auto operator = file_string_init(self, arguments);
     file_types_must_match(self, argument.type, expected, operator);
     file_type_pointers_must_match(self, argument.type, expected, operator);
     auto slot = file_get_slot(self);
