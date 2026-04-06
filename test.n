@@ -1,37 +1,43 @@
-i32 main()
+i32 add(i32 a, i32 b)
 {
+    ret a + b;
+}
+
+i32 testfunction()
+{
+    if(add(32, add(1, 1)) == 34)
     {
-        {
-            {
-                1 + 1;
-            }
-        }
+        ret 0;
     }
+    ret 1;
+}
 
-    {
-        i32 hidden;
-    }
-
-    i32 hidden;
-
-    i32 x;
-    x = 32;
-    x = x;
+i32 testpointers()
+{
+    i32* p;
+    i32** pp;
+    i32*** ppp;
 
     i32 value;
-    value = 32 + 2 * x / 2;
+    value = 42;
 
-    i32* p;
     p = &value;
-
-    i32** pp;
     pp = &p;
-
-    i32*** ppp;
     ppp = &pp;
 
-    ***ppp = value - 61;
+    ***ppp = ***ppp - 1;
+    **pp = **pp - 1;
+    *p = *p - 1;
 
+    if(value == 39)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 testbreak()
+{
     i32 i;
     i = 0;
     while(i < 10)
@@ -40,28 +46,121 @@ i32 main()
         {
             break;
         }
-        value = value - 1;
         i = i + 1;
-        continue;
     }
-
-    value = value + 3;
-
-    if(value == 3) ret 0;
-
-    if(value == 4)
+    if(i == 3)
     {
-        ret 1;
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 testcontinue()
+{
+    i32 i;
+    i = 0;
+
+    i32 out;
+    out = 0;
+
+    while(i < 10)
+    {
+        i = i + 1;
+        if(i <= 5)
+        {
+            continue;
+        }
+        out = out + 1;
+    }
+    if(out == 5)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 testif0()
+{
+    if(0 == 0)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 testif1()
+{
+    if(0 == 1)
+    {
     }
     else
-    if(value == 5)
     {
-        ret 2;
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 testif2()
+{
+    if(0 == 1)
+    {
+    }
+    else
+    if(1 == 1)
+    {
+        ret 0;
     }
     else
     {
-        if(value == 5) ret 3; else ret 4;
     }
+    ret 1;
+}
 
-    ret 0;
+i32 testif3()
+{
+    if(0 == 1)
+    {
+    }
+    else
+    if(2 == 1)
+    {
+    }
+    else
+    if(1 == 1)
+    {
+        ret 0;
+    }
+    else
+    {
+    }
+    ret 1;
+}
+
+i32 testnest()
+{
+    {
+        {
+            {
+                i32 x;
+            }
+            i32 x;
+        }
+        i32 x;
+    }
+    i32 x;
+    x = 0;
+    ret x;
+}
+
+i32 main()
+{
+    ret testfunction()
+      | testpointers()
+      | testbreak()
+      | testcontinue()
+      | testif0()
+      | testif1()
+      | testif2()
+      | testif3()
+      | testnest();
 }

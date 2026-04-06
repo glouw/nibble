@@ -1,7 +1,18 @@
+CC = gcc -std=c23
+CFLAGS = -Og -fsanitize=address,undefined -Wall -Wextra -Wpedantic
+FRONTEND = lang
+SRC = main.c
+TEMP = out.ll
+EXE = a.out
+BACKEND = clang -O3
+
+test: all
+	clear && ./$(FRONTEND) > $(TEMP) && $(BACKEND) $(TEMP) && ./$(EXE)
+
 all:
-	gcc -g -fsanitize=address,undefined -Wall -Wextra -Wpedantic -std=c2y main.c -o lang
+	$(CC) $(CFLAGS) $(SRC) -o $(FRONTEND)
 
 clean:
-	rm -f lang
-	rm -f a.out
-	rm -f out.ll
+	rm -f $(FRONTEND)
+	rm -f $(EXE)
+	rm -f $(TEMP)
