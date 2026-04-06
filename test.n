@@ -263,7 +263,10 @@ i32 test_bitwise()
     i32 z;
     z = 1 ^ 2 ^ 3 ^ 4;
 
-    if(x == 0 & y == 7 & z == 4)
+    i32 a;
+    a = ~255;
+
+    if(x == 0 & y == 7 & z == 4 & a == -256)
     {
         ret 0;
     }
@@ -279,7 +282,15 @@ i32 test_shift()
     y = 8;
     y = y >> 1;
 
-    if(x == 256 & y == 4)
+    i32 z;
+    z = -8;
+    z = z >> 1;
+
+    i32 a;
+    a = -8;
+    a = a << 1;
+
+    if(x == 256 & y == 4 & z == -4 & a == -16)
     {
         ret 0;
     }
@@ -309,7 +320,7 @@ i32 test_equality()
     x = 1;
     y = 2;
 
-    if(x == 1 & y == 2 & x != 2 & y != 1)
+    if(x == 1 & y == 2 & x != 2 & y != 1 & !(x == y))
     {
         ret 0;
     }
@@ -339,16 +350,52 @@ i32 test_complex_expression()
     px = &x;
 
     result = (((*px * y / z + w - 1) << 2) >> 1) & e ^ f | g;
-
     if(result == 3)
     {
         ret 0;
     }
 
-    i32* a;
-    i32 b;
-    b = a;
+    ret 1;
+}
 
+i32 test_negative()
+{
+    i32 x;
+    x = -5;
+    x = -x;
+    x = -x;
+    if(x == +5)
+    {
+        ret 1;
+    }
+    if(x == 5)
+    {
+        ret 1;
+    }
+    if(x == -5)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 test_negative_loop()
+{
+    i32 loops;
+    loops = 0;
+
+    i32 i;
+    i = -5;
+    while(i < 10)
+    {
+        loops = loops + 1;
+        i = i + 1;
+    }
+
+    if(loops == 15)
+    {
+        ret 0;
+    }
     ret 1;
 }
 
@@ -375,5 +422,7 @@ i32 main()
       | test_comparison()
       | test_equality()
       | test_complex_expression()
+      | test_negative()
+      | test_negative_loop()
       ;
 }

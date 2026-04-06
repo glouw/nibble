@@ -123,11 +123,11 @@ static constexpr chars_t g_digit_end   = "9";
 // Operators
 //
 
+static constexpr chars_t g_not                   = "!";
 static constexpr chars_t g_add                   = "+";
 static constexpr chars_t g_subtract              = "-";
 static constexpr chars_t g_divide                = "/";
 static constexpr chars_t g_multiply              = "*";
-static constexpr chars_t g_not                   = "!";
 static constexpr chars_t g_equals                = "=";
 static constexpr chars_t g_equal_to              = "==";
 static constexpr chars_t g_not_equal_to          = "!=";
@@ -140,15 +140,16 @@ static constexpr chars_t g_shift_left            = "<<";
 static constexpr chars_t g_bitwise_or            = "|";
 static constexpr chars_t g_bitwise_xor           = "^";
 static constexpr chars_t g_bitwise_and           = "&";
+static constexpr chars_t g_bitwise_not           = "~";
 static constexpr chars_t g_comma                 = ",";
 static constexpr chars_t g_ampersand             = "&";
 
 static const char* const g_operator_chars[] = {
+    g_not,
     g_add,
     g_subtract,
     g_divide,
     g_multiply,
-    g_not,
     g_equals,
     g_equal_to,
     g_not_equal_to,
@@ -161,6 +162,7 @@ static const char* const g_operator_chars[] = {
     g_bitwise_or,
     g_bitwise_xor,
     g_bitwise_and,
+    g_bitwise_not,
     g_comma,
     g_ampersand,
     nullptr
@@ -209,6 +211,8 @@ static constexpr chars_t g_opcode_target                = "target triple = \"x86
 static constexpr chars_t g_label                        = "L%lu:";
 static constexpr chars_t g_branch_if_else               = "br i1 %%%llu, label %%L%lu, label %%L%lu";
 static constexpr chars_t g_branch                       = "br label %%L%lu";
+static constexpr chars_t g_opcode_not                   = "%%%lu = xor %s %%%lu, true";
+static constexpr chars_t g_opcode_negative              = "%%%lu = mul %s %%%lu, -1";
 static constexpr chars_t g_opcode_mul                   = "%%%lu = mul %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_sdiv                  = "%%%lu = sdiv %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_add                   = "%%%lu = add %s %%%lu, %%%lu";
@@ -220,6 +224,7 @@ static constexpr chars_t g_opcode_less_than_equal_to    = "%%%lu = icmp sle %s %
 static constexpr chars_t g_opcode_greater_than          = "%%%lu = icmp sgt %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_greater_than_equal_to = "%%%lu = icmp sge %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_bitwise_or            = "%%%lu = or %s %%%lu, %%%lu";
+static constexpr chars_t g_opcode_bitwise_not           = "%%%lu = xor %s %%%lu, -1";
 static constexpr chars_t g_opcode_bitwise_xor           = "%%%lu = xor %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_bitwise_and           = "%%%lu = and %s %%%lu, %%%lu";
 static constexpr chars_t g_opcode_shift_left            = "%%%lu = shl %s %%%lu, %%%lu";
@@ -523,9 +528,9 @@ file_type_pointers_must_match(file_t* self, type_t left, type_t rite, string_t o
 }
 
 static void
-file_values_must_be_scalar(file_t* self, value_t left, value_t rite, string_t operator)
+file_values_must_be_scalar(file_t* self, type_t left, type_t rite, string_t operator)
 {
-    if(type_is_pointer(left.type) || type_is_pointer(rite.type))
+    if(type_is_pointer(left) || type_is_pointer(rite))
     {
         file_quit(self, "expected scalars with '%s'", operator.begin);
     }
@@ -1029,7 +1034,7 @@ file_operate(file_t* self, value_t left, value_t rite, string_t operator)
     }
     else
     {
-        file_values_must_be_scalar(self, left, rite, operator);
+        file_values_must_be_scalar(self, left.type, rite.type, operator);
         left = file_value_to_rvalue(self, left);
         rite = file_value_to_rvalue(self, rite);
         value_t out = {
@@ -1108,7 +1113,7 @@ file_direct_load(file_t* self)
 }
 
 static size_t
-file_push_argument(file_t* self, type_t expected)
+file_push_function_argument(file_t* self, type_t expected)
 {
     auto argument = file_read_expression(self);
     const chars_t arguments = "arguments";
@@ -1134,7 +1139,7 @@ file_read_function_call_argument_list(file_t* self, value_t* found)
             break;
         }
         auto expected = found->types.begin[list.size];
-        auto slot = file_push_argument(self, expected);
+        auto slot = file_push_function_argument(self, expected);
         file_slot_list_append(self, &list, slot);
         file_read_space(self);
         if(file_peek(self) == *g_comma)
@@ -1206,7 +1211,65 @@ file_dereference_value(file_t* self, value_t value)
     file_emit(self, g_opcode_load, slot, file_type_as_opaque(self, value.type).begin, value.slot);
     value.slot = slot;
     value.type.stars -= 1;
-    return value; // Stays lvalue
+    return value;
+}
+
+static void
+file_unary_operation_expects(file_t* self, value_t value, const chars_t op, const chars_t type)
+{
+    auto operator = file_string_init(self, op);
+    type_t expected = {
+        .name = file_string_init(self, type),
+    };
+    file_types_must_match(self, value.type, expected, operator);
+    file_values_must_be_scalar(self, value.type, expected, operator);
+}
+
+static value_t
+file_to_positive_value(file_t* self, value_t value)
+{
+    value = file_value_to_rvalue(self, value);
+    file_unary_operation_expects(self, value, g_add, g_i32);
+    return value;
+}
+
+static value_t
+file_to_negative_value(file_t* self, value_t value)
+{
+    value = file_value_to_rvalue(self, value);
+    file_unary_operation_expects(self, value, g_subtract, g_i32);
+    value_t out = {
+        .slot = file_get_slot(self),
+        .type = value.type,
+    };
+    file_emit(self, g_opcode_negative, out.slot, file_type_as_opaque(self, value.type).begin, value.slot);
+    return out;
+}
+
+static value_t
+file_to_bitwise_not_value(file_t* self, value_t value)
+{
+    value = file_value_to_rvalue(self, value);
+    file_unary_operation_expects(self, value, g_bitwise_not, g_i32);
+    value_t out = {
+        .slot = file_get_slot(self),
+        .type = value.type,
+    };
+    file_emit(self, g_opcode_bitwise_not, out.slot, file_type_as_opaque(self, value.type).begin, value.slot);
+    return out;
+}
+
+static value_t
+file_to_not_value(file_t* self, value_t value)
+{
+    value = file_value_to_rvalue(self, value);
+    file_unary_operation_expects(self, value, g_not, g_i1);
+    value_t out = {
+        .slot = file_get_slot(self),
+        .type = value.type,
+    };
+    file_emit(self, g_opcode_not, out.slot, file_type_as_opaque(self, value.type).begin, value.slot);
+    return out;
 }
 
 static value_t
@@ -1216,6 +1279,30 @@ static value_t
 file_read_unary_expression(file_t* self)
 {
     auto peek = file_peek(self);
+    if(peek == *g_not)
+    {
+        file_match(self, g_not);
+        auto value = file_p0(self);
+        return file_to_not_value(self, value);
+    }
+    if(peek == *g_bitwise_not)
+    {
+        file_match(self, g_bitwise_not);
+        auto value = file_p0(self);
+        return file_to_bitwise_not_value(self, value);
+    }
+    if(peek == *g_add)
+    {
+        file_match(self, g_add);
+        auto value = file_p0(self);
+        return file_to_positive_value(self, value);
+    }
+    if(peek == *g_subtract)
+    {
+        file_match(self, g_subtract);
+        auto value = file_p0(self);
+        return file_to_negative_value(self, value);
+    }
     if(peek == *g_ampersand)
     {
         file_match(self, g_ampersand);
