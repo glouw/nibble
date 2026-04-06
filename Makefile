@@ -7,7 +7,7 @@ EXE = a.out
 BACKEND = clang -O3
 
 test: all
-	clear && ./$(FRONTEND) > $(TEMP) && $(BACKEND) $(TEMP) && ./$(EXE)
+	./$(FRONTEND) > $(TEMP) && $(BACKEND) $(TEMP) && ./$(EXE)
 
 all:
 	$(CC) $(CFLAGS) $(SRC) -o $(FRONTEND)
