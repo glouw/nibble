@@ -36,6 +36,21 @@ i32 testpointers()
     ret 1;
 }
 
+i32 testloopret()
+{
+    i32 i;
+    i = 10;
+    while(i >= 0)
+    {
+        if(i == 0)
+        {
+            ret i;
+        }
+        i = i - 1;
+    }
+    ret 1;
+}
+
 i32 testbreak()
 {
     i32 i;
@@ -162,5 +177,6 @@ i32 main()
       | testif1()
       | testif2()
       | testif3()
-      | testnest();
+      | testnest()
+      | testloopret();
 }
