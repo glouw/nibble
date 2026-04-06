@@ -530,6 +530,7 @@ file_type_pointers_must_match(file_t* self, type_t left, type_t rite, string_t o
 static void
 file_values_must_be_scalar(file_t* self, type_t left, type_t rite, string_t operator)
 {
+    file_types_must_match(self, left, rite, operator);
     if(type_is_pointer(left) || type_is_pointer(rite))
     {
         file_quit(self, "expected scalars with '%s'", operator.begin);
@@ -1214,22 +1215,14 @@ file_dereference_value(file_t* self, value_t value)
     return value;
 }
 
-static void
-file_unary_operation_expects(file_t* self, value_t value, const chars_t op, const chars_t type)
-{
-    auto operator = file_string_init(self, op);
-    type_t expected = {
-        .name = file_string_init(self, type),
-    };
-    file_types_must_match(self, value.type, expected, operator);
-    file_values_must_be_scalar(self, value.type, expected, operator);
-}
-
 static value_t
 file_to_positive_value(file_t* self, value_t value)
 {
     value = file_value_to_rvalue(self, value);
-    file_unary_operation_expects(self, value, g_add, g_i32);
+    type_t expect = {
+        .name = file_string_init(self, g_i32)
+    };
+    file_values_must_be_scalar(self, value.type, expect, file_string_init(self, g_add));
     return value;
 }
 
@@ -1237,7 +1230,11 @@ static value_t
 file_to_negative_value(file_t* self, value_t value)
 {
     value = file_value_to_rvalue(self, value);
-    file_unary_operation_expects(self, value, g_subtract, g_i32);
+    type_t expect = {
+        .name = file_string_init(self, g_i32)
+    };
+    auto operator = file_string_init(self, g_subtract);
+    file_values_must_be_scalar(self, value.type, expect, operator);
     value_t out = {
         .slot = file_get_slot(self),
         .type = value.type,
@@ -1250,7 +1247,11 @@ static value_t
 file_to_bitwise_not_value(file_t* self, value_t value)
 {
     value = file_value_to_rvalue(self, value);
-    file_unary_operation_expects(self, value, g_bitwise_not, g_i32);
+    type_t expect = {
+        .name = file_string_init(self, g_i32)
+    };
+    auto operator = file_string_init(self, g_bitwise_not);
+    file_values_must_be_scalar(self, value.type, expect, operator);
     value_t out = {
         .slot = file_get_slot(self),
         .type = value.type,
@@ -1263,7 +1264,11 @@ static value_t
 file_to_not_value(file_t* self, value_t value)
 {
     value = file_value_to_rvalue(self, value);
-    file_unary_operation_expects(self, value, g_not, g_i1);
+    type_t expect = {
+        .name = file_string_init(self, g_i1)
+    };
+    auto operator = file_string_init(self, g_not);
+    file_values_must_be_scalar(self, value.type, expect, operator);
     value_t out = {
         .slot = file_get_slot(self),
         .type = value.type,
