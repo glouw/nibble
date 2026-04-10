@@ -1,3 +1,5 @@
+declare ptr malloc(i64 size);
+
 i32 add(i32 a, i32 b)
 {
     ret a + b;
@@ -399,6 +401,23 @@ i32 test_negative_loop()
     ret 1;
 }
 
+i32 test_generic_ptr()
+{
+    ptr p;
+    p = malloc(<i64>(1024));
+
+    i32* as;
+    as = <i32*>(p);
+
+    *as = 42;
+
+    if(*as == 42)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     ret test_function()
@@ -424,5 +443,6 @@ i32 main()
       | test_complex_expression()
       | test_negative()
       | test_negative_loop()
+      | test_generic_ptr()
       ;
 }
