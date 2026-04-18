@@ -1,4 +1,6 @@
 declare ptr malloc(i64 size);
+declare i32 abs(i32 value);
+declare i64 llabs(i64 value);
 
 i32 add(i32 a, i32 b)
 {
@@ -356,7 +358,6 @@ i32 test_complex_expression()
     {
         ret 0;
     }
-
     ret 1;
 }
 
@@ -418,6 +419,37 @@ i32 test_generic_ptr()
     ret 1;
 }
 
+i32 test_abs()
+{
+    i32 out;
+    out = abs(-1);
+    if(out == 1)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 test_llabs()
+{
+    i64 out;
+    out = llabs(<i64>(-1));
+    if(out == <i64>(1))
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 test_bool_param(i1 x, i1 y, i1 z)
+{
+    if(x & y & z)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     ret test_function()
@@ -444,5 +476,8 @@ i32 main()
       | test_negative()
       | test_negative_loop()
       | test_generic_ptr()
+      | test_abs()
+      | test_llabs()
+      | test_bool_param(1 == 1, 2 == 2, 3 == 3)
       ;
 }

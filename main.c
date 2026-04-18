@@ -5,7 +5,7 @@
 
 constexpr size_t g_str_size = 64;
 constexpr size_t g_value_list_size = 1024;
-constexpr size_t g_arg_list_size = 8;
+constexpr size_t g_arg_list_size = 4;
 constexpr size_t g_code_size = 65536;
 constexpr size_t g_max_operators_per_precedence = 8;
 
@@ -61,7 +61,6 @@ typedef struct
     bool is_lvalue;
     size_t slot;
     type_list_t types;
-    bool is_decl;
 }
 value_t;
 
@@ -167,14 +166,14 @@ chars_t g_opcode_bitwise_and      = "%%%lu = and %s %%%lu, %%%lu";
 chars_t g_opcode_shift_left       = "%%%lu = shl %s %%%lu, %%%lu";
 chars_t g_opcode_shift_rite       = "%%%lu = ashr %s %%%lu, %%%lu";
 chars_t g_opcode_alloca           = "%%%lu = alloca %s";
-chars_t g_opcode_gep              = "%%%lu = getelementptr %s, ptr %%%lu, %s %lu";
+chars_t g_opcode_gep              = "%%%lu = getelementptr ptr, ptr %%%lu, %s %lu";
 chars_t g_opcode_load_immediate   = "%%%lu = add %s %s, 0";
-chars_t g_opcode_ret              = "ret %s %%%d";
+chars_t g_opcode_ret              = "ret %s %%%lu";
 chars_t g_opcode_define           = "define %s @%s";
 chars_t g_opcode_declare          = "declare %s @%s";
 chars_t g_opcode_load             = "%%%lu = load %s, ptr %%%lu";
 chars_t g_opcode_store            = "store %s %%%lu, ptr %%%lu";
-chars_t g_opcode_ptr              = "ptr %%%lu";
+chars_t g_opcode_type             = "%s %%%lu";
 chars_t g_opcode_function_call    = "%%%lu = call %s @%s";
 chars_t g_opcode_entry            = "entry:";
 chars_t g_opcode_signed_extend    = "%%%lu = sext %s %%%lu to %s";
@@ -317,8 +316,8 @@ void emit(file_t* file, char* format, ...)
         fprintf(out, g_tab);
     }
     vfprintf(out, format, args);
-    fprintf(out, g_newline);
     va_end(args);
+    fprintf(out, g_newline);
 }
 
 void str_append(file_t* file, str_t* str, char c)
@@ -653,7 +652,8 @@ value_list_t read_function_decl_arg_list(file_t* file, value_t* value)
             break;
         }
         auto arg = read_value_decl(file);
-        emit(file, g_opcode_ptr, arg.slot);
+        auto llvm_type = to_llvm_type(file, arg.type).begin;
+        emit(file, g_opcode_type, llvm_type, arg.slot);
         value_list_append(file, &values, arg);
         type_list_append(file, &value->types, arg.type);
         if(next_char(file) == *g_comma)
@@ -886,7 +886,6 @@ void read_function(file_t* file)
         read_alnum(file);
         auto ret_value = read_value_decl(file);
         auto llvm_type = to_llvm_type(file, ret_value.type).begin;
-        ret_value.is_decl = true;
         emit(file, g_opcode_declare, llvm_type, ret_value.name.begin);
         read_function_decl_arg_list(file, &ret_value);
         value_list_append(file, &file->values, ret_value);
@@ -899,12 +898,18 @@ void read_function(file_t* file)
         emit(file, g_opcode_define, llvm_type, ret_value.name.begin);
         auto args = read_function_decl_arg_list(file, &ret_value);
         value_list_append(file, &file->values, ret_value);
-        for(size_t i = 0; i < args.size; i++)
-        {
-            value_list_append(file, &file->values, args.begin[i]);
-        }
         emit(file, g_left_curl);
         emit(file, g_opcode_entry);
+        for(size_t i = 0; i < args.size; i++)
+        {
+            auto arg = args.begin[i];
+            auto slot = get_slot(file);
+            auto llvm_type = to_llvm_type(file, arg.type).begin;
+            emit(file, g_opcode_alloca, slot, llvm_type);
+            emit(file, g_opcode_store, llvm_type, arg.slot, slot);
+            arg.slot = slot;
+            value_list_append(file, &file->values, arg);
+        }
         bool terminated = read_block(file, ret_value);
         if(!terminated)
         {
@@ -913,11 +918,18 @@ void read_function(file_t* file)
         emit(file, g_rite_curl);
         file->values.size -= args.size;
     }
+    emit(file, "");
+}
+
+void write_header(file_t* file)
+{
+    emit(file, g_opcode_target);
+    emit(file, "");
 }
 
 void read_program(file_t* file)
 {
-    emit(file, g_opcode_target);
+    write_header(file);
     while(true)
     {
         if(is_end_of_file(file))
@@ -992,8 +1004,7 @@ value_t operate(file_t* file, value_t left, value_t rite, str_t operator)
             str_equal(operator.begin, g_bitwise_or)       ? g_opcode_bitwise_or       :
             str_equal(operator.begin, g_bitwise_xor)      ? g_opcode_bitwise_xor      :
             str_equal(operator.begin, g_shift_left)       ? g_opcode_shift_left       :
-            str_equal(operator.begin, g_shift_rite)       ? g_opcode_shift_rite       :
-            nullptr;
+            str_equal(operator.begin, g_shift_rite)       ? g_opcode_shift_rite       : nullptr;
         if(format)
         {
             emit(file, format, out.slot, left.type.name.begin, left.slot, rite.slot);
@@ -1045,24 +1056,13 @@ value_t load_direct(file_t* file)
     return value;
 }
 
-size_t push_arg(file_t* file, type_t expected, bool is_decl)
+size_t push_arg(file_t* file, type_t expected)
 {
     auto arg = read_expression(file);
     auto operator = str_init(file, g_function);
     assert_types_match(file, arg.type, expected, operator);
     assert_stars_match(file, arg.type, expected, operator);
-    if(is_decl)
-    {
-        return file->slot;
-    }
-    else
-    {
-        auto slot = get_slot(file);
-        auto llvm_type = to_llvm_type(file, arg.type).begin;
-        emit(file, g_opcode_alloca, slot, g_ptr);
-        emit(file, g_opcode_store, llvm_type, arg.slot, slot);
-        return slot;
-    }
+    return file->slot;
 }
 
 slot_list_t read_function_call_arg_list(file_t* file, value_t* found)
@@ -1076,7 +1076,7 @@ slot_list_t read_function_call_arg_list(file_t* file, value_t* found)
             break;
         }
         auto expected = found->types.begin[list.size];
-        auto slot = push_arg(file, expected, found->is_decl);
+        auto slot = push_arg(file, expected);
         slot_list_append(file, &list, slot);
         if(next_char(file) == *g_comma)
         {
@@ -1108,15 +1108,8 @@ value_t call_function(file_t* file, value_t* found)
     for(size_t i = 0; i < list.size; i++)
     {
         auto slot = list.begin[i];
-        if(found->is_decl)
-        {
-            auto llvm_type = to_llvm_type(file, found->types.begin[i]).begin;
-            emit(file, "%s %%%llu", llvm_type, slot);
-        }
-        else
-        {
-            emit(file, "%s %%%llu", g_ptr, slot);
-        }
+        auto llvm_type = to_llvm_type(file, found->types.begin[i]).begin;
+        emit(file, g_opcode_type, llvm_type, slot);
         if(i < list.size - 1)
         {
             emit(file, g_comma);
@@ -1133,8 +1126,7 @@ value_t load_indirect(file_t* file, value_t* found)
         .slot = get_slot(file),
         .type = found->type,
     };
-    auto llvm_type = to_llvm_type(file, value.type).begin;
-    emit(file, g_opcode_gep, value.slot, llvm_type, found->slot, g_i32, 0);
+    emit(file, g_opcode_gep, value.slot, found->slot, g_i32, 0);
     return value;
 }
 

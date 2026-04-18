@@ -4,10 +4,10 @@ FRONTEND = lang
 SRC = main.c
 TEMP = out.ll
 EXE = a.out
-BACKEND = clang -O3
+BACKEND = clang -O2
 
 test: all
-	./$(FRONTEND) > $(TEMP) && $(BACKEND) $(TEMP) && ./$(EXE)
+	time ./$(FRONTEND) > $(TEMP) && time $(BACKEND) $(TEMP) && time ./$(EXE)
 
 all:
 	$(CC) $(CFLAGS) $(SRC) -o $(FRONTEND)
