@@ -1,13 +1,13 @@
 CC = gcc -std=c23
-CFLAGS = -Og -fsanitize=address,undefined -Wall -Wextra -Wpedantic
+CFLAGS = -O2 -Wall -Wextra -Wpedantic
 FRONTEND = lang
 SRC = main.c
 TEMP = out.ll
 EXE = a.out
-BACKEND = clang -O2
+BACKEND = clang -g
 
 test: all
-	time ./$(FRONTEND) > $(TEMP) && time $(BACKEND) $(TEMP) && time ./$(EXE)
+	time ./$(FRONTEND) > $(TEMP) && time $(BACKEND) $(TEMP) && time valgrind --leak-check=full -s ./$(EXE)
 
 all:
 	$(CC) $(CFLAGS) $(SRC) -o $(FRONTEND)
