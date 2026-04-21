@@ -647,21 +647,23 @@ i32 test_new_many()
     array = new i32[<i64>(elems)];
 
     i32 sum;
-    sum = 0;
 
-    i32 i;
-    i = 0;
-    while(i < elems)
     {
-        array[<i64>(i)] = value;
-        i = i + 1;
+        i32 i;
+        while(i < elems)
+        {
+            array[<i64>(i)] = value;
+            i = i + 1;
+        }
     }
 
-    i = 0;
-    while(i < elems)
     {
-        sum = sum + array[<i64>(i)];
-        i = i + 1;
+        i32 i;
+        while(i < elems)
+        {
+            sum = sum + array[<i64>(i)];
+            i = i + 1;
+        }
     }
 
     if(sum == total)
@@ -681,12 +683,21 @@ i32 test_zero_init()
     i16 c;
     i32 d;
     i64 e;
+    ptr p;
+    i32* pp;
+    i32** ppp;
+    i64* pppp;
 
     if(a == <i1>(0)
      & b == <i8>(0)
      & c == <i16>(0)
      & d == <i32>(0)
-     & e == <i64>(0))
+     & e == <i64>(0)
+     & p == <ptr>(0)
+     & pp == <i32*>(0)
+     & ppp == <i32**>(0)
+     & pppp == <i64*>(0)
+    )
     {
         ret 0;
     }

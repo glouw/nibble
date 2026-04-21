@@ -177,7 +177,8 @@ chars_t g_opcode_alloca           = "%%%lu = alloca %s";
 chars_t g_opcode_flat_gep         = "%%%lu = getelementptr ptr, ptr %%%lu, %s %lu";
 chars_t g_opcode_gep              = "%%%lu = getelementptr %s, ptr %%%lu, %s %%%lu";
 chars_t g_opcode_sizeof           = "%%%lu = getelementptr %s, ptr null, i64 1";
-chars_t g_opcode_ptr_to_i64       = "%%%lu = ptrtoint ptr %%%llu to i64";
+chars_t g_opcode_ptr_to_int       = "%%%lu = ptrtoint ptr %%%llu to %s";
+chars_t g_opcode_int_to_ptr       = "%%%lu = inttoptr %s %%%llu to ptr";
 chars_t g_opcode_load_immediate   = "%%%lu = add %s %s, 0";
 chars_t g_opcode_ret              = "ret %s %%%lu";
 chars_t g_opcode_ret_void         = "ret %s";
@@ -321,6 +322,11 @@ bool is_pointer(type_t type)
     return type.stars > 0 || is_generic_pointer(type);
 }
 
+bool is_scalar(type_t type)
+{
+    return type.stars == 0;
+}
+
 void quit(file_t* file, char* format, ...)
 {
     auto out = stderr;
@@ -416,7 +422,7 @@ void value_list_append(file_t* file, value_list_t* list, value_t value)
 {
     if(list->size == g_value_list_size)
     {
-        quit(file, "one file supports max %d value identifiers", g_value_list_size);
+        quit(file, "vlaue lists supports max %d identifiers", g_value_list_size);
     }
     list->begin[list->size++] = value;
 }
@@ -425,7 +431,7 @@ void type_list_append(file_t* file, type_list_t* list, type_t type)
 {
     if(list->size == g_arg_list_size)
     {
-        quit(file, "functions support max %d args", g_arg_list_size);
+        quit(file, "type lists support max %d types", g_arg_list_size);
     }
     list->begin[list->size++] = type;
 }
@@ -434,7 +440,7 @@ void slot_list_append(file_t* file, slot_list_t* list, size_t slot)
 {
     if(list->size == g_arg_list_size)
     {
-        quit(file, "functions support max %s args", g_arg_list_size);
+        quit(file, "slot lists support max %s slots", g_arg_list_size);
     }
     list->begin[list->size++] = slot;
 }
@@ -487,7 +493,7 @@ void assert_types_match(file_t* file, type_t left, type_t rite, str_t operator)
     }
     if(left.stars != rite.stars)
     {
-        quit(file, "pointer level mismatch with '%s'", operator.begin);
+        quit(file, "pointer level mismatch (%llu and %llu) with '%s'", left.stars, rite.stars, operator.begin);
     }
 }
 
@@ -1019,10 +1025,10 @@ bool is_relational(file_t* file, str_t operator)
 
 value_t operate(file_t* file, value_t left, value_t rite, str_t operator)
 {
-    assert_types_match(file, left.type, rite.type, operator);
     if(str_in(operator, get_operators(file, g_precedence_assignment)))
     {
         assert_lvalue(file, left, operator);
+        assert_types_match(file, left.type, rite.type, operator);
         rite = to_rvalue(file, rite);
         auto llvm_type = to_llvm_type(file, rite.type).begin;
         emit(file, g_opcode_store, llvm_type, rite.slot, left.slot);
@@ -1030,13 +1036,14 @@ value_t operate(file_t* file, value_t left, value_t rite, str_t operator)
     }
     else
     {
-        assert_scalar(file, left.type, rite.type, operator);
         left = to_rvalue(file, left);
         rite = to_rvalue(file, rite);
+        assert_types_match(file, left.type, rite.type, operator);
         value_t out = {
             .slot = get_slot(file),
             .type = left.type,
         };
+        out.type.stars = 0;
         auto format =
             str_equal( operator.begin, g_multiply         ) ? g_opcode_mul              :
             str_equal( operator.begin, g_divide           ) ? g_opcode_sdiv             :
@@ -1055,7 +1062,8 @@ value_t operate(file_t* file, value_t left, value_t rite, str_t operator)
             str_equal( operator.begin, g_shift_rite       ) ? g_opcode_shift_rite       : nullptr;
         if(format)
         {
-            emit(file, format, out.slot, left.type.name.begin, left.slot, rite.slot);
+            auto llvm_type = to_llvm_type(file, left.type).begin;
+            emit(file, format, out.slot, llvm_type, left.slot, rite.slot);
             if(is_relational(file, operator))
             {
                 out.type.name = str_init(file, g_i1);
@@ -1265,7 +1273,7 @@ value_t to_sizeof(file_t* file, value_t value)
     };
     auto llvm_type = to_llvm_type(file, value.type).begin;
     emit(file, g_opcode_sizeof, slot, llvm_type);
-    emit(file, g_opcode_ptr_to_i64, out.slot, slot);
+    emit(file, g_opcode_ptr_to_int, out.slot, slot, g_i64);
     return out;
 }
 
@@ -1278,7 +1286,7 @@ value_t to_type_sizeof(file_t* file, type_t type)
     };
     auto llvm_type = to_llvm_type(file, type).begin;
     emit(file, g_opcode_sizeof, slot, llvm_type);
-    emit(file, g_opcode_ptr_to_i64, out.slot, slot);
+    emit(file, g_opcode_ptr_to_int, out.slot, slot, g_i64);
     return out;
 }
 
@@ -1341,11 +1349,7 @@ size_t type_power(file_t* file, type_t type)
 value_t type_cast(file_t* file, value_t value, type_t type)
 {
     value = to_rvalue(file, value);
-    if(str_equal(value.type.name.begin, type.name.begin))
-    {
-        return value;
-    }
-    if(is_pointer(value.type))
+    if(is_pointer(type) && is_pointer(value.type))
     {
         value.type = type;
         return value;
@@ -1354,17 +1358,28 @@ value_t type_cast(file_t* file, value_t value, type_t type)
         .slot = get_slot(file),
         .type = type,
     };
-    if(type_power(file, value.type) < type_power(file, type))
+    auto from = value.type.name.begin;
+    auto to = type.name.begin;
+    if(is_pointer(type) && is_scalar(value.type))
     {
-        emit(file, g_opcode_signed_extend, out.slot, value.type.name.begin, value.slot, type.name.begin);
+        emit(file, g_opcode_int_to_ptr, out.slot, from, value.slot);
         return out;
     }
-    if(type_power(file, value.type) > type_power(file, type))
+    if(type_power(file, type) > type_power(file, value.type))
     {
-        emit(file, g_opcode_trunc, out.slot, value.type.name.begin, value.slot, type.name.begin);
+        emit(file, g_opcode_signed_extend, out.slot, from, value.slot, to);
         return out;
     }
-    quit(file, "could not type cast '%s' to '%s'", value.type.name.begin, type.name.begin);
+    if(type_power(file, type) < type_power(file, value.type))
+    {
+        emit(file, g_opcode_trunc, out.slot, from, value.slot, to);
+        return out;
+    }
+    if(type_power(file, type) == type_power(file, value.type))
+    {
+        return value;
+    }
+    quit(file, "could not type cast '%s' to '%s'", from, to);
     return (value_t) {};
 }
 
