@@ -1,5 +1,5 @@
 CC = gcc -std=c23
-CFLAGS = -O2 -Wall -Wextra -Wpedantic
+CFLAGS = -fsanitize=address,undefined -Og -Wall -Wextra -Wpedantic
 FRONTEND = lang
 SRC = main.c
 TEMP = out.ll

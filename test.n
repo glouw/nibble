@@ -1,7 +1,12 @@
-declare ptr malloc(i64 size);
-declare void free(ptr pointer);
-declare i32 abs(i32 value);
-declare i64 llabs(i64 value);
+ptr malloc(i64 size);
+void free(ptr pointer);
+i32 abs(i32 value);
+i64 llabs(i64 value);
+
+void fun()
+{
+    ret;
+}
 
 i32 add(i32 a, i32 b)
 {
@@ -191,16 +196,16 @@ i32 test_recursion(i32 x)
     ret test_recursion(x - 1);
 }
 
-i32 set_to_zero(i32* x)
+void set_to_zero(i32* x)
 {
     *x = 0;
-    ret 0;
+    ret;
 }
 
-i32 dont_set_to_above_zero(i32 x)
+void dont_set_to_zero(i32 x)
 {
     x = 42;
-    ret 0;
+    ret;
 }
 
 i32 test_pointer_arg_0()
@@ -215,7 +220,7 @@ i32 test_pointer_arg_1()
 {
     i32 x;
     x = 0;
-    dont_set_to_above_zero(x);
+    dont_set_to_zero(x);
     ret x;
 }
 
@@ -406,7 +411,7 @@ i32 test_negative_loop()
 i32 test_generic_ptr()
 {
     ptr p;
-    p = malloc(<i64>(4));
+    p = malloc(sizeof i32);
 
     i32* as;
     as = <i32*>(p);
@@ -461,7 +466,7 @@ i32 test_array_index()
     i32* as;
 
     elems = 4;
-    size_per = 4;
+    size_per = <i32>(sizeof *as);
     as = <i32*>(malloc(<i64>(elems * size_per)));
 
     as[<i64>(0)] = 1;
@@ -492,7 +497,7 @@ i32 test_array_loop_index()
     i32 fill;
 
     elems = 32;
-    size_per = 4;
+    size_per = <i32>(sizeof *as);
     as = <i32*>(malloc(<i64>(elems * size_per)));
 
     fill = 1;
@@ -518,6 +523,173 @@ i32 test_array_loop_index()
     }
 
     free(<ptr>(as));
+    ret 1;
+}
+
+i32 test_generic_indirect()
+{
+    ptr p;
+    ptr* pp;
+    ptr** ppp;
+
+    pp = &p;
+    ppp = &pp;
+
+    **ppp = malloc(<i64>(4));
+    free(**ppp);
+
+    ret 0;
+}
+
+i32 test_sizeof()
+{
+    ptr p;
+    i1  a;
+    i8  b;
+    i16 c;
+    i32 d;
+    i64 e;
+    i32* f;
+    f = &d;
+
+    if(sizeof p     == <i64>(8)
+     & sizeof a     == <i64>(1)
+     & sizeof b     == <i64>(1)
+     & sizeof c     == <i64>(2)
+     & sizeof d     == <i64>(4)
+     & sizeof e     == <i64>(8)
+     & sizeof (e)   == <i64>(8)
+     & sizeof *f    == <i64>(4)
+     & sizeof (*f)  == <i64>(4)
+     & sizeof ptr   == <i64>(8)
+     & sizeof i1    == <i64>(1)
+     & sizeof i8    == <i64>(1)
+     & sizeof i16   == <i64>(2)
+     & sizeof i32   == <i64>(4)
+     & sizeof i64   == <i64>(8)
+     & sizeof i64   == <i64>(8)
+     & sizeof i8*   == <i64>(8)
+     & sizeof i8**  == <i64>(8)
+     & sizeof i8*** == <i64>(8))
+    {
+        ret 0;
+    }
+
+    ret 1;
+}
+
+i32 test_new()
+{
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+
+    i32* x;
+    x = new i32;
+    *x = 1;
+    if(*x == 1)
+    {
+        del x;
+        ret 0;
+    }
+    del x;
+    ret 1;
+}
+
+i32 test_new_indirect()
+{
+    i32* x;
+    x = new i32;
+
+    i32** y;
+    y = new i32*;
+
+    i32*** z;
+    z = new i32**;
+
+    *x = 42;
+    *y = x;
+    *z = y;
+
+    if(***z == 42)
+    {
+        del x;
+        del y;
+        del z;
+        ret 0;
+    }
+
+    del x;
+    del y;
+    del z;
+    ret 1;
+}
+
+i32 test_new_many()
+{
+    i32 value;
+    value = 4;
+
+    i32 elems;
+    elems = 512;
+
+    i32 total;
+    total = elems * value;
+
+    i32* array;
+    array = new i32[<i64>(elems)];
+
+    i32 sum;
+    sum = 0;
+
+    i32 i;
+    i = 0;
+    while(i < elems)
+    {
+        array[<i64>(i)] = value;
+        i = i + 1;
+    }
+
+    i = 0;
+    while(i < elems)
+    {
+        sum = sum + array[<i64>(i)];
+        i = i + 1;
+    }
+
+    if(sum == total)
+    {
+        del array;
+        ret 0;
+    }
+
+    del array;
+    ret 1;
+}
+
+i32 test_zero_init()
+{
+    i1 a;
+    i8 b;
+    i16 c;
+    i32 d;
+    i64 e;
+
+    if(a == <i1>(0)
+     & b == <i8>(0)
+     & c == <i16>(0)
+     & d == <i32>(0)
+     & e == <i64>(0))
+    {
+        ret 0;
+    }
     ret 1;
 }
 
@@ -552,5 +724,11 @@ i32 main()
       | test_bool_param(1 == 1, 2 == 2, 3 == 3)
       | test_array_index()
       | test_array_loop_index()
+      | test_generic_indirect()
+      | test_sizeof()
+      | test_new()
+      | test_new_indirect()
+      | test_new_many()
+      | test_zero_init()
       ;
 }
