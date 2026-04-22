@@ -3,9 +3,12 @@
 #include <string.h>
 #include <stdarg.h>
 
+#define len(x) (sizeof(x) / sizeof(*x))
+
 constexpr size_t g_str_size = 64;
 constexpr size_t g_value_list_size = 1024;
-constexpr size_t g_arg_list_size = 4;
+constexpr size_t g_slot_list_size = 8;
+constexpr size_t g_type_list_size = 8;
 constexpr size_t g_code_size = 65536;
 constexpr size_t g_max_operators_per_precedence = 8;
 
@@ -28,7 +31,7 @@ precedence_t;
 
 typedef struct
 {
-    size_t begin[g_arg_list_size];
+    size_t begin[g_slot_list_size];
     size_t size;
 }
 slot_list_t;
@@ -49,7 +52,7 @@ type_t;
 
 typedef struct
 {
-    type_t begin[g_arg_list_size];
+    type_t begin[g_type_list_size];
     size_t size;
 }
 type_list_t;
@@ -82,9 +85,8 @@ code_t;
 typedef struct
 {
     code_t code;
+    slot_list_t defers;
     value_list_t values;
-    value_list_t loop_again;
-    value_list_t loop_end;
     size_t line;
     size_t slot;
     size_t tabs;
@@ -146,8 +148,7 @@ chars_t g_ptr                     = "ptr";
 chars_t g_if                      = "if";
 chars_t g_else                    = "else";
 chars_t g_while                   = "while";
-chars_t g_break                   = "break";
-chars_t g_continue                = "continue";
+chars_t g_defer                   = "defer";
 chars_t g_new                     = "new";
 chars_t g_del                     = "del";
 chars_t g_sizeof                  = "sizeof";
@@ -236,8 +237,7 @@ char* g_control_keywords[] = {
     g_if,
     g_else,
     g_while,
-    g_break,
-    g_continue,
+    g_defer,
     nullptr
 };
 
@@ -260,9 +260,25 @@ char* g_operators_by_precedence[g_precedence_count][g_max_operators_per_preceden
     [ g_precedence_assignment   ]  = { g_equals                                               },
 };
 
+#define list_full(file, list)              \
+    ((list)->size == len((list)->begin) - 1)
+
+#define list_append(file, list, value) do  \
+{                                          \
+    if(list_full(file, list))              \
+        quit(file, "list overflow");       \
+    (list)->begin[(list)->size++] = value; \
+}                                          \
+while(false)
+
 bool is_digit_char(char c)
 {
     return c >= *g_digit_begin && c <= *g_digit_end;
+}
+
+bool is_not_semicolon(char c)
+{
+    return c != *g_semicolon;
 }
 
 bool is_lower_char(char c)
@@ -353,21 +369,12 @@ void emit(file_t* file, char* format, ...)
     fprintf(out, g_newline);
 }
 
-void str_append(file_t* file, str_t* str, char c)
-{
-    if(str->size == g_str_size - 1)
-    {
-        quit(file, "str '%s' truncated", str->begin);
-    }
-    str->begin[str->size++] = c;
-}
-
 str_t str_init(file_t* file, chars_t chars)
 {
     str_t str = {};
     while(*chars)
     {
-        str_append(file, &str, *chars);
+        list_append(file, &str, *chars);
         chars += 1;
     }
     return str;
@@ -416,33 +423,6 @@ bool is_reserved_keyword(str_t keyword)
     return str_in(keyword, g_type_keywords)
         || str_in(keyword, g_control_keywords)
         || str_in(keyword, g_construct_keywords);
-}
-
-void value_list_append(file_t* file, value_list_t* list, value_t value)
-{
-    if(list->size == g_value_list_size)
-    {
-        quit(file, "vlaue lists supports max %d identifiers", g_value_list_size);
-    }
-    list->begin[list->size++] = value;
-}
-
-void type_list_append(file_t* file, type_list_t* list, type_t type)
-{
-    if(list->size == g_arg_list_size)
-    {
-        quit(file, "type lists support max %d types", g_arg_list_size);
-    }
-    list->begin[list->size++] = type;
-}
-
-void slot_list_append(file_t* file, slot_list_t* list, size_t slot)
-{
-    if(list->size == g_arg_list_size)
-    {
-        quit(file, "slot lists support max %s slots", g_arg_list_size);
-    }
-    list->begin[list->size++] = slot;
 }
 
 size_t get_slot(file_t* file)
@@ -563,7 +543,7 @@ void match(file_t* file, char* expected)
     str_t got = {};
     for(size_t i = 0; i < size; i++)
     {
-        str_append(file, &got, next_char(file));
+        list_append(file, &got, next_char(file));
         step(file);
     }
     if(!str_equal(got.begin, expected))
@@ -581,7 +561,7 @@ str_t read_chars(file_t* file, bool matches(char))
         auto c = peek_char(file);
         if(matches(c))
         {
-            str_append(file, &str, c);
+            list_append(file, &str, c);
             step(file);
         }
         else
@@ -605,6 +585,11 @@ str_t read_alnum(file_t* file)
 str_t read_digit(file_t* file)
 {
     return read_chars(file, is_digit_char);
+}
+
+str_t read_till_semicolon(file_t* file)
+{
+    return read_chars(file, is_not_semicolon);
 }
 
 str_t peek_operator(file_t* file)
@@ -687,7 +672,7 @@ value_list_t read_function_decl_arg_list(file_t* file)
             break;
         }
         auto arg = read_value_decl(file);
-        value_list_append(file, &values, arg);
+        list_append(file, &values, arg);
         if(next_char(file) == *g_comma)
         {
             match(file, g_comma);
@@ -707,8 +692,20 @@ value_list_t read_function_decl_arg_list(file_t* file)
 
 value_t read_expression(file_t*);
 
+void execute_defers(file_t* file, size_t total)
+{
+    auto at = file->code.at;
+    for(size_t i = 0; i < total; i++)
+    {
+        file->code.at = file->defers.begin[file->defers.size - 1 - i];
+        read_expression(file);
+    }
+    file->code.at = at;
+}
+
 value_t read_ret_statement(file_t* file, value_t ret_value)
 {
+    execute_defers(file, file->defers.size);
     read_alnum(file);
     if(str_equal(ret_value.type.name.begin, g_void))
     {
@@ -780,28 +777,13 @@ void read_if_else_statement(file_t* file, value_t ret_value)
     emit(file, g_opcode_label, end_label);
 }
 
-void read_continue_statement(file_t* file)
+void read_defer_statement(file_t* file)
 {
     read_alnum(file);
+    skip_space(file);
+    list_append(file, &file->defers, file->code.at);
+    read_till_semicolon(file);
     match(file, g_semicolon);
-    if(file->loop_again.size == 0)
-    {
-        quit(file, "%s statement not within a loop", g_continue);
-    }
-    auto to = file->loop_again.begin[file->loop_again.size - 1];
-    emit(file, g_opcode_branch, to.slot);
-}
-
-void read_break_statement(file_t* file)
-{
-    read_alnum(file);
-    match(file, g_semicolon);
-    if(file->loop_end.size == 0)
-    {
-        quit(file, "%s statement not within a loop", g_break);
-    }
-    auto to = file->loop_end.begin[file->loop_end.size - 1];
-    emit(file, g_opcode_branch, to.slot);
 }
 
 void read_while_statement(file_t* file, value_t ret_value)
@@ -809,8 +791,6 @@ void read_while_statement(file_t* file, value_t ret_value)
     auto again_label = get_label(file);
     auto while_label = get_label(file);
     auto end_label = get_label(file);
-    value_list_append(file, &file->loop_again, (value_t) {.slot = again_label});
-    value_list_append(file, &file->loop_end, (value_t) {.slot = end_label});
     emit(file, g_opcode_branch, again_label);
     emit(file, g_opcode_label, again_label);
     read_alnum(file);
@@ -830,8 +810,6 @@ void read_while_statement(file_t* file, value_t ret_value)
         emit(file, g_opcode_branch, again_label);
     }
     emit(file, g_opcode_label, end_label);
-    file->loop_again.size -= 1;
-    file->loop_end.size -= 1;
 }
 
 bool read_block(file_t*, value_t);
@@ -848,15 +826,9 @@ bool read_statement(file_t* file, value_t ret_value)
             assert_types_match(file, value.type, ret_value.type, operator);
             return true;
         }
-        if(str_equal(keyword.begin, g_continue))
+        if(str_equal(keyword.begin, g_defer))
         {
-            read_continue_statement(file);
-            return true;
-        }
-        if(str_equal(keyword.begin, g_break))
-        {
-            read_break_statement(file);
-            return true;
+            read_defer_statement(file);
         }
         if(str_equal(keyword.begin, g_if))
         {
@@ -875,7 +847,7 @@ bool read_statement(file_t* file, value_t ret_value)
     if(str_in(keyword, g_type_keywords))
     {
         auto value = read_value_decl(file);
-        value_list_append(file, &file->values, value);
+        list_append(file, &file->values, value);
         auto llvm_type = to_llvm_type(file, value.type).begin;
         emit(file, g_opcode_alloca, value.slot, llvm_type);
         emit(file, g_opcode_zero_init, llvm_type, value.slot);
@@ -909,6 +881,7 @@ bool read_statement(file_t* file, value_t ret_value)
 
 bool read_block(file_t* file, value_t ret_value)
 {
+    auto defers = file->defers.size;
     auto values = file->values.size;
     bool terminated = false;
     file->tabs += 1;
@@ -925,8 +898,13 @@ bool read_block(file_t* file, value_t ret_value)
         }
         terminated = read_statement(file, ret_value);
     }
+    if(!terminated)
+    {
+        execute_defers(file, file->defers.size - defers);
+    }
     match(file, g_rite_curl);
     file->tabs -= 1;
+    file->defers.size = defers;
     file->values.size = values;
     return terminated;
 }
@@ -938,7 +916,7 @@ void emit_parameters(file_t* file, value_list_t* args, value_t* ret_value)
     {
         auto type = args->begin[i].type;
         auto slot = args->begin[i].slot;
-        type_list_append(file, &ret_value->types, type);
+        list_append(file, &ret_value->types, type);
         auto llvm_type = to_llvm_type(file, type).begin;
         emit(file, g_opcode_type, llvm_type, slot);
         if(i < args->size - 1)
@@ -959,14 +937,14 @@ void read_function(file_t* file)
     {
         emit(file, g_opcode_declare, llvm_type, ret_value.name.begin);
         emit_parameters(file, &args, &ret_value);
-        value_list_append(file, &file->values, ret_value);
+        list_append(file, &file->values, ret_value);
         match(file, g_semicolon);
     }
     else
     {
         emit(file, g_opcode_define, llvm_type, ret_value.name.begin);
         emit_parameters(file, &args, &ret_value);
-        value_list_append(file, &file->values, ret_value);
+        list_append(file, &file->values, ret_value);
         emit(file, g_left_curl);
         emit(file, g_opcode_entry);
         for(size_t i = 0; i < args.size; i++)
@@ -977,7 +955,7 @@ void read_function(file_t* file)
             emit(file, g_opcode_alloca, slot, llvm_type);
             emit(file, g_opcode_store, llvm_type, arg.slot, slot);
             arg.slot = slot;
-            value_list_append(file, &file->values, arg);
+            list_append(file, &file->values, arg);
         }
         bool terminated = read_block(file, ret_value);
         if(!terminated)
@@ -1146,7 +1124,7 @@ slot_list_t read_function_call_arg_list(file_t* file, value_t* found)
         }
         auto expected = found->types.begin[list.size];
         auto slot = push_arg(file, expected);
-        slot_list_append(file, &list, slot);
+        list_append(file, &list, slot);
         if(next_char(file) == *g_comma)
         {
             match(file, g_comma);

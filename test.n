@@ -61,49 +61,6 @@ i32 test_loop_ret()
     ret 1;
 }
 
-i32 test_break()
-{
-    i32 i;
-    i = 0;
-    while(i < 10)
-    {
-        if(i == 3)
-        {
-            break;
-        }
-        i = i + 1;
-    }
-    if(i == 3)
-    {
-        ret 0;
-    }
-    ret 1;
-}
-
-i32 test_continue()
-{
-    i32 i;
-    i = 0;
-
-    i32 out;
-    out = 0;
-
-    while(i < 10)
-    {
-        i = i + 1;
-        if(i <= 5)
-        {
-            continue;
-        }
-        out = out + 1;
-    }
-    if(out == 5)
-    {
-        ret 0;
-    }
-    ret 1;
-}
-
 i32 test_if_0()
 {
     if(0 == 0)
@@ -712,12 +669,93 @@ i32 test_init()
     ret 0;
 }
 
+i32 test_defer_0()
+{
+    i32* x = new i32[<i64>(512)];
+    i32* y = new i32[<i64>(512)];
+    i32* z = new i32[<i64>(512)];
+    defer del x;
+    defer del y;
+    defer del z;
+    1 == 1;
+    2 == 2;
+    3 == 3;
+    4 == 4;
+    ret 0;
+}
+
+i32 test_defer_1()
+{
+    i32* x = new i32[<i64>(512)];
+    defer del x;
+    1 == 1;
+    {
+        i32* y = new i32[<i64>(512)];
+        defer del y;
+        1 == 1;
+        {
+            i32* z = new i32[<i64>(512)];
+            defer del z;
+            1 == 1;
+        }
+    }
+    ret 0;
+}
+
+i32 test_defer_2()
+{
+    if(1 == 1)
+    {
+        i32* x = new i32[<i64>(512)];
+        defer del x;
+        1 == 1;
+    }
+    else
+    {
+        i32* y = new i32[<i64>(512)];
+        defer del y;
+        1 == 1;
+    }
+    ret 0;
+}
+
+void do_a_thing(i32* array)
+{
+    ret;
+}
+
+i32 test_defer_3()
+{
+    i32* x = new i32[<i64>(512)];
+    defer del x;
+    do_a_thing(x);
+    ret 0;
+}
+
+i32 test_defer_4()
+{
+    i32* x = new i32[<i64>(512)];
+    defer del x;
+    1 == 1;
+    {
+        i32* y = new i32[<i64>(512)];
+        defer del y;
+        1 == 1;
+        {
+            i32* z = new i32[<i64>(512)];
+            defer del z;
+            1 == 1;
+            {
+                ret 0;
+            }
+        }
+    }
+}
+
 i32 main()
 {
     ret test_function()
       | test_pointers()
-      | test_break()
-      | test_continue()
       | test_if_0()
       | test_if_1()
       | test_if_2()
@@ -749,5 +787,9 @@ i32 main()
       | test_new_indirect()
       | test_new_many()
       | test_zero_init()
+      | test_defer_0()
+      | test_defer_1()
+      | test_defer_2()
+      | test_defer_3()
       ;
 }
