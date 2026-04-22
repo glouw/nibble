@@ -487,13 +487,13 @@ void step(file_t* file)
 
 void assert_types_match(file_t* file, type_t left, type_t rite, str_t operator)
 {
-    if(!str_equal(left.name.begin, rite.name.begin))
-    {
-        quit(file, "types '%s' and '%s' mismatch with '%s'", left.name.begin, rite.name.begin, operator.begin);
-    }
     if(left.stars != rite.stars)
     {
         quit(file, "pointer level mismatch (%llu and %llu) with '%s'", left.stars, rite.stars, operator.begin);
+    }
+    if(!str_equal(left.name.begin, rite.name.begin))
+    {
+        quit(file, "types '%s' and '%s' mismatch with '%s'", left.name.begin, rite.name.begin, operator.begin);
     }
 }
 
@@ -522,8 +522,9 @@ void assert_lvalue(file_t* file, value_t left, str_t operator)
     }
 }
 
-void skip_space(file_t* file)
+size_t skip_space(file_t* file)
 {
+    size_t count = 0;
     while(true)
     {
         auto c = peek_char(file);
@@ -534,12 +535,14 @@ void skip_space(file_t* file)
                 file->line += 1;
             }
             step(file);
+            count += 1;
         }
         else
         {
             break;
         }
     }
+    return count;
 }
 
 char next_char(file_t* file)
@@ -876,7 +879,18 @@ bool read_statement(file_t* file, value_t ret_value)
         auto llvm_type = to_llvm_type(file, value.type).begin;
         emit(file, g_opcode_alloca, value.slot, llvm_type);
         emit(file, g_opcode_zero_init, llvm_type, value.slot);
-        match(file, g_semicolon);
+        auto spaces = skip_space(file);
+        if(peek_char(file) == *g_semicolon)
+        {
+            match(file, g_semicolon);
+        }
+        else
+        {
+            code_rewind(&file->code, spaces);
+            code_rewind(&file->code, value.name.size);
+            read_expression(file);
+            match(file, g_semicolon);
+        }
     }
     else
     {

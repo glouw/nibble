@@ -704,6 +704,14 @@ i32 test_zero_init()
     ret 1;
 }
 
+i32 test_init()
+{
+    i32 elems = 512;
+    i32* array = new i32[<i64>(elems)];
+    del array;
+    ret 0;
+}
+
 i32 main()
 {
     ret test_function()
