@@ -492,12 +492,13 @@ i64 test_sizeof()
     i1  a;
     i8  b;
     i16 c;
-    i64 d;
+    i32 d;
     i64 e;
-    i64* f;
+    i32* f;
     f = &d;
 
-    if(sizeof p     == 8
+    if(
+       sizeof p     == 8
      & sizeof a     == 1
      & sizeof b     == 1
      & sizeof c     == 2
@@ -510,12 +511,12 @@ i64 test_sizeof()
      & sizeof i1    == 1
      & sizeof i8    == 1
      & sizeof i16   == 2
-     & sizeof i64   == 4
-     & sizeof i64   == 8
+     & sizeof i32   == 4
      & sizeof i64   == 8
      & sizeof i8*   == 8
      & sizeof i8**  == 8
-     & sizeof i8*** == 8)
+     & sizeof i8*** == 8
+     )
     {
         ret 0;
     }
@@ -923,9 +924,42 @@ i64 test_defer_10(i64 loops)
     ret -1;
 }
 
+i64** new_2d_array(i64 ysize, i64 xsize)
+{
+    i64** y = new i64*[ysize];
+    i64 i = 0;
+    while(i < ysize)
+    {
+        y[i] = new i64[xsize];
+        i = i + 1;
+    }
+    ret y;
+}
+
+void del_2d_array(i64** array, i64 ysize)
+{
+    i64 i = 0;
+    while(i < ysize)
+    {
+        del array[i];
+        i = i + 1;
+    }
+    del array;
+    ret;
+}
+
+i64 test_2d_array()
+{
+    i64 ysize = 128;
+    i64 xsize = 32;
+    i64** array = new_2d_array(ysize, xsize);
+    defer del_2d_array(array, ysize);
+    ret 0;
+}
+
 i32 main()
 {
-    i64 out =
+    ret <i32> (
         test_function()
       | test_pointers()
       | test_if_0()
@@ -970,6 +1004,7 @@ i32 main()
       | test_defer_7()
       | test_defer_8()
       | test_defer_9()
-      | test_defer_10(10);
-    ret <i32>(0);
+      | test_defer_10(10)
+      | test_2d_array()
+    );
 }

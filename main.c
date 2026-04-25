@@ -262,6 +262,14 @@ char* g_type_keywords[] = {
     nullptr
 };
 
+char* g_scalars[] = {
+    g_i8,
+    g_i16,
+    g_i32,
+    g_i64,
+    nullptr
+};
+
 char* g_control_keywords[] = {
     g_ret,
     g_if,
@@ -530,6 +538,16 @@ void assert_scalar_of(file_t* file, value_t value, chars_t type, str_t operator)
         .name = str_init(file, type)
     };
     assert_scalar(file, value.type, expect, operator);
+}
+
+void assert_scalar_any(file_t* file, value_t value, str_t operator)
+{
+    if(str_in(value.type.name, g_scalars))
+    {
+        assert_scalar(file, value.type, value.type, operator);
+        return;
+    }
+    quit(file, "%s does not support operator %s", value.type.name.begin, operator.begin);
 }
 
 void assert_lvalue(file_t* file, value_t left, str_t operator)
@@ -1323,7 +1341,7 @@ value_t to_positive(file_t* file, value_t value)
 {
     auto operator = str_init(file, g_add);
     value = to_rvalue(file, value);
-    assert_scalar_of(file, value, g_i64, operator);
+    assert_scalar_any(file, value, operator);
     return value;
 }
 
@@ -1331,7 +1349,7 @@ value_t to_negative(file_t* file, value_t value)
 {
     auto operator = str_init(file, g_subtract);
     value = to_rvalue(file, value);
-    assert_scalar_of(file, value, g_i64, operator);
+    assert_scalar_any(file, value, operator);
     value_t out = {
         .slot = get_slot(file),
         .type = value.type,
@@ -1345,7 +1363,7 @@ value_t to_bitwise_not(file_t* file, value_t value)
 {
     auto operator = str_init(file, g_bitwise_not);
     value = to_rvalue(file, value);
-    assert_scalar_of(file, value, g_i64, operator);
+    assert_scalar_any(file, value, operator);
     value_t out = {
         .slot = get_slot(file),
         .type = value.type,
@@ -1443,11 +1461,26 @@ value_t do_del(file_t* file, value_t value)
 size_t type_power(file_t* file, type_t type)
 {
     char* at = type.name.begin;
-    if(str_equal(at, g_i1 )) return 0;
-    if(str_equal(at, g_i8 )) return 1;
-    if(str_equal(at, g_i16)) return 2;
-    if(str_equal(at, g_i32)) return 3;
-    if(str_equal(at, g_i64)) return 4;
+    if(str_equal(at, g_i1))
+    {
+        return 0;
+    }
+    if(str_equal(at, g_i8))
+    {
+        return 1;
+    }
+    if(str_equal(at, g_i16))
+    {
+        return 2;
+    }
+    if(str_equal(at, g_i32))
+    {
+        return 3;
+    }
+    if(str_equal(at, g_i64))
+    {
+        return 4;
+    }
     quit(file, "unknown type '%s'", at);
     return 0;
 }
@@ -1583,7 +1616,6 @@ value_t read_unary(file_t* file)
     quit(file, "compiler error: '%s'", __func__);
     return (value_t) {};
 }
-
 
 value_t return_indirect_offset(file_t* file, value_t indirect)
 {
