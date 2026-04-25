@@ -1210,7 +1210,7 @@ value_t read_rtol(file_t* file, value_t with(file_t*), precedence_t precedence)
 value_t load_direct(file_t* file)
 {
     value_t value = {
-        .type.name = str_init(file, g_i32),
+        .type.name = str_init(file, g_i64),
         .slot = get_slot(file),
     };
     auto name = read_digit(file);
@@ -1294,7 +1294,7 @@ value_t load_indirect(file_t* file, value_t* found)
         .slot = get_slot(file),
         .type = found->type,
     };
-    emit(file, g_opcode_flat_gep, value.slot, found->slot, g_i32, 0);
+    emit(file, g_opcode_flat_gep, value.slot, found->slot, g_i64, 0);
     return value;
 }
 
@@ -1323,7 +1323,7 @@ value_t to_positive(file_t* file, value_t value)
 {
     auto operator = str_init(file, g_add);
     value = to_rvalue(file, value);
-    assert_scalar_of(file, value, g_i32, operator);
+    assert_scalar_of(file, value, g_i64, operator);
     return value;
 }
 
@@ -1331,7 +1331,7 @@ value_t to_negative(file_t* file, value_t value)
 {
     auto operator = str_init(file, g_subtract);
     value = to_rvalue(file, value);
-    assert_scalar_of(file, value, g_i32, operator);
+    assert_scalar_of(file, value, g_i64, operator);
     value_t out = {
         .slot = get_slot(file),
         .type = value.type,
@@ -1345,7 +1345,7 @@ value_t to_bitwise_not(file_t* file, value_t value)
 {
     auto operator = str_init(file, g_bitwise_not);
     value = to_rvalue(file, value);
-    assert_scalar_of(file, value, g_i32, operator);
+    assert_scalar_of(file, value, g_i64, operator);
     value_t out = {
         .slot = get_slot(file),
         .type = value.type,
@@ -1455,35 +1455,47 @@ size_t type_power(file_t* file, type_t type)
 value_t type_cast(file_t* file, value_t value, type_t type)
 {
     value = to_rvalue(file, value);
-    if(is_pointer(type) && is_pointer(value.type))
-    {
-        value.type = type;
-        return value;
-    }
-    value_t out = {
-        .slot = get_slot(file),
-        .type = type,
-    };
     auto from = value.type.name.begin;
     auto to = type.name.begin;
-    if(is_pointer(type) && is_scalar(value.type))
+    if(is_pointer(type))
     {
-        emit(file, g_opcode_int_to_ptr, out.slot, from, value.slot);
-        return out;
+        if(is_pointer(value.type))
+        {
+            value.type = type;
+            return value;
+        }
+        value_t out = {
+            .slot = get_slot(file),
+            .type = type,
+        };
+        if(is_scalar(value.type))
+        {
+            emit(file, g_opcode_int_to_ptr, out.slot, from, value.slot);
+            return out;
+        }
     }
-    if(type_power(file, type) > type_power(file, value.type))
+    else
     {
-        emit(file, g_opcode_signed_extend, out.slot, from, value.slot, to);
-        return out;
-    }
-    if(type_power(file, type) < type_power(file, value.type))
-    {
-        emit(file, g_opcode_trunc, out.slot, from, value.slot, to);
-        return out;
-    }
-    if(type_power(file, type) == type_power(file, value.type))
-    {
-        return value;
+        auto x = type_power(file, type);
+        auto y = type_power(file, value.type);
+        if(x == y)
+        {
+            return value;
+        }
+        value_t out = {
+            .slot = get_slot(file),
+            .type = type,
+        };
+        if(x > y)
+        {
+            emit(file, g_opcode_signed_extend, out.slot, from, value.slot, to);
+            return out;
+        }
+        if(x < y)
+        {
+            emit(file, g_opcode_trunc, out.slot, from, value.slot, to);
+            return out;
+        }
     }
     quit(file, "could not type cast '%s' to '%s'", from, to);
     return (value_t) {};
