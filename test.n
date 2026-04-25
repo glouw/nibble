@@ -669,11 +669,50 @@ i32 test_init()
     ret 0;
 }
 
+i32 test_continue()
+{
+    i32 sum = 0;
+    i32 i = 0;
+    while(i < 32)
+    {
+        i = i + 1;
+        if(i < 16)
+        {
+            continue;
+        }
+        sum = sum + 1;
+    }
+    if(sum == 17)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 test_break()
+{
+    i32 i = 0;
+    while(i < 512)
+    {
+        if(i == 32)
+        {
+            break;
+        }
+        i = i + 1;
+    }
+    if(i == 32)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 test_defer_0()
 {
-    i32* x = new i32[<i64>(512)];
-    i32* y = new i32[<i64>(512)];
-    i32* z = new i32[<i64>(512)];
+    i32 elems = 512;
+    i32* x = new i32[<i64>(elems)];
+    i32* y = new i32[<i64>(elems)];
+    i32* z = new i32[<i64>(elems)];
     defer del x;
     defer del y;
     defer del z;
@@ -686,17 +725,26 @@ i32 test_defer_0()
 
 i32 test_defer_1()
 {
-    i32* x = new i32[<i64>(512)];
+    i32 elems = 512;
+    i32* x = new i32[<i64>(elems)];
     defer del x;
     1 == 1;
     {
-        i32* y = new i32[<i64>(512)];
+        i32* y = new i32[<i64>(elems)];
         defer del y;
         1 == 1;
         {
-            i32* z = new i32[<i64>(512)];
-            defer del z;
-            1 == 1;
+            {
+                {
+                    {
+                        i32* z = new i32[<i64>(elems)];
+                        defer del z;
+                        1 == 1;
+                        {
+                        }
+                    }
+                }
+            }
         }
     }
     ret 0;
@@ -704,15 +752,16 @@ i32 test_defer_1()
 
 i32 test_defer_2()
 {
+    i32 elems = 512;
     if(1 == 1)
     {
-        i32* x = new i32[<i64>(512)];
+        i32* x = new i32[<i64>(elems)];
         defer del x;
         1 == 1;
     }
     else
     {
-        i32* y = new i32[<i64>(512)];
+        i32* y = new i32[<i64>(elems)];
         defer del y;
         1 == 1;
     }
@@ -726,7 +775,8 @@ void do_a_thing(i32* array)
 
 i32 test_defer_3()
 {
-    i32* x = new i32[<i64>(512)];
+    i32 elems = 512;
+    i32* x = new i32[<i64>(elems)];
     defer del x;
     do_a_thing(x);
     ret 0;
@@ -734,15 +784,16 @@ i32 test_defer_3()
 
 i32 test_defer_4()
 {
-    i32* x = new i32[<i64>(512)];
+    i32 elems = 512;
+    i32* x = new i32[<i64>(elems)];
     defer del x;
     1 == 1;
     {
-        i32* y = new i32[<i64>(512)];
+        i32* y = new i32[<i64>(elems)];
         defer del y;
         1 == 1;
         {
-            i32* z = new i32[<i64>(512)];
+            i32* z = new i32[<i64>(elems)];
             defer del z;
             1 == 1;
             {
@@ -750,6 +801,122 @@ i32 test_defer_4()
             }
         }
     }
+}
+
+i32 test_defer_5()
+{
+    i32 elems = 512;
+    if(1 == 2)
+    {
+    }
+    else
+    if(1 == 1)
+    {
+        i32* x = new i32[<i64>(elems)];
+        defer del x;
+        1 == 1;
+    }
+    else
+    {
+    }
+    ret 0;
+}
+
+i32 test_defer_6()
+{
+    i32* v = new i32[<i64>(32)];
+    defer del v;
+    i32 i = 0;
+    i32 j = 0;
+    while(j < 1)
+    {
+        i32* w = new i32[<i64>(32)];
+        defer del w;
+        while(i < 512)
+        {
+            i32* x = new i32[<i64>(32)];
+            defer del x;
+            i32* y = new i32[<i64>(32)];
+            defer del y;
+            if(i == 32)
+            {
+                {
+                    i32* z = new i32[<i64>(32)];
+                    defer del z;
+                    {
+                        break;
+                    }
+                }
+            }
+            i = i + 1;
+        }
+        j = j + 1;
+    }
+    if(i == 32)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 test_defer_7()
+{
+    i32 i = 0;
+    while(i < 512)
+    {
+        i32* x = new i32[<i64>(32)];
+        defer del x;
+        if(i == 32)
+        {
+            break;
+        }
+        i = i + 1;
+    }
+    if(i == 32)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 test_defer_8()
+{
+    i32* x = new i32[<i64>(32)];
+    defer del x;
+    i32 i = 0;
+    while(i < 512)
+    {
+        if(i == 32)
+        {
+            break;
+        }
+        i = i + 1;
+    }
+    if(i == 32)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 test_defer_9()
+{
+    i32 i = 0;
+    while(i < 512)
+    {
+        if(i == 32)
+        {
+            i32* x = new i32[<i64>(32)];
+            defer del x;
+            break;
+        }
+        i = i + 1;
+    }
+    if(i == 32)
+    {
+        ret 0;
+    }
+    ret 1;
 }
 
 i32 main()
@@ -787,9 +954,17 @@ i32 main()
       | test_new_indirect()
       | test_new_many()
       | test_zero_init()
+      | test_continue()
+      | test_break()
       | test_defer_0()
       | test_defer_1()
       | test_defer_2()
       | test_defer_3()
+      | test_defer_4()
+      | test_defer_5()
+      | test_defer_6()
+      | test_defer_7()
+      | test_defer_8()
+      | test_defer_9()
       ;
 }

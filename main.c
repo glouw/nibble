@@ -8,6 +8,7 @@
 constexpr size_t g_str_size = 64;
 constexpr size_t g_value_list_size = 1024;
 constexpr size_t g_slot_list_size = 8;
+constexpr size_t g_defer_list_size = 8;
 constexpr size_t g_type_list_size = 8;
 constexpr size_t g_code_size = 65536;
 constexpr size_t g_max_operators_per_precedence = 8;
@@ -35,6 +36,30 @@ typedef struct
     size_t size;
 }
 slot_list_t;
+
+typedef enum : size_t
+{
+    g_scope_function,
+    g_scope_while,
+    g_scope_brace,
+    g_scope_if,
+}
+scope_t;
+
+typedef struct
+{
+    scope_t scope;
+    size_t at;
+    size_t block;
+}
+defer_t;
+
+typedef struct
+{
+    defer_t begin[g_defer_list_size];
+    size_t size;
+}
+defer_list_t;
 
 typedef struct
 {
@@ -85,9 +110,12 @@ code_t;
 typedef struct
 {
     code_t code;
-    slot_list_t defers;
+    defer_list_t defers;
+    slot_list_t loop_again;
+    slot_list_t loop_end;
     value_list_t values;
     size_t line;
+    size_t block;
     size_t slot;
     size_t tabs;
     size_t label;
@@ -148,6 +176,8 @@ chars_t g_ptr                     = "ptr";
 chars_t g_if                      = "if";
 chars_t g_else                    = "else";
 chars_t g_while                   = "while";
+chars_t g_break                   = "break";
+chars_t g_continue                = "continue";
 chars_t g_defer                   = "defer";
 chars_t g_new                     = "new";
 chars_t g_del                     = "del";
@@ -238,6 +268,8 @@ char* g_control_keywords[] = {
     g_else,
     g_while,
     g_defer,
+    g_break,
+    g_continue,
     nullptr
 };
 
@@ -260,12 +292,12 @@ char* g_operators_by_precedence[g_precedence_count][g_max_operators_per_preceden
     [ g_precedence_assignment   ]  = { g_equals                                               },
 };
 
-#define list_full(file, list)              \
+#define list_full(list)                    \
     ((list)->size == len((list)->begin) - 1)
 
 #define list_append(file, list, value) do  \
 {                                          \
-    if(list_full(file, list))              \
+    if(list_full(list))                    \
         quit(file, "list overflow");       \
     (list)->begin[(list)->size++] = value; \
 }                                          \
@@ -423,6 +455,12 @@ bool is_reserved_keyword(str_t keyword)
     return str_in(keyword, g_type_keywords)
         || str_in(keyword, g_control_keywords)
         || str_in(keyword, g_construct_keywords);
+}
+
+size_t get_block(file_t* file)
+{
+    file->block += 1;
+    return file->block;
 }
 
 size_t get_slot(file_t* file)
@@ -697,7 +735,7 @@ void execute_defers(file_t* file, size_t total)
     auto at = file->code.at;
     for(size_t i = 0; i < total; i++)
     {
-        file->code.at = file->defers.begin[file->defers.size - 1 - i];
+        file->code.at = file->defers.begin[file->defers.size - 1 - i].at;
         read_expression(file);
     }
     file->code.at = at;
@@ -726,9 +764,9 @@ value_t read_ret_statement(file_t* file, value_t ret_value)
     }
 }
 
-bool read_statement(file_t*, value_t);
+bool read_statement(file_t*, value_t, scope_t, size_t);
 
-void read_if_statement(file_t* file, value_t ret_value, size_t if_label, size_t else_label, size_t end_label)
+void read_if_statement(file_t* file, value_t ret_value, size_t if_label, size_t else_label, size_t end_label, size_t block)
 {
     read_alnum(file);
     match(file, g_left_paren);
@@ -741,21 +779,21 @@ void read_if_statement(file_t* file, value_t ret_value, size_t if_label, size_t 
     match(file, g_rite_paren);
     emit(file, g_opcode_branch_if_else, value.slot, if_label, else_label);
     emit(file, g_opcode_label, if_label);
-    auto terminated = read_statement(file, ret_value);
+    auto terminated = read_statement(file, ret_value, g_scope_if, block);
     if(!terminated)
     {
         emit(file, g_opcode_branch, end_label);
     }
 }
 
-void read_else_statement(file_t* file, value_t ret_value, size_t else_label, size_t end_label)
+void read_else_statement(file_t* file, value_t ret_value, size_t else_label, size_t end_label, size_t block)
 {
     emit(file, g_opcode_label, else_label);
     auto keyword = peek_alnum(file);
     if(str_equal(keyword.begin, g_else))
     {
         read_alnum(file);
-        auto terminated = read_statement(file, ret_value);
+        auto terminated = read_statement(file, ret_value, g_scope_if, block);
         if(!terminated)
         {
             emit(file, g_opcode_branch, end_label);
@@ -767,30 +805,93 @@ void read_else_statement(file_t* file, value_t ret_value, size_t else_label, siz
     }
 }
 
-void read_if_else_statement(file_t* file, value_t ret_value)
+void read_if_else_statement(file_t* file, value_t ret_value, size_t block)
 {
     auto if_label = get_label(file);
     auto else_label = get_label(file);
     auto end_label = get_label(file);
-    read_if_statement(file, ret_value, if_label, else_label, end_label);
-    read_else_statement(file, ret_value, else_label, end_label);
+    read_if_statement(file, ret_value, if_label, else_label, end_label, block);
+    read_else_statement(file, ret_value, else_label, end_label, block);
     emit(file, g_opcode_label, end_label);
 }
 
-void read_defer_statement(file_t* file)
+void read_defer_statement(file_t* file, scope_t scope, size_t block)
 {
     read_alnum(file);
     skip_space(file);
-    list_append(file, &file->defers, file->code.at);
+    defer_t defer = {
+        .scope = scope,
+        .at = file->code.at,
+        .block = block
+    };
+    list_append(file, &file->defers, defer);
     read_till_semicolon(file);
     match(file, g_semicolon);
 }
 
-void read_while_statement(file_t* file, value_t ret_value)
+void execute_break_defers(file_t* file)
+{
+    auto scopes = file->defers.begin;
+    size_t defers = 0;
+    int at = file->defers.size - 1;
+    if(scopes[at].scope != g_scope_function)
+    {
+        while(at >= 0)
+        {
+            if(scopes[at].scope == g_scope_while)
+            {
+                break;
+            }
+            at -= 1;
+            defers += 1;
+        }
+        auto block = scopes[at].block;
+        while(at >= 0)
+        {
+            if(scopes[at].block != block)
+            {
+                break;
+            }
+            at -= 1;
+            defers += 1;
+        }
+        execute_defers(file, defers);
+    }
+}
+
+void read_break_statement(file_t* file)
+{
+    read_alnum(file);
+    match(file, g_semicolon);
+    if(file->loop_end.size == 0)
+    {
+        quit(file, "%s statement not within a loop", g_break);
+    }
+    execute_break_defers(file);
+    auto to = file->loop_end.begin[file->loop_end.size - 1];
+    emit(file, g_opcode_branch, to);
+}
+
+void read_continue_statement(file_t* file)
+{
+    read_alnum(file);
+    match(file, g_semicolon);
+    if(file->loop_again.size == 0)
+    {
+        quit(file, "%s statement not within a loop", g_continue);
+    }
+    execute_break_defers(file);
+    auto to = file->loop_again.begin[file->loop_again.size - 1];
+    emit(file, g_opcode_branch, to);
+}
+
+void read_while_statement(file_t* file, value_t ret_value, size_t block)
 {
     auto again_label = get_label(file);
     auto while_label = get_label(file);
     auto end_label = get_label(file);
+    list_append(file, &file->loop_again, again_label);
+    list_append(file, &file->loop_end, end_label);
     emit(file, g_opcode_branch, again_label);
     emit(file, g_opcode_label, again_label);
     read_alnum(file);
@@ -804,17 +905,19 @@ void read_while_statement(file_t* file, value_t ret_value)
     assert_types_match(file, value.type, expected.type, operator);
     emit(file, g_opcode_branch_if_else, value.slot, while_label, end_label);
     emit(file, g_opcode_label, while_label);
-    auto terminated = read_statement(file, ret_value);
+    auto terminated = read_statement(file, ret_value, g_scope_while, block);
     if(!terminated)
     {
         emit(file, g_opcode_branch, again_label);
     }
     emit(file, g_opcode_label, end_label);
+    file->loop_again.size -= 1;
+    file->loop_end.size -= 1;
 }
 
-bool read_block(file_t*, value_t);
+bool read_block(file_t*, value_t, scope_t);
 
-bool read_statement(file_t* file, value_t ret_value)
+bool read_statement(file_t* file, value_t ret_value, scope_t scope, size_t block)
 {
     auto keyword = peek_alnum(file);
     if(str_in(keyword, g_control_keywords))
@@ -826,13 +929,23 @@ bool read_statement(file_t* file, value_t ret_value)
             assert_types_match(file, value.type, ret_value.type, operator);
             return true;
         }
+        if(str_equal(keyword.begin, g_continue))
+        {
+            read_continue_statement(file);
+            return true;
+        }
+        if(str_equal(keyword.begin, g_break))
+        {
+            read_break_statement(file);
+            return true;
+        }
         if(str_equal(keyword.begin, g_defer))
         {
-            read_defer_statement(file);
+            read_defer_statement(file, scope, block);
         }
         if(str_equal(keyword.begin, g_if))
         {
-            read_if_else_statement(file, ret_value);
+            read_if_else_statement(file, ret_value, block);
         }
         if(str_equal(keyword.begin, g_else))
         {
@@ -840,7 +953,7 @@ bool read_statement(file_t* file, value_t ret_value)
         }
         if(str_equal(keyword.begin, g_while))
         {
-            read_while_statement(file, ret_value);
+            read_while_statement(file, ret_value, block);
         }
     }
     else
@@ -868,7 +981,7 @@ bool read_statement(file_t* file, value_t ret_value)
     {
         if(next_char(file) == *g_left_curl)
         {
-            return read_block(file, ret_value);
+            return read_block(file, ret_value, scope);
         }
         else
         {
@@ -879,8 +992,9 @@ bool read_statement(file_t* file, value_t ret_value)
     return false;
 }
 
-bool read_block(file_t* file, value_t ret_value)
+bool read_block(file_t* file, value_t ret_value, scope_t scope)
 {
+    auto block = get_block(file);
     auto defers = file->defers.size;
     auto values = file->values.size;
     bool terminated = false;
@@ -896,7 +1010,7 @@ bool read_block(file_t* file, value_t ret_value)
         {
             quit(file, "block was terminated");
         }
-        terminated = read_statement(file, ret_value);
+        terminated = read_statement(file, ret_value, scope, block);
     }
     if(!terminated)
     {
@@ -957,7 +1071,7 @@ void read_function(file_t* file)
             arg.slot = slot;
             list_append(file, &file->values, arg);
         }
-        bool terminated = read_block(file, ret_value);
+        bool terminated = read_block(file, ret_value, g_scope_function);
         if(!terminated)
         {
             quit(file, "block missing %s statement", g_ret);
