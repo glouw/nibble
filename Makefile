@@ -5,9 +5,10 @@ SRC = main.c
 TEMP = out.ll
 EXE = a.out
 BACKEND = clang -g
+TEST = test.n
 
 test: all
-	time ./$(FRONTEND) > $(TEMP) && time $(BACKEND) $(TEMP) && time valgrind --leak-check=full -s ./$(EXE)
+	time ./$(FRONTEND) $(TEST) > $(TEMP) && time $(BACKEND) $(TEMP) && time valgrind --leak-check=full -s ./$(EXE)
 
 all:
 	$(CC) $(CFLAGS) $(SRC) -o $(FRONTEND)

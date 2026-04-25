@@ -919,6 +919,22 @@ i32 test_defer_9()
     ret 1;
 }
 
+i32 test_defer_10(i32 loops)
+{
+    i32* x = new i32[<i64>(32)];
+    *x = loops;
+    defer del x;
+    if(loops == 0)
+    {
+        ret 0;
+    }
+    else
+    {
+        ret test_defer_10(loops - 1);
+    }
+    ret -1;
+}
+
 i32 main()
 {
     ret test_function()
@@ -966,5 +982,6 @@ i32 main()
       | test_defer_7()
       | test_defer_8()
       | test_defer_9()
+      | test_defer_10(10)
       ;
 }

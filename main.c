@@ -1634,23 +1634,62 @@ unary:
     return read_unary(file);
 }
 
-value_t read_p1(file_t* file) { return read_ltor( file, read_p0, g_precedence_arithmetic_0 ); }
-value_t read_p2(file_t* file) { return read_ltor( file, read_p1, g_precedence_arithmetic_1 ); }
-value_t read_p3(file_t* file) { return read_ltor( file, read_p2, g_precedence_shift        ); }
-value_t read_p4(file_t* file) { return read_ltor( file, read_p3, g_precedence_relational_0 ); }
-value_t read_p5(file_t* file) { return read_ltor( file, read_p4, g_precedence_relational_1 ); }
-value_t read_p6(file_t* file) { return read_ltor( file, read_p5, g_precedence_bitwise_and  ); }
-value_t read_p7(file_t* file) { return read_ltor( file, read_p6, g_precedence_bitwise_xor  ); }
-value_t read_p8(file_t* file) { return read_ltor( file, read_p7, g_precedence_bitwise_or   ); }
-value_t read_p9(file_t* file) { return read_rtol( file, read_p8, g_precedence_assignment   ); }
+value_t read_p1(file_t* file)
+{
+    return read_ltor(file, read_p0, g_precedence_arithmetic_0);
+}
+
+value_t read_p2(file_t* file)
+{
+    return read_ltor(file, read_p1, g_precedence_arithmetic_1);
+}
+
+value_t read_p3(file_t* file)
+{
+    return read_ltor(file, read_p2, g_precedence_shift);
+}
+
+value_t read_p4(file_t* file)
+{
+    return read_ltor(file, read_p3, g_precedence_relational_0);
+}
+
+value_t read_p5(file_t* file)
+{
+    return read_ltor(file, read_p4, g_precedence_relational_1);
+}
+
+value_t read_p6(file_t* file)
+{
+    return read_ltor(file, read_p5, g_precedence_bitwise_and);
+}
+
+value_t read_p7(file_t* file)
+{
+    return read_ltor(file, read_p6, g_precedence_bitwise_xor);
+}
+
+value_t read_p8(file_t* file)
+{
+    return read_ltor(file, read_p7, g_precedence_bitwise_or);
+}
+
+value_t read_p9(file_t* file)
+{
+    return read_rtol(file, read_p8, g_precedence_assignment);
+}
 
 value_t read_expression(file_t* file)
 {
     return read_p9(file);
 }
 
-int main()
+int main(int argc, char** argv)
 {
-    auto file = file_init("test.n");
+    if(argc != 2)
+    {
+        return 1;
+    }
+    auto file = file_init(argv[1]);
     read_program(&file);
 }
