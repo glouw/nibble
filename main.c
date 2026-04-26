@@ -10,6 +10,7 @@ constexpr size_t g_value_list_size = 1024;
 constexpr size_t g_slot_list_size = 8;
 constexpr size_t g_defer_list_size = 8;
 constexpr size_t g_type_list_size = 8;
+constexpr size_t g_str_list_size = 8;
 constexpr size_t g_code_size = 65536;
 constexpr size_t g_max_operators_per_precedence = 8;
 
@@ -84,11 +85,19 @@ type_list_t;
 
 typedef struct
 {
+    str_t begin[g_str_list_size];
+    size_t size;
+}
+str_list_t;
+
+typedef struct
+{
     type_t type;
     str_t name;
     bool is_lvalue;
     size_t slot;
     type_list_t types;
+    str_list_t names;
 }
 value_t;
 
@@ -114,6 +123,7 @@ typedef struct
     slot_list_t loop_again;
     slot_list_t loop_end;
     value_list_t values;
+    value_list_t types;
     size_t line;
     size_t block;
     size_t slot;
@@ -165,6 +175,8 @@ chars_t g_bitwise_and             = "&";
 chars_t g_bitwise_not             = "~";
 chars_t g_comma                   = ",";
 chars_t g_ampersand               = "&";
+chars_t g_percent                 = "%";
+chars_t g_empty                   = "";
 chars_t g_void                    = "void";
 chars_t g_i1                      = "i1";
 chars_t g_i8                      = "i8";
@@ -178,10 +190,12 @@ chars_t g_else                    = "else";
 chars_t g_while                   = "while";
 chars_t g_break                   = "break";
 chars_t g_continue                = "continue";
+chars_t g_type                    = "type";
 chars_t g_defer                   = "defer";
 chars_t g_new                     = "new";
 chars_t g_del                     = "del";
 chars_t g_sizeof                  = "sizeof";
+chars_t g_opcode_type_def         = "%%%s = type";
 chars_t g_opcode_label            = "L%lu:";
 chars_t g_opcode_branch_if_else   = "br i1 %%%llu, label %%L%lu, label %%L%lu";
 chars_t g_opcode_branch           = "br label %%L%lu";
@@ -285,6 +299,7 @@ char* g_construct_keywords[] = {
     g_new,
     g_del,
     g_sizeof,
+    g_type,
     nullptr
 };
 
@@ -409,27 +424,20 @@ void emit(file_t* file, char* format, ...)
     fprintf(out, g_newline);
 }
 
+void str_append(file_t* file, str_t* str, chars_t chars)
+{
+    while(*chars)
+    {
+        list_append(file, str, *chars);
+        chars += 1;
+    }
+}
+
 str_t str_init(file_t* file, chars_t chars)
 {
     str_t str = {};
-    while(*chars)
-    {
-        list_append(file, &str, *chars);
-        chars += 1;
-    }
+    str_append(file, &str, chars);
     return str;
-}
-
-str_t to_llvm_type(file_t* file, type_t type)
-{
-    if(is_pointer(type))
-    {
-        return str_init(file, g_ptr);
-    }
-    else
-    {
-        return type.name;
-    }
 }
 
 bool str_in(str_t str, char** array)
@@ -445,6 +453,26 @@ bool str_in(str_t str, char** array)
     return false;
 }
 
+char* get_builtin_prefix(type_t type)
+{
+    return str_in(type.name, g_type_keywords) ? g_empty : g_percent;
+}
+
+str_t to_llvm_type(file_t* file, type_t type)
+{
+    if(is_pointer(type))
+    {
+        return str_init(file, g_ptr);
+    }
+    else
+    {
+        auto prefix = get_builtin_prefix(type);
+        auto out = str_init(file, prefix);
+        str_append(file, &out, type.name.begin);
+        return out;
+    }
+}
+
 value_t* value_in(str_t str, value_list_t* list)
 {
     for(size_t i = 0; i < list->size; i++)
@@ -458,9 +486,24 @@ value_t* value_in(str_t str, value_list_t* list)
     return nullptr;
 }
 
-bool is_reserved_keyword(str_t keyword)
+bool is_type(file_t* file, str_t type)
 {
-    return str_in(keyword, g_type_keywords)
+    bool is_builtin = str_in(type, g_type_keywords);
+    bool is_type = false;
+    for(size_t i = 0; i < file->types.size; i++)
+    {
+        if(str_equal(type.begin, file->types.begin[i].name.begin))
+        {
+            is_type = true;
+            break;
+        }
+    }
+    return is_builtin || is_type;
+}
+
+bool is_reserved_keyword(file_t* file, str_t keyword)
+{
+    return is_type(file, keyword)
         || str_in(keyword, g_control_keywords)
         || str_in(keyword, g_construct_keywords);
 }
@@ -706,11 +749,11 @@ value_t read_value_decl(file_t* file)
     {
         quit(file, "'%s' already declared", value.name.begin);
     }
-    if(is_reserved_keyword(value.name))
+    if(is_reserved_keyword(file, value.name))
     {
         quit(file, "'%s' is a reserved keyword", value.name.begin);
     }
-    if(!str_in(value.type.name, g_type_keywords))
+    if(!is_type(file, value.type.name))
     {
         quit(file, "'%s' not a valid type", value.type.name.begin);
     }
@@ -975,7 +1018,7 @@ bool read_statement(file_t* file, value_t ret_value, scope_t scope, size_t block
         }
     }
     else
-    if(str_in(keyword, g_type_keywords))
+    if(is_type(file, keyword))
     {
         auto value = read_value_decl(file);
         list_append(file, &file->values, value);
@@ -1106,6 +1149,50 @@ void write_header(file_t* file)
     emit(file, "");
 }
 
+void read_type_def(file_t* file)
+{
+    read_alnum(file);
+    auto name = read_alnum(file);
+    value_t value = {
+        .type = {
+            .name = name,
+        },
+        .name = name,
+    };
+    if(value_in(value.name, &file->types))
+    {
+        quit(file, "type '%s' already declared", value.name.begin);
+    }
+    emit(file, g_opcode_type_def, name.begin);
+    emit(file, g_left_curl);
+    match(file, g_left_curl);
+    while(true)
+    {
+        if(next_char(file) == *g_rite_curl)
+        {
+            break;
+        }
+        auto type = read_type(file);
+        auto name = read_alnum(file);
+        if(!is_type(file, type.name))
+        {
+            quit(file, "'%s' is not a valid type", type.name.begin);
+        }
+        list_append(file, &value.types, type);
+        list_append(file, &value.names, name);
+        match(file, g_semicolon);
+        emit(file, "%s%s", str_in(type.name, g_type_keywords) ? "" : "%", type.name.begin);
+        if(next_char(file) != *g_rite_curl)
+        {
+            emit(file, g_comma);
+        }
+    }
+    emit(file, g_rite_curl);
+    match(file, g_rite_curl);
+    match(file, g_semicolon);
+    list_append(file, &file->types, value);
+}
+
 void read_program(file_t* file)
 {
     write_header(file);
@@ -1115,7 +1202,15 @@ void read_program(file_t* file)
         {
             break;
         }
-        read_function(file);
+        auto alnum = peek_alnum(file);
+        if(str_equal(alnum.begin, g_type))
+        {
+            read_type_def(file);
+        }
+        else
+        {
+            read_function(file);
+        }
     }
 }
 
@@ -1550,7 +1645,7 @@ value_t read_unary(file_t* file)
     {
         read_alnum(file);
         auto keyword = peek_alnum(file);
-        if(str_in(keyword, g_type_keywords))
+        if(is_type(file, keyword))
         {
             auto type = read_type(file);
             return to_type_sizeof(file, type);

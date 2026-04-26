@@ -2,11 +2,6 @@ ptr malloc(i64 size);
 void free(ptr pointer);
 i64 llabs(i64 value);
 
-void fun()
-{
-    ret;
-}
-
 i64 add(i64 a, i64 b)
 {
     ret a + b;
@@ -486,6 +481,14 @@ i64 test_generic_indirect()
     ret 0;
 }
 
+type type_size_1 { i1 a; };
+type type_size_2 { i8 a; i8 b; };
+type type_size_3 { i8 a; i8 b; i8 c; };
+type type_size_4 { i8 a; i8 b; i8 c; i8 d; };
+type type_size_8 { i32 a; i8 b; };
+type type_size_16 { i64 a; i8 b; };
+type type_size_16_2 { i64 a; i8 b; i8 c; i8 d; i8 e; };
+
 i64 test_sizeof()
 {
     ptr p;
@@ -498,7 +501,13 @@ i64 test_sizeof()
     f = &d;
 
     if(
-       sizeof p     == 8
+       sizeof type_size_1 == 1
+     & sizeof type_size_2 == 2
+     & sizeof type_size_3 == 3
+     & sizeof type_size_8 == 8
+     & sizeof type_size_16 == 16
+     & sizeof type_size_16_2 == 16
+     & sizeof p     == 8
      & sizeof a     == 1
      & sizeof b     == 1
      & sizeof c     == 2
@@ -957,6 +966,39 @@ i64 test_2d_array()
     ret 0;
 }
 
+type type_a
+{
+    i64 a;
+    i32 b;
+    i8 c;
+};
+
+type type_b
+{
+    type_a a;
+    i64 b;
+};
+
+type type_c
+{
+    type_a a;
+    type_b b;
+    i64 c;
+    i64 d;
+    i8 e;
+    i1 f;
+};
+
+i64 test_types()
+{
+    type_c stack;
+    type_c* heap = new type_c;
+    type_c* heaps = new type_c[32];
+    defer del heap;
+    defer del heaps;
+    ret 0;
+}
+
 i32 main()
 {
     ret <i32> (
@@ -1006,5 +1048,6 @@ i32 main()
       | test_defer_9()
       | test_defer_10(10)
       | test_2d_array()
+      | test_types()
     );
 }
