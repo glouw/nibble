@@ -2,6 +2,9 @@ ptr malloc(i64 size);
 void free(ptr pointer);
 i64 llabs(i64 value);
 
+# this is a comment
+# for # us to read #
+
 i64 add(i64 a, i64 b)
 {
     ret a + b;
@@ -599,7 +602,7 @@ i64 test_new_many()
     total = elems * value;
 
     i64* array;
-    array = new i64[elems];
+    array = new i64 [elems];
 
     i64 sum;
 
@@ -998,7 +1001,6 @@ i64 test_types()
     defer del heaps;
     ret 0;
 }
-
 i32 main()
 {
     ret <i32> (
@@ -1051,3 +1053,8 @@ i32 main()
       | test_types()
     );
 }
+# comment
+#comment
+#
+
+#
