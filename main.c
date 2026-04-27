@@ -133,116 +133,117 @@ g_file = {
     .line = 1
 };
 
-char g_str                     [] = "%s";
-char g_red                     [] = "\033[31m";
-char g_white                   [] = "\033[1;37m";
-char g_normal                  [] = "\033[0m";
-char g_underscore              [] = "_";
-char g_left_square             [] = "[";
-char g_rite_square             [] = "]";
-char g_left_curl               [] = "{";
-char g_rite_curl               [] = "}";
-char g_left_paren              [] = "(";
-char g_rite_paren              [] = ")";
-char g_semicolon               [] = ";";
-char g_newline                 [] = "\n";
-char g_space                   [] = " ";
-char g_tab                     [] = "\t";
-char g_lower_begin             [] = "a";
-char g_lower_end               [] = "z";
-char g_upper_begin             [] = "A";
-char g_upper_end               [] = "Z";
-char g_digit_begin             [] = "0";
-char g_digit_end               [] = "9";
-char g_not                     [] = "!";
-char g_type_cast               [] = "<>";
-char g_function                [] = "()";
-char g_index                   [] = "[]";
-char g_add                     [] = "+";
-char g_subtract                [] = "-";
-char g_divide                  [] = "/";
-char g_multiply                [] = "*";
-char g_equals                  [] = "=";
-char g_equal_to                [] = "==";
-char g_not_equal_to            [] = "!=";
-char g_less_equal_to           [] = "<=";
-char g_less                    [] = "<";
-char g_greater_equal_to        [] = ">=";
-char g_greater                 [] = ">";
-char g_shift_rite              [] = ">>";
-char g_shift_left              [] = "<<";
-char g_bitwise_or              [] = "|";
-char g_bitwise_xor             [] = "^";
-char g_bitwise_and             [] = "&";
-char g_bitwise_not             [] = "~";
-char g_comma                   [] = ",";
-char g_ampersand               [] = "&";
-char g_percent                 [] = "%";
-char g_hash                    [] = "#";
-char g_empty                   [] = "";
-char g_void                    [] = "void";
-char g_i1                      [] = "i1";
-char g_i8                      [] = "i8";
-char g_i16                     [] = "i16";
-char g_i32                     [] = "i32";
-char g_i64                     [] = "i64";
-char g_ret                     [] = "ret";
-char g_ptr                     [] = "ptr";
-char g_if                      [] = "if";
-char g_else                    [] = "else";
-char g_while                   [] = "while";
-char g_break                   [] = "break";
-char g_continue                [] = "continue";
-char g_type                    [] = "type";
-char g_defer                   [] = "defer";
-char g_new                     [] = "new";
-char g_del                     [] = "del";
-char g_sizeof                  [] = "sizeof";
-char g_opcode_type_def         [] = "%%%s = type";
-char g_opcode_label            [] = "L%d:";
-char g_opcode_branch_if_else   [] = "br i1 %%%d, label %%L%d, label %%L%d";
-char g_opcode_branch           [] = "br label %%L%d";
-char g_opcode_target           [] = "target triple = \"x86_64-pc-linux-gnu\"";
-char g_opcode_not              [] = "%%%d = xor %s %%%d, true";
-char g_opcode_negative         [] = "%%%d = mul %s %%%d, -1";
-char g_opcode_mul              [] = "%%%d = mul %s %%%d, %%%d";
-char g_opcode_sdiv             [] = "%%%d = sdiv %s %%%d, %%%d";
-char g_opcode_add              [] = "%%%d = add %s %%%d, %%%d";
-char g_opcode_sub              [] = "%%%d = sub %s %%%d, %%%d";
-char g_opcode_equal_to         [] = "%%%d = icmp eq %s %%%d, %%%d";
-char g_opcode_not_equal_to     [] = "%%%d = icmp ne %s %%%d, %%%d";
-char g_opcode_less             [] = "%%%d = icmp slt %s %%%d, %%%d";
-char g_opcode_less_equal_to    [] = "%%%d = icmp sle %s %%%d, %%%d";
-char g_opcode_greater          [] = "%%%d = icmp sgt %s %%%d, %%%d";
-char g_opcode_greater_equal_to [] = "%%%d = icmp sge %s %%%d, %%%d";
-char g_opcode_bitwise_or       [] = "%%%d = or %s %%%d, %%%d";
-char g_opcode_bitwise_not      [] = "%%%d = xor %s %%%d, -1";
-char g_opcode_bitwise_xor      [] = "%%%d = xor %s %%%d, %%%d";
-char g_opcode_bitwise_and      [] = "%%%d = and %s %%%d, %%%d";
-char g_opcode_shift_left       [] = "%%%d = shl %s %%%d, %%%d";
-char g_opcode_shift_rite       [] = "%%%d = ashr %s %%%d, %%%d";
-char g_opcode_alloca           [] = "%%%d = alloca %s";
-char g_opcode_flat_gep         [] = "%%%d = getelementptr ptr, ptr %%%d, %s %d";
-char g_opcode_gep              [] = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
-char g_opcode_sizeof           [] = "%%%d = getelementptr %s, ptr null, i64 1";
-char g_opcode_ptr_to_int       [] = "%%%d = ptrtoint ptr %%%d to %s";
-char g_opcode_int_to_ptr       [] = "%%%d = inttoptr %s %%%d to ptr";
-char g_opcode_load_immediate   [] = "%%%d = add %s %s, 0";
-char g_opcode_ret              [] = "ret %s %%%d";
-char g_opcode_ret_void         [] = "ret %s";
-char g_opcode_define           [] = "define %s @%s";
-char g_opcode_declare          [] = "declare %s @%s";
-char g_opcode_load             [] = "%%%d = load %s, ptr %%%d";
-char g_opcode_store            [] = "store %s %%%d, ptr %%%d";
-char g_opcode_zero_init        [] = "store %s zeroinitializer, ptr %%%d";
-char g_opcode_type_slot        [] = "%s %%%d";
-char g_opcode_call             [] = "%%%d = call %s @%s";
-char g_opcode_void_call        [] = "call %s @%s";
-char g_opcode_entry            [] = "entry:";
-char g_opcode_signed_extend    [] = "%%%d = sext %s %%%d to %s";
-char g_opcode_trunc            [] = "%%%d = trunc %s %%%d to %s";
-char g_opcode_malloc           [] = "%%%d = call ptr @malloc(i64 %%%d)";
-char g_opcode_free             [] = "call void @free(ptr %%%d)";
+char* const g_str                     = "%s";
+char* const g_red                     = "\033[31m";
+char* const g_white                   = "\033[1;37m";
+char* const g_normal                  = "\033[0m";
+char* const g_underscore              = "_";
+char* const g_left_square             = "[";
+char* const g_rite_square             = "]";
+char* const g_left_curl               = "{";
+char* const g_rite_curl               = "}";
+char* const g_left_paren              = "(";
+char* const g_rite_paren              = ")";
+char* const g_semicolon               = ";";
+char* const g_newline                 = "\n";
+char* const g_space                   = " ";
+char* const g_tab                     = "\t";
+char* const g_lower_begin             = "a";
+char* const g_lower_end               = "z";
+char* const g_upper_begin             = "A";
+char* const g_upper_end               = "Z";
+char* const g_digit_begin             = "0";
+char* const g_digit_end               = "9";
+char* const g_not                     = "!";
+char* const g_type_cast               = "<>";
+char* const g_function                = "()";
+char* const g_index                   = "[]";
+char* const g_add                     = "+";
+char* const g_subtract                = "-";
+char* const g_divide                  = "/";
+char* const g_multiply                = "*";
+char* const g_equals                  = "=";
+char* const g_equal_to                = "==";
+char* const g_not_equal_to            = "!=";
+char* const g_less_equal_to           = "<=";
+char* const g_less                    = "<";
+char* const g_greater_equal_to        = ">=";
+char* const g_greater                 = ">";
+char* const g_shift_rite              = ">>";
+char* const g_shift_left              = "<<";
+char* const g_bitwise_or              = "|";
+char* const g_bitwise_xor             = "^";
+char* const g_bitwise_and             = "&";
+char* const g_bitwise_not             = "~";
+char* const g_comma                   = ",";
+char* const g_ampersand               = "&";
+char* const g_percent                 = "%";
+char* const g_hash                    = "#";
+char* const g_empty                   = "";
+char* const g_void                    = "void";
+char* const g_i1                      = "i1";
+char* const g_i8                      = "i8";
+char* const g_i16                     = "i16";
+char* const g_i32                     = "i32";
+char* const g_i64                     = "i64";
+char* const g_ret                     = "ret";
+char* const g_ptr                     = "ptr";
+char* const g_if                      = "if";
+char* const g_else                    = "else";
+char* const g_while                   = "while";
+char* const g_break                   = "break";
+char* const g_continue                = "continue";
+char* const g_type                    = "type";
+char* const g_defer                   = "defer";
+char* const g_new                     = "new";
+char* const g_del                     = "del";
+char* const g_sizeof                  = "sizeof";
+char* const g_comment                 = "//";
+char* const g_opcode_type_def         = "%%%s = type";
+char* const g_opcode_label            = "L%d:";
+char* const g_opcode_branch_if_else   = "br i1 %%%d, label %%L%d, label %%L%d";
+char* const g_opcode_branch           = "br label %%L%d";
+char* const g_opcode_target           = "target triple = \"x86_64-pc-linux-gnu\"";
+char* const g_opcode_not              = "%%%d = xor %s %%%d, true";
+char* const g_opcode_negative         = "%%%d = mul %s %%%d, -1";
+char* const g_opcode_mul              = "%%%d = mul %s %%%d, %%%d";
+char* const g_opcode_sdiv             = "%%%d = sdiv %s %%%d, %%%d";
+char* const g_opcode_add              = "%%%d = add %s %%%d, %%%d";
+char* const g_opcode_sub              = "%%%d = sub %s %%%d, %%%d";
+char* const g_opcode_equal_to         = "%%%d = icmp eq %s %%%d, %%%d";
+char* const g_opcode_not_equal_to     = "%%%d = icmp ne %s %%%d, %%%d";
+char* const g_opcode_less             = "%%%d = icmp slt %s %%%d, %%%d";
+char* const g_opcode_less_equal_to    = "%%%d = icmp sle %s %%%d, %%%d";
+char* const g_opcode_greater          = "%%%d = icmp sgt %s %%%d, %%%d";
+char* const g_opcode_greater_equal_to = "%%%d = icmp sge %s %%%d, %%%d";
+char* const g_opcode_bitwise_or       = "%%%d = or %s %%%d, %%%d";
+char* const g_opcode_bitwise_not      = "%%%d = xor %s %%%d, -1";
+char* const g_opcode_bitwise_xor      = "%%%d = xor %s %%%d, %%%d";
+char* const g_opcode_bitwise_and      = "%%%d = and %s %%%d, %%%d";
+char* const g_opcode_shift_left       = "%%%d = shl %s %%%d, %%%d";
+char* const g_opcode_shift_rite       = "%%%d = ashr %s %%%d, %%%d";
+char* const g_opcode_alloca           = "%%%d = alloca %s";
+char* const g_opcode_flat_gep         = "%%%d = getelementptr ptr, ptr %%%d, %s %d";
+char* const g_opcode_gep              = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
+char* const g_opcode_sizeof           = "%%%d = getelementptr %s, ptr null, i64 1";
+char* const g_opcode_ptr_to_int       = "%%%d = ptrtoint ptr %%%d to %s";
+char* const g_opcode_int_to_ptr       = "%%%d = inttoptr %s %%%d to ptr";
+char* const g_opcode_load_immediate   = "%%%d = add %s %s, 0";
+char* const g_opcode_ret              = "ret %s %%%d";
+char* const g_opcode_ret_void         = "ret %s";
+char* const g_opcode_define           = "define %s @%s";
+char* const g_opcode_declare          = "declare %s @%s";
+char* const g_opcode_load             = "%%%d = load %s, ptr %%%d";
+char* const g_opcode_store            = "store %s %%%d, ptr %%%d";
+char* const g_opcode_zero_init        = "store %s zeroinitializer, ptr %%%d";
+char* const g_opcode_type_slot        = "%s %%%d";
+char* const g_opcode_call             = "%%%d = call %s @%s";
+char* const g_opcode_void_call        = "call %s @%s";
+char* const g_opcode_entry            = "entry:";
+char* const g_opcode_signed_extend    = "%%%d = sext %s %%%d to %s";
+char* const g_opcode_trunc            = "%%%d = trunc %s %%%d to %s";
+char* const g_opcode_malloc           = "%%%d = call ptr @malloc(i64 %%%d)";
+char* const g_opcode_free             = "call void @free(ptr %%%d)";
 
 char* g_operator_chars[] = {
     g_not,
@@ -568,6 +569,14 @@ void assert_scalar(type_t left, type_t rite, str_t operator)
     }
 }
 
+void assert_pointer(type_t type, str_t operator)
+{
+    if(!is_pointer(type))
+    {
+        quit("expected pointer with '%s'", operator.begin);
+    }
+}
+
 void assert_scalar_of(type_t type, char* typename, str_t operator)
 {
     type_t expect = {
@@ -593,23 +602,9 @@ void assert_lvalue(value_t left, str_t operator)
     }
 }
 
-int read_comment()
+int skip_space_and_comment()
 {
-    auto count = 0;
-    while(true)
-    {
-        step();
-        count += 1;
-        if(peek_char() == *g_newline)
-        {
-            break;
-        }
-    }
-    return count;
-}
-
-int skip_space()
-{
+    auto len = (int) strlen(g_comment);
     auto count = 0;
     while(true)
     {
@@ -624,9 +619,22 @@ int skip_space()
             count += 1;
         }
         else
-        if(c == *g_hash)
+        if(c == *g_divide)
         {
-            count += read_comment();
+            step();
+            if(peek_char() != *g_divide)
+            {
+                code_rewind(&g_file.code, 1);
+                count -= len;
+                break;
+            }
+            step();
+            count += len;
+            while(peek_char() != *g_newline)
+            {
+                step();
+                count += 1;
+            }
         }
         else
         {
@@ -638,13 +646,13 @@ int skip_space()
 
 char next_char()
 {
-    skip_space();
+    skip_space_and_comment();
     return peek_char();
 }
 
 bool is_end_of_file()
 {
-    skip_space();
+    skip_space_and_comment();
     return g_file.code.at == g_file.code.size;
 }
 
@@ -665,7 +673,7 @@ void match(char* expected)
 
 str_t read_chars(bool matches(char))
 {
-    skip_space();
+    skip_space_and_comment();
     str_t str = {};
     while(true)
     {
@@ -903,7 +911,6 @@ void read_if_else_statement(value_t ret_value, int block)
 void read_defer_statement(scope_t scope, int block)
 {
     read_alnum();
-    skip_space();
     defer_t defer = {
         .scope = scope,
         .at = g_file.code.at,
@@ -1049,14 +1056,14 @@ bool read_statement(value_t ret_value, scope_t scope, int block)
         auto llvm_type = to_llvm_type(value.type).begin;
         emit(g_opcode_alloca, value.slot, llvm_type);
         emit(g_opcode_zero_init, llvm_type, value.slot);
-        auto spaces = skip_space();
+        auto read = skip_space_and_comment();
         if(next_char() == *g_semicolon)
         {
             match(g_semicolon);
         }
         else
         {
-            code_rewind(&g_file.code, spaces);
+            code_rewind(&g_file.code, read);
             code_rewind(&g_file.code, value.name.size);
             read_expression();
             match(g_semicolon);
@@ -1446,12 +1453,16 @@ value_t get_address_of(value_t value)
 value_t dereference(value_t value)
 {
     auto operator = str_init(g_multiply);
-    assert_lvalue(value, operator);
-    auto slot = get_slot();
-    auto llvm_type = to_llvm_type(value.type).begin;
-    emit(g_opcode_load, slot, llvm_type, value.slot);
-    value.slot = slot;
+    assert_pointer(value.type, operator);
+    if(value.is_lvalue)
+    {
+        auto slot = get_slot();
+        auto llvm_type = to_llvm_type(value.type).begin;
+        emit(g_opcode_load, slot, llvm_type, value.slot);
+        value.slot = slot;
+    }
     value.type.stars -= 1;
+    value.is_lvalue = true;
     return value;
 }
 

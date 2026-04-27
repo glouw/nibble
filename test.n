@@ -2,8 +2,7 @@ ptr malloc(i64 size);
 void free(ptr pointer);
 i64 llabs(i64 value);
 
-# this is a comment
-# for # us to read #
+// this is a test
 
 i64 add(i64 a, i64 b)
 {
@@ -1001,6 +1000,46 @@ i64 test_types()
     defer del heaps;
     ret 0;
 }
+
+i64* pass_pointer(i64* p)
+{
+    ret p;
+}
+
+i64** pass_pointer_pointer(i64** pp)
+{
+    ret pp;
+}
+
+i64 test_direct_function_deref()
+{
+    i1 true = 1 == 1;
+    i1 false = !true;
+
+    i64* p = new i64;
+    defer del p;
+
+    i1 okay = true;
+
+    //
+    // ensure functions pointers are lvalue convertable
+    //
+
+    *pass_pointer(p) = 42;
+    if(*p != 42)
+        okay = false;
+
+    **pass_pointer_pointer(&p) = 11;
+    if(*p != 11)
+        okay = false;
+
+    if(okay)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     ret <i32> (
@@ -1051,10 +1090,11 @@ i32 main()
       | test_defer_10(10)
       | test_2d_array()
       | test_types()
+      | test_direct_function_deref()
     );
 }
-# comment
-#comment
-#
+//
+// test
+//
 
-#
+//
