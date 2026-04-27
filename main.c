@@ -129,9 +129,7 @@ struct
     int tabs;
     int label;
 }
-g_file = {
-    .line = 1
-};
+g_file;
 
 char* const g_str                     = "%s";
 char* const g_red                     = "\033[31m";
@@ -158,6 +156,7 @@ char* const g_not                     = "!";
 char* const g_type_cast               = "<>";
 char* const g_function                = "()";
 char* const g_index                   = "[]";
+char* const g_dot                     = ".";
 char* const g_add                     = "+";
 char* const g_subtract                = "-";
 char* const g_divide                  = "/";
@@ -481,14 +480,27 @@ str_t to_llvm_type(type_t type)
     }
 }
 
-value_t* value_in(str_t str, value_list_t* list)
+value_t* value_in_list(str_t str, value_list_t* list)
 {
     for(int i = 0; i < list->size; i++)
     {
-        auto value = &list->begin[i];
-        if(str_equal(str.begin, value->name.begin))
+        auto check = &list->begin[i];
+        if(str_equal(str.begin, check->name.begin))
         {
-            return value;
+            return check;
+        }
+    }
+    return nullptr;
+}
+
+str_t* str_in_list(str_t str, str_list_t* list)
+{
+    for(int i = 0; i < list->size; i++)
+    {
+        auto check = &list->begin[i];
+        if(str_equal(str.begin, check->begin))
+        {
+            return check;
         }
     }
     return nullptr;
@@ -765,7 +777,7 @@ value_t read_value()
 value_t read_value_decl()
 {
     auto value = read_value();
-    if(value_in(value.name, &g_file.values))
+    if(value_in_list(value.name, &g_file.values))
     {
         quit("'%s' already declared", value.name.begin);
     }
@@ -1183,18 +1195,18 @@ void write_header()
 void read_type_def()
 {
     read_alnum();
-    auto name = read_alnum();
+    auto type_name = read_alnum();
     value_t value = {
         .type = {
-            .name = name,
+            .name = type_name,
         },
-        .name = name,
+        .name = type_name,
     };
-    if(value_in(value.name, &g_file.types))
+    if(value_in_list(value.name, &g_file.types))
     {
         quit("type '%s' already declared", value.name.begin);
     }
-    emit(g_opcode_type_def, name.begin);
+    emit(g_opcode_type_def, type_name.begin);
     emit(g_str, g_left_curl);
     match(g_left_curl);
     while(true)
@@ -1207,7 +1219,11 @@ void read_type_def()
         auto name = read_alnum();
         if(!is_type(type.name))
         {
-            quit("'%s' is not a valid type", type.name.begin);
+            quit("'%s' is not a valid type in aggregate type '%s'", type.name.begin, type_name.begin);
+        }
+        if(str_in_list(name, &value.names))
+        {
+            quit("'%s' already a defined member of aggregate type '%s'", name.begin, type_name.begin);
         }
         list_append(&value.types, type);
         list_append(&value.names, name);
@@ -1369,7 +1385,7 @@ int push_arg(type_t expected)
     return g_file.slot;
 }
 
-slot_list_t read_function_call_arg_list(value_t* found)
+slot_list_t read_function_call_arg_list(value_t found)
 {
     slot_list_t list = {};
     match(g_left_paren);
@@ -1379,7 +1395,7 @@ slot_list_t read_function_call_arg_list(value_t* found)
         {
             break;
         }
-        auto expected = found->types.begin[list.size];
+        auto expected = found.types.begin[list.size];
         auto slot = push_arg(expected);
         list_append(&list, slot);
         if(next_char() == *g_comma)
@@ -1399,27 +1415,27 @@ slot_list_t read_function_call_arg_list(value_t* found)
     return list;
 }
 
-value_t call_function(value_t* found)
+value_t call_function(value_t found)
 {
     auto list = read_function_call_arg_list(found);
     value_t value = {
         .slot = get_slot(),
-        .type = found->type,
+        .type = found.type,
     };
-    auto llvm_type = to_llvm_type(found->type).begin;
-    if(str_equal(found->type.name.begin, g_void))
+    auto llvm_type = to_llvm_type(found.type).begin;
+    if(str_equal(found.type.name.begin, g_void))
     {
-        emit(g_opcode_void_call, llvm_type, found->name.begin);
+        emit(g_opcode_void_call, llvm_type, found.name.begin);
     }
     else
     {
-        emit(g_opcode_call, value.slot, llvm_type, found->name.begin);
+        emit(g_opcode_call, value.slot, llvm_type, found.name.begin);
     }
     emit(g_str, g_left_paren);
     for(auto i = 0; i < list.size; i++)
     {
         auto slot = list.begin[i];
-        auto llvm_type = to_llvm_type(found->types.begin[i]).begin;
+        auto llvm_type = to_llvm_type(found.types.begin[i]).begin;
         emit(g_opcode_type_slot, llvm_type, slot);
         if(i < list.size - 1)
         {
@@ -1430,14 +1446,14 @@ value_t call_function(value_t* found)
     return value;
 }
 
-value_t load_indirect(value_t* found)
+value_t load_indirect(value_t found)
 {
     value_t value = {
         .is_lvalue = true,
         .slot = get_slot(),
-        .type = found->type,
+        .type = found.type,
     };
-    emit(g_opcode_flat_gep, value.slot, found->slot, g_i64, 0);
+    emit(g_opcode_flat_gep, value.slot, found.slot, g_i64, 0);
     return value;
 }
 
@@ -1746,7 +1762,24 @@ value_t read_unary()
     return (value_t) {};
 }
 
-value_t return_indirect_offset(value_t indirect)
+value_t field_access(value_t);
+value_t index_access(value_t);
+
+value_t chain_access(value_t offset)
+{
+    auto c = next_char();
+    if(c == *g_dot)
+    {
+        return field_access(offset);
+    }
+    if(c == *g_left_square)
+    {
+        return index_access(offset);
+    }
+    return offset;
+}
+
+value_t index_access(value_t indirect)
 {
     auto operator = str_init(g_index);
     match(g_left_square);
@@ -1761,7 +1794,28 @@ value_t return_indirect_offset(value_t indirect)
     };
     auto llvm_type = to_llvm_type(offset.type).begin;
     emit(g_opcode_gep, offset.slot, llvm_type, array.slot, g_i64, index.slot);
-    return offset;
+    return chain_access(offset);
+}
+
+value_t field_access(value_t found)
+{
+    match(g_dot);
+    auto name = read_alnum();
+    auto type = value_in_list(found.type.name, &g_file.types);
+    auto exists = str_in_list(name, &type->names);
+    if(exists == nullptr)
+    {
+        quit("could not access '%s' in '%s'", name.begin, found.type.name.begin);
+    }
+    auto index = exists - type->names.begin;
+    value_t offset = {
+        .slot = get_slot(),
+        .type = type->types.begin[index],
+        .is_lvalue = true,
+    };
+    auto llvm_type = to_llvm_type(found.type).begin;
+    emit("%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d", offset.slot, llvm_type, found.slot, index);
+    return chain_access(offset);
 }
 
 value_t read_p0()
@@ -1779,20 +1833,25 @@ value_t read_p0()
             goto unary;
         }
         read_alnum();
-        auto found = value_in(alnum, &g_file.values);
+        auto found = value_in_list(alnum, &g_file.values);
         if(!found)
         {
             quit("'%s' not declared", alnum.begin);
         }
+        auto value = *found;
         auto peek = next_char();
         if(peek == *g_left_paren)
         {
-            return call_function(found);
+            return call_function(value);
         }
-        auto indirect = load_indirect(found);
+        if(peek == *g_dot)
+        {
+            return field_access(value);
+        }
+        auto indirect = load_indirect(value);
         if(peek == *g_left_square)
         {
-            return return_indirect_offset(indirect);
+            return index_access(indirect);
         }
         return indirect;
     }

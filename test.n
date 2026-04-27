@@ -1040,6 +1040,62 @@ i64 test_direct_function_deref()
     ret 1;
 }
 
+type int_t
+{
+    i64 value;
+};
+
+type array_t
+{
+    int_t* value;
+};
+
+type blob_t
+{
+    i32 a;
+    i1 c;
+    i8 d;
+    i16 e;
+    i64 f;
+    int_t int;
+    array_t array;
+};
+
+i64 test_type_copy()
+{
+    blob_t a;
+    blob_t b;
+    blob_t* p = &a;
+
+    a.f = 42;
+
+    a.int.value = 42;
+
+    int_t other = a.int;
+
+    b = *p;
+
+    blob_t c;
+    c.array.value = new int_t[32];
+    defer del c.array.value;
+
+    int_t* temp = c.array.value;
+    temp[4].value = 42;
+
+    if(a.f == 42
+     & b.f == 42
+     & other.value == 42
+     & a.int.value == 42
+     & temp[4].value == 42
+     & c.array.value[4].value == 42
+     )
+    {
+        ret 0;
+    }
+
+    ret 1;
+}
+
 i32 main()
 {
     ret <i32> (
@@ -1091,6 +1147,7 @@ i32 main()
       | test_2d_array()
       | test_types()
       | test_direct_function_deref()
+      | test_type_copy()
     );
 }
 //
