@@ -1265,6 +1265,59 @@ i64 test_type_pass()
     ret 0;
 }
 
+i64 test_mod()
+{
+    if(9 % 8 == 1)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i64 test_postix_increment()
+{
+    i64 x = 41;
+    i64 y = x++;
+    if(y == 41 & x == 42)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i64 test_postix_decrement()
+{
+    i64 x = 42;
+    i64 y = x--;
+    if(y == 42 & x == 41)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i64 test_prefix_increment()
+{
+    i64 x = 41;
+    i64 y = ++x;
+    if(y == 42 & x == 42)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i64 test_prefix_decrement()
+{
+    i64 x = 43;
+    i64 y = --x;
+    if(y == 42 & x == 42)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     ret <i32> (
@@ -1321,6 +1374,11 @@ i32 main()
       | test_putchar()
       | test_str()
       | test_type_pass()
+      | test_mod()
+      | test_postix_increment()
+      | test_postix_decrement()
+      | test_prefix_increment()
+      | test_prefix_decrement()
     );
 }
 //

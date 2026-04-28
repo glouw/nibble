@@ -161,6 +161,7 @@ char* const g_dot                     = ".";
 char* const g_add                     = "+";
 char* const g_subtract                = "-";
 char* const g_divide                  = "/";
+char* const g_mod                     = "%";
 char* const g_escape                  = "\\";
 char* const g_multiply                = "*";
 char* const g_equals                  = "=";
@@ -172,6 +173,8 @@ char* const g_greater_equal_to        = ">=";
 char* const g_greater                 = ">";
 char* const g_shift_rite              = ">>";
 char* const g_shift_left              = "<<";
+char* const g_increment               = "++";
+char* const g_decrement               = "--";
 char* const g_bitwise_or              = "|";
 char* const g_bitwise_xor             = "^";
 char* const g_bitwise_and             = "&";
@@ -209,6 +212,7 @@ char* const g_opcode_not              = "%%%d = xor %s %%%d, true";
 char* const g_opcode_negative         = "%%%d = mul %s %%%d, -1";
 char* const g_opcode_mul              = "%%%d = mul %s %%%d, %%%d";
 char* const g_opcode_sdiv             = "%%%d = sdiv %s %%%d, %%%d";
+char* const g_opcode_srem             = "%%%d = srem %s %%%d, %%%d";
 char* const g_opcode_add              = "%%%d = add %s %%%d, %%%d";
 char* const g_opcode_sub              = "%%%d = sub %s %%%d, %%%d";
 char* const g_opcode_equal_to         = "%%%d = icmp eq %s %%%d, %%%d";
@@ -248,12 +252,15 @@ char* const g_opcode_malloc           = "%%%d = call ptr @malloc(i64 %%%d)";
 char* const g_opcode_free             = "call void @free(ptr %%%d)";
 char* const g_opcode_alloca_string    = "%%%d = alloca [%d x i8]";
 char* const g_opcode_store_string     = "store [%d x i8] c\"%s\", ptr %%%d";
+char* const g_opcode_increment        = "%%%d = add %s %%%d, 1";
+char* const g_opcode_decrement        = "%%%d = sub %s %%%d, 1";
 
 char* g_operator_chars[] = {
     g_not,
     g_add,
     g_subtract,
     g_divide,
+    g_mod,
     g_multiply,
     g_equals,
     g_equal_to,
@@ -312,7 +319,7 @@ char* g_construct_keywords[] = {
 };
 
 char* g_operators_by_precedence[g_precedence_count][g_operator_precedences] = {
-    [ g_precedence_arithmetic_0 ]  = { g_multiply, g_divide                                   },
+    [ g_precedence_arithmetic_0 ]  = { g_multiply, g_divide, g_mod                            },
     [ g_precedence_arithmetic_1 ]  = { g_add, g_subtract                                      },
     [ g_precedence_shift        ]  = { g_shift_left, g_shift_rite                             },
     [ g_precedence_relational_0 ]  = { g_less, g_less_equal_to, g_greater, g_greater_equal_to },
@@ -1334,6 +1341,7 @@ value_t operate(value_t left, value_t rite, str_t operator)
         auto format =
             str_equal(operator.begin, g_multiply        ) ? g_opcode_mul              :
             str_equal(operator.begin, g_divide          ) ? g_opcode_sdiv             :
+            str_equal(operator.begin, g_mod             ) ? g_opcode_srem             :
             str_equal(operator.begin, g_add             ) ? g_opcode_add              :
             str_equal(operator.begin, g_subtract        ) ? g_opcode_sub              :
             str_equal(operator.begin, g_equal_to        ) ? g_opcode_equal_to         :
@@ -1508,6 +1516,58 @@ value_t call_function(value_t found)
     }
     emit(g_str, g_rite_paren);
     return value;
+}
+
+value_t increment(value_t value, bool prefix)
+{
+    auto slot = value.slot;
+    auto operator = str_init(g_increment);
+    value = to_rvalue(value);
+    assert_scalar_any(value.type, operator);
+    value_t out = {
+        .slot = get_slot(),
+        .type = value.type,
+    };
+    auto llvm_type = to_llvm_type(out.type).begin;
+    emit(g_opcode_increment, out.slot, llvm_type, value.slot);
+    emit(g_opcode_store, llvm_type, out.slot, slot);
+    return prefix ? out : value;
+}
+
+value_t prefix_increment(value_t value)
+{
+    return increment(value, true);
+}
+
+value_t postfix_increment(value_t value)
+{
+    return increment(value, false);
+}
+
+value_t decrement(value_t value, bool prefix)
+{
+    auto slot = value.slot;
+    auto operator = str_init(g_decrement);
+    value = to_rvalue(value);
+    assert_scalar_any(value.type, operator);
+    value_t out = {
+        .slot = get_slot(),
+        .type = value.type,
+    };
+    auto llvm_type = to_llvm_type(out.type).begin;
+    emit(g_opcode_decrement, out.slot, llvm_type, value.slot);
+    emit(g_opcode_store, llvm_type, out.slot, slot);
+    return prefix ? out : value;
+}
+
+value_t prefix_decrement(value_t value)
+{
+    return decrement(value, true);
+}
+
+value_t postfix_decrement(value_t value)
+{
+    return decrement(value, false);
 }
 
 value_t load_indirect(value_t found)
@@ -1747,7 +1807,23 @@ value_t type_cast(value_t value, type_t type)
 
 value_t read_p0();
 
-value_t read_unary()
+value_t read_postfix_modify(value_t indirect, str_t operator)
+{
+    if(str_equal(operator.begin, g_increment))
+    {
+        read_operator();
+        return postfix_increment(indirect);
+    }
+    if(str_equal(operator.begin, g_decrement))
+    {
+        read_operator();
+        return postfix_decrement(indirect);
+    }
+    quit("unknown unary operator '%s'", operator.begin);
+    return (value_t) {};
+}
+
+value_t read_prefix()
 {
     auto peek = next_char();
     auto alnum = peek_alnum();
@@ -1777,6 +1853,19 @@ value_t read_unary()
         read_alnum();
         value_t value = read_p0();
         return do_del(value);
+    }
+    auto operator = peek_operator();
+    if(str_equal(operator.begin, g_increment))
+    {
+        read_operator();
+        value_t value = read_p0();
+        return prefix_increment(value);
+    }
+    if(str_equal(operator.begin, g_decrement))
+    {
+        read_operator();
+        value_t value = read_p0();
+        return prefix_decrement(value);
     }
     if(peek == *g_less)
     {
@@ -1831,7 +1920,7 @@ value_t read_unary()
 value_t field_access(value_t);
 value_t index_access(value_t);
 
-value_t chain_access(value_t offset)
+value_t read_postfix_access(value_t offset)
 {
     auto c = next_char();
     if(c == *g_dot)
@@ -1860,7 +1949,7 @@ value_t index_access(value_t indirect)
     };
     auto llvm_type = to_llvm_type(offset.type).begin;
     emit(g_opcode_gep, offset.slot, llvm_type, array.slot, g_i64, index.slot);
-    return chain_access(offset);
+    return read_postfix_access(offset);
 }
 
 value_t field_access(value_t found)
@@ -1885,7 +1974,7 @@ value_t field_access(value_t found)
     };
     auto llvm_type = to_llvm_type(found.type).begin;
     emit(g_opcode_type_field, offset.slot, llvm_type, found.slot, index);
-    return chain_access(offset);
+    return read_postfix_access(offset);
 }
 
 value_t read_p0()
@@ -1919,7 +2008,13 @@ value_t read_p0()
             return call_function(value);
         }
         auto indirect = load_indirect(value);
-        return chain_access(indirect);
+        auto operator = peek_operator();
+        if(str_equal(operator.begin, g_increment)
+        || str_equal(operator.begin, g_decrement))
+        {
+            return read_postfix_modify(indirect, operator);
+        }
+        return read_postfix_access(indirect);
     }
     if(peek == *g_left_paren)
     {
@@ -1929,7 +2024,7 @@ value_t read_p0()
         return value;
     }
 unary:
-    return read_unary();
+    return read_prefix();
 }
 
 value_t read_p1()
