@@ -247,7 +247,7 @@ char* const g_opcode_trunc            = "%%%d = trunc %s %%%d to %s";
 char* const g_opcode_malloc           = "%%%d = call ptr @malloc(i64 %%%d)";
 char* const g_opcode_free             = "call void @free(ptr %%%d)";
 char* const g_opcode_alloca_string    = "%%%d = alloca [%d x i8]";
-char* const g_opcode_store_string     = "store [%d x i8] c\"%s\\00\", ptr %%%d";
+char* const g_opcode_store_string     = "store [%d x i8] c\"%s\", ptr %%%d";
 
 char* g_operator_chars[] = {
     g_not,
@@ -1398,6 +1398,32 @@ value_t load_direct()
     return value;
 }
 
+str_t fix_escape_chars(str_t string, int* size)
+{
+    str_t out = {};
+    for(auto i = 0; i < string.size; i++)
+    {
+        if(string.begin[i] == '\\')
+        {
+            switch(string.begin[i + 1])
+            {
+            case 'n': str_append(&out, "\\0A"); break;
+            case 't': str_append(&out, "\\09"); break;
+            default : quit("unknown esc char"); break;
+            }
+            i += 1;
+        }
+        else
+        {
+            list_append(&out, string.begin[i]);
+        }
+        *size += 1;
+    }
+    str_append(&out, "\\00");
+    *size += 1;
+    return out;
+}
+
 value_t load_string()
 {
     match(g_quotation);
@@ -1407,9 +1433,10 @@ value_t load_string()
     };
     value.type.stars = 1;
     auto string = read_string();
-    auto size = string.size + 1;
+    int size = 0;
+    auto fixed = fix_escape_chars(string, &size);
     emit(g_opcode_alloca_string, value.slot, size);
-    emit(g_opcode_store_string, size, string.begin, value.slot);
+    emit(g_opcode_store_string, size, fixed.begin, value.slot);
     match(g_quotation);
     return value;
 }

@@ -1220,7 +1220,7 @@ i64 test_str()
     str_t a = str_init(" ");
     str_t b = str_init("this");
     str_t c = str_init(" ");
-    str_t d = str_init("message");
+    str_t d = str_init("\tmessage\nx\nx\nx\n");
     defer del message.data;
     defer del a.data;
     defer del b.data;
