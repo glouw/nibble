@@ -1237,6 +1237,34 @@ i64 test_str()
     ret 0;
 }
 
+void test_type_no_change(int_t int)
+{
+    int.value = 42;
+    ret;
+}
+
+void test_type_change(int_t* int)
+{
+    int.value = 42;
+    ret;
+}
+
+i64 test_type_pass()
+{
+    int_t int;
+    test_type_no_change(int);
+    if(int.value == 42)
+    {
+        ret 1;
+    }
+    test_type_change(&int);
+    if(int.value == 0)
+    {
+        ret 1;
+    }
+    ret 0;
+}
+
 i32 main()
 {
     ret <i32> (
@@ -1292,6 +1320,7 @@ i32 main()
       | test_type_access()
       | test_putchar()
       | test_str()
+      | test_type_pass()
     );
 }
 //
