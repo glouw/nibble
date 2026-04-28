@@ -5,7 +5,7 @@
 
 #define len(x) (sizeof(x) / sizeof(*x))
 
-constexpr auto g_str_size = 32;
+constexpr auto g_str_size = 64;
 constexpr auto g_value_list_size = 1024;
 constexpr auto g_defer_list_size = 32;
 constexpr auto g_value_args = 9;
@@ -14,6 +14,7 @@ constexpr auto g_type_list_size = g_value_args;
 constexpr auto g_str_list_size = g_value_args;
 constexpr auto g_code_size = 65536;
 constexpr auto g_operator_precedences = 8;
+constexpr auto g_module_stack_size = 8;
 
 typedef enum
 {
@@ -97,6 +98,7 @@ typedef struct
     str_list_t names;
     int slot;
     bool is_lvalue;
+    bool unlock_args;
 }
 value_t;
 
@@ -112,24 +114,25 @@ typedef struct
     char begin[g_code_size];
     int size;
     int at;
+    int line;
 }
 code_t;
 
 struct
 {
-    code_t code;
+    code_t code[g_module_stack_size];
     defer_list_t defers;
     slot_list_t loop_again;
     slot_list_t loop_end;
     value_list_t values;
     value_list_t types;
-    int line;
     int block;
     int slot;
     int tabs;
     int label;
+    int module;
 }
-g_file = { .line = 1 };
+g_file;
 
 char* const g_quotation               = "\"";
 char* const g_str                     = "%s";
@@ -203,6 +206,7 @@ char* const g_new                     = "new";
 char* const g_del                     = "del";
 char* const g_sizeof                  = "sizeof";
 char* const g_comment                 = "//";
+char* const g_include                 = "include";
 char* const g_opcode_type_def         = "%%%s = type";
 char* const g_opcode_label            = "L%d:";
 char* const g_opcode_branch_if_else   = "br i1 %%%d, label %%L%d, label %%L%d";
@@ -375,7 +379,10 @@ bool is_string_char(char c)
     return is_alpha_char(c)
         || c == *g_space
         || c == *g_underscore
-        || c == *g_escape;
+        || c == *g_escape
+        || c == *g_dot
+        || c == *g_mod
+        || c == *g_divide;
 }
 
 bool is_space_char(char c)
@@ -423,12 +430,17 @@ bool is_scalar(type_t type)
     return type.stars == 0;
 }
 
+code_t* get_code()
+{
+    return &g_file.code[g_file.module];
+}
+
 void quit(char* format, ...)
 {
     auto out = stderr;
     va_list args = {};
     va_start(args, format);
-    fprintf(out, "%sline %d:%s %serror: %s", g_white, g_file.line, g_normal, g_red, g_normal);
+    fprintf(out, "%sline %d:%s %serror: %s", g_white, get_code()->line, g_normal, g_red, g_normal);
     vfprintf(out, format, args);
     fprintf(out, g_newline);
     va_end(args);
@@ -568,13 +580,14 @@ int get_label()
 
 char peek_char()
 {
-    return g_file.code.begin[g_file.code.at];
+    auto at = get_code()->at;
+    return get_code()->begin[at];
 }
 
 void step()
 {
-    g_file.code.at += 1;
-    if(g_file.code.at == g_code_size - 1)
+    get_code()->at += 1;
+    if(get_code()->at == g_code_size - 1)
     {
         quit("unexpected end of file");
     }
@@ -645,7 +658,7 @@ int skip_space_and_comment()
         {
             if(c == *g_newline)
             {
-                g_file.line += 1;
+                get_code()->line += 1;
             }
             step();
             count += 1;
@@ -656,7 +669,7 @@ int skip_space_and_comment()
             step();
             if(peek_char() != *g_divide)
             {
-                code_rewind(&g_file.code, 1);
+                code_rewind(get_code(), 1);
                 count -= len;
                 break;
             }
@@ -685,7 +698,7 @@ char next_char()
 bool is_end_of_file()
 {
     skip_space_and_comment();
-    return g_file.code.at == g_file.code.size;
+    return get_code()->at == get_code()->size;
 }
 
 void match(char* expected)
@@ -754,14 +767,14 @@ str_t read_till_semicolon()
 str_t peek_operator()
 {
     auto operator = read_operator();
-    code_rewind(&g_file.code, operator.size);
+    code_rewind(get_code(), operator.size);
     return operator;
 }
 
 str_t peek_alnum()
 {
     auto alnum = read_alnum();
-    code_rewind(&g_file.code, alnum.size);
+    code_rewind(get_code(), alnum.size);
     return alnum;
 }
 
@@ -853,13 +866,13 @@ value_t read_expression();
 
 void execute_defers(int total)
 {
-    auto at = g_file.code.at;
+    auto at = get_code()->at;
     for(auto i = 0; i < total; i++)
     {
-        g_file.code.at = g_file.defers.begin[g_file.defers.size - 1 - i].at;
+        get_code()->at = g_file.defers.begin[g_file.defers.size - 1 - i].at;
         read_expression();
     }
-    g_file.code.at = at;
+    get_code()->at = at;
 }
 
 value_t read_ret_statement(value_t ret_value)
@@ -953,7 +966,7 @@ void read_defer_statement(scope_t scope, int block)
     read_alnum();
     defer_t defer = {
         .scope = scope,
-        .at = g_file.code.at,
+        .at = get_code()->at,
         .block = block
     };
     list_append(&g_file.defers, defer);
@@ -1103,8 +1116,8 @@ bool read_statement(value_t ret_value, scope_t scope, int block)
         }
         else
         {
-            code_rewind(&g_file.code, read);
-            code_rewind(&g_file.code, value.name.size);
+            code_rewind(get_code(), read);
+            code_rewind(get_code(), value.name.size);
             read_expression();
             match(g_semicolon);
         }
@@ -1178,6 +1191,11 @@ void read_function()
     g_file.slot = 0;
     auto ret_value = read_value_decl();
     auto llvm_type = to_llvm_type(ret_value.type).begin;
+    if(next_char() == *g_not)
+    {
+        match(g_not);
+        ret_value.unlock_args = true;
+    }
     auto args = read_function_decl_arg_list();
     if(next_char() == *g_semicolon)
     {
@@ -1211,12 +1229,6 @@ void read_function()
         emit(g_str, g_rite_curl);
         g_file.values.size -= args.size;
     }
-    emit(g_str, g_empty);
-}
-
-void write_header()
-{
-    emit(g_opcode_target);
     emit(g_str, g_empty);
 }
 
@@ -1267,27 +1279,6 @@ void read_type_def()
     match(g_rite_curl);
     match(g_semicolon);
     list_append(&g_file.types, value);
-}
-
-void read_program()
-{
-    write_header();
-    while(true)
-    {
-        if(is_end_of_file())
-        {
-            break;
-        }
-        auto alnum = peek_alnum();
-        if(str_equal(alnum.begin, g_type))
-        {
-            read_type_def();
-        }
-        else
-        {
-            read_function();
-        }
-    }
 }
 
 value_t to_rvalue(value_t value)
@@ -1449,15 +1440,7 @@ value_t load_string()
     return value;
 }
 
-int push_arg(type_t expected)
-{
-    auto arg = read_expression();
-    auto operator = str_init(g_function);
-    assert_types_match(arg.type, expected, operator);
-    return g_file.slot;
-}
-
-slot_list_t read_function_call_arg_list(value_t found)
+slot_list_t read_function_call_arg_list(type_list_t* types)
 {
     slot_list_t list = {};
     match(g_left_paren);
@@ -1467,9 +1450,10 @@ slot_list_t read_function_call_arg_list(value_t found)
         {
             break;
         }
-        auto expected = found.types.begin[list.size];
-        auto slot = push_arg(expected);
+        auto value = read_expression();
+        auto slot = g_file.slot;
         list_append(&list, slot);
+        list_append(types, value.type);
         if(next_char() == *g_comma)
         {
             match(g_comma);
@@ -1489,7 +1473,22 @@ slot_list_t read_function_call_arg_list(value_t found)
 
 value_t call_function(value_t found)
 {
-    auto list = read_function_call_arg_list(found);
+    type_list_t types = {};
+    auto slots = read_function_call_arg_list(&types);
+    if(found.unlock_args == false)
+    {
+        if(types.size != found.types.size)
+        {
+            quit("function '%s' expected '%d' args but got '%d' args", found.name.begin, found.types.size, types.size);
+        }
+        auto operator = str_init(g_function);
+        for(auto i = 0; i < slots.size; i++)
+        {
+            auto type = types.begin[i];
+            auto expected = found.types.begin[i];
+            assert_types_match(type, expected, operator);
+        }
+    }
     value_t value = {
         .slot = get_slot(),
         .type = found.type,
@@ -1504,12 +1503,12 @@ value_t call_function(value_t found)
         emit(g_opcode_call, value.slot, llvm_type, found.name.begin);
     }
     emit(g_str, g_left_paren);
-    for(auto i = 0; i < list.size; i++)
+    for(auto i = 0; i < slots.size; i++)
     {
-        auto slot = list.begin[i];
-        auto llvm_type = to_llvm_type(found.types.begin[i]).begin;
+        auto slot = slots.begin[i];
+        auto llvm_type = to_llvm_type(types.begin[i]).begin;
         emit(g_opcode_type_slot, llvm_type, slot);
-        if(i < list.size - 1)
+        if(i < slots.size - 1)
         {
             emit(g_str, g_comma);
         }
@@ -1961,11 +1960,11 @@ value_t field_access(value_t found)
     match(g_dot);
     auto name = read_alnum();
     auto type = value_in_list(found.type.name, &g_file.types);
-    auto exists = str_in_list(name, &type->names);
-    if(exists == nullptr)
+    if(type == nullptr)
     {
-        quit("could not access '%s' in '%s'", name.begin, found.type.name.begin);
+        quit("could not access field '%s' in type '%s'", name.begin, found.type.name.begin);
     }
+    auto exists = str_in_list(name, &type->names);
     auto index = exists - type->names.begin;
     value_t offset = {
         .slot = get_slot(),
@@ -1975,6 +1974,30 @@ value_t field_access(value_t found)
     auto llvm_type = to_llvm_type(found.type).begin;
     emit(g_opcode_type_field, offset.slot, llvm_type, found.slot, index);
     return read_postfix_access(offset);
+}
+
+value_t read_postfix()
+{
+    auto alnum = read_alnum();
+    auto found = value_in_list(alnum, &g_file.values);
+    if(!found)
+    {
+        quit("'%s' not declared", alnum.begin);
+    }
+    auto value = *found;
+    auto peek = next_char();
+    if(peek == *g_left_paren)
+    {
+        return call_function(value);
+    }
+    auto indirect = load_indirect(value);
+    auto operator = peek_operator();
+    if(str_equal(operator.begin, g_increment)
+    || str_equal(operator.begin, g_decrement))
+    {
+        return read_postfix_modify(indirect, operator);
+    }
+    return read_postfix_access(indirect);
 }
 
 value_t read_p0()
@@ -1990,31 +2013,10 @@ value_t read_p0()
     }
     if(is_alpha_char(peek))
     {
-        auto alnum = peek_alnum();
-        if(str_in(alnum, g_construct_keywords))
+        if(!str_in(peek_alnum(), g_construct_keywords))
         {
-            goto unary;
+            return read_postfix();
         }
-        read_alnum();
-        auto found = value_in_list(alnum, &g_file.values);
-        if(!found)
-        {
-            quit("'%s' not declared", alnum.begin);
-        }
-        auto value = *found;
-        auto peek = next_char();
-        if(peek == *g_left_paren)
-        {
-            return call_function(value);
-        }
-        auto indirect = load_indirect(value);
-        auto operator = peek_operator();
-        if(str_equal(operator.begin, g_increment)
-        || str_equal(operator.begin, g_decrement))
-        {
-            return read_postfix_modify(indirect, operator);
-        }
-        return read_postfix_access(indirect);
     }
     if(peek == *g_left_paren)
     {
@@ -2023,7 +2025,6 @@ value_t read_p0()
         match(g_rite_paren);
         return value;
     }
-unary:
     return read_prefix();
 }
 
@@ -2077,6 +2078,89 @@ value_t read_expression()
     return read_p9();
 }
 
+void read_code(char* path)
+{
+    auto fp = fopen(path, "r");
+    if(fp == nullptr)
+    {
+        quit("could not open '%s'", path);
+    }
+    auto max = g_code_size - 1;
+    get_code()->size = fread(get_code()->begin, sizeof(char), max, fp);
+    fprintf(stderr, "%s: %d bytes (max %d bytes)\n", path, get_code()->size, g_code_size);
+    fclose(fp);
+    if(get_code()->size == max)
+    {
+        quit("file size exceeds compiler buffer\n");
+    }
+}
+
+void push_code(char* path)
+{
+    g_file.module += 1;
+    get_code()->line= 1;
+    read_code(path);
+}
+
+void pop_code()
+{
+    *get_code() = (code_t) {};
+    g_file.module -= 1;
+}
+
+void read_include()
+{
+    read_alnum();
+    match(g_quotation);
+    auto path = read_string();
+    match(g_quotation);
+    if(path.size == 0)
+    {
+        quit("expected path");
+    }
+    match(g_semicolon);
+    push_code(path.begin);
+}
+
+void write_header()
+{
+    emit(g_opcode_target);
+    emit(g_str, g_empty);
+}
+
+void read_program()
+{
+    write_header();
+    while(true)
+    {
+        if(is_end_of_file())
+        {
+            if(g_file.module == 0)
+            {
+                break;
+            }
+            else
+            {
+                pop_code();
+            }
+        }
+        auto alnum = peek_alnum();
+        if(str_equal(alnum.begin, g_type))
+        {
+            read_type_def();
+        }
+        else
+        if(str_equal(alnum.begin, g_include))
+        {
+            read_include();
+        }
+        else
+        {
+            read_function();
+        }
+    }
+}
+
 int main(int argc, char** argv)
 {
     if(argc != 2)
@@ -2084,20 +2168,6 @@ int main(int argc, char** argv)
         return 1;
     }
     auto path = argv[1];
-    auto fp = fopen(path, "r");
-    if(fp == nullptr)
-    {
-        quit("could not open '%s'", path);
-    }
-    auto max = g_code_size - 1;
-    g_file.code.size = fread(g_file.code.begin, sizeof(char), max, fp);
-    fprintf(stderr, "%s: %d bytes (max %d bytes)\n", path, g_file.code.size, g_code_size);
-    fprintf(stderr, "sizeof(value_t) = %ld bytes\n", sizeof(value_t));
-    fclose(fp);
-    if(g_file.code.size == max)
-    {
-        quit("file size exceeds compiler buffer\n");
-        return 2;
-    }
+    read_code(path);
     read_program();
 }

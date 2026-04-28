@@ -1,0 +1,98 @@
+include "std.n";
+
+type rect_t
+{
+    i32 x;
+    i32 y;
+    i32 w;
+    i32 h;
+};
+
+i8 SDL_Init(i32 flags);
+i8 SDL_SetRenderDrawColor(ptr renderer, i8 r, i8 g, i8 b, i8 a);
+i8 SDL_RenderClear(ptr renderer);
+ptr SDL_CreateWindow(i8* title, i32 x, i32 y, i32 w, i32 h, i32 flags);
+ptr SDL_CreateRenderer(ptr window, i32 index, i32 flags);
+i32 SDL_RenderFillRect(ptr renderer, rect_t* rect);
+void SDL_DestroyWindow(ptr window);
+void SDL_Quit();
+void SDL_Delay(i32 ms);
+void SDL_DestroyRenderer(ptr renderer);
+void SDL_RenderPresent(ptr renderer);
+ptr SDL_RWFromFile(i8* path, i8* mode);
+ptr SDL_LoadBMP_RW(ptr source, i32 close_stream);
+void SDL_FreeSurface(ptr surface);
+
+type sdl_t
+{
+    i64 xres;
+    i64 yres;
+    i8* name;
+    ptr window;
+    ptr renderer;
+};
+
+sdl_t* sdl_new()
+{
+    SDL_Init(<i32>(32));
+    sdl_t* self = new sdl_t;
+    self.xres = 1440;
+    self.yres = 900;
+    self.name = "game";
+    self.window = SDL_CreateWindow(
+        self.name,
+        <i32>(0),
+        <i32>(0),
+        <i32>(self.xres),
+        <i32>(self.yres),
+        <i32>(0)
+    );
+    self.renderer= SDL_CreateRenderer(self.window, <i32>(0), <i32>(0));
+    ret self;
+}
+
+void sdl_del(sdl_t* self)
+{
+    SDL_DestroyRenderer(self.renderer);
+    SDL_DestroyWindow(self.window);
+    SDL_Quit();
+    ret;
+}
+
+void sdl_clear_screen(sdl_t* self)
+{
+    SDL_SetRenderDrawColor(self.renderer, <i8>(0), <i8>(0), <i8>(0), <i8>(0));
+    SDL_RenderClear(self.renderer);
+    ret;
+}
+
+void sdl_present(sdl_t* self)
+{
+    SDL_RenderPresent(self.renderer);
+    ret;
+}
+
+void sdl_delay(i64 ms)
+{
+    SDL_Delay(<i32>(ms));
+    ret;
+}
+
+ptr sdl_load_bmp(i8* path)
+{
+    ptr data = SDL_RWFromFile(path, "rb");
+    i32 close_stream = <i32>(1); // yes, close it.
+    ptr bmp = SDL_LoadBMP_RW(data, close_stream);
+    if(bmp == <ptr>(0))
+    {
+        printf("could not open %s\n", path);
+        exit(<i32>(1));
+    }
+    ret bmp;
+}
+
+void sdl_del_bmp(ptr surface)
+{
+    SDL_FreeSurface(surface);
+    ret;
+}

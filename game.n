@@ -1,0 +1,16 @@
+include "sdl.n";
+
+i32 main()
+{
+    sdl_t* sdl = sdl_new();
+    defer sdl_del(sdl);
+
+    ptr chicken = sdl_load_bmp("chicken.bmp");
+    defer sdl_del_bmp(chicken);
+
+    sdl_clear_screen(sdl);
+    sdl_present(sdl);
+    sdl_delay(1000);
+
+    ret <i32>(0);
+}

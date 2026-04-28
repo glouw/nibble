@@ -1,0 +1,56 @@
+//
+// C Standard Libray Bindings
+//
+
+ptr malloc(i64 size);
+void free(ptr pointer);
+i64 llabs(i64 value);
+i32 putchar(i32 value);
+i32 puts(i8* string);
+i64 strlen(i8* string);
+i32 printf!(i8* format);
+i8* strcpy(i8* dest, i8* source);
+i8* strcat(i8* dest, i8* source);
+i32 strcmp(i8* x, i8* y);
+void exit(i32 status);
+
+type str_t
+{
+    i8* data;
+    i64 size;
+};
+
+str_t str_init(i8* data)
+{
+    str_t self;
+    self.size = strlen(data);
+    self.data = new i8[self.size + 1];
+    strcpy(self.data, data);
+    ret self;
+}
+
+void str_cat(str_t* self, str_t* other)
+{
+    str_t out;
+    out.size = self.size + other.size;
+    out.data = new i8[out.size + 1];
+    i64 index;
+    strcpy(out.data, self.data);
+    strcat(out.data, other.data);
+    del self.data;
+    *self = out;
+    ret;
+}
+
+void str_del(str_t* self)
+{
+    del self.data;
+    self.size = 0;
+    self.data = <i8*>(0);
+    ret;
+}
+
+i1 str_equal(str_t* self, str_t* other)
+{
+    ret strcmp(self.data, other.data) == <i32>(0);
+}

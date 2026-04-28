@@ -4,15 +4,18 @@ FRONTEND = lang
 SRC = main.c
 TEMP = out.ll
 EXE = a.out
-BACKEND = clang -g
+BACKEND = clang -O2
 TEST = test.n
-VALGRIND = valgrind --leak-check=full -s
+GAME = game.n
+VALGRIND = valgrind
 TIME = time
+GAME_FLAGS = -lSDL2
 
 test: all
-	$(TIME) ./$(FRONTEND) $(TEST) > $(TEMP) && \
-	$(TIME) $(BACKEND) $(TEMP) && \
-	$(TIME) $(VALGRIND) ./$(EXE)
+	$(TIME) ./$(FRONTEND) $(TEST) > $(TEMP) && $(TIME) $(BACKEND) $(TEMP) && $(TIME) $(VALGRIND) ./$(EXE)
+
+game: all
+	$(TIME) ./$(FRONTEND) $(GAME) > $(TEMP) && $(TIME) $(BACKEND) $(TEMP) $(GAME_FLAGS) && ./$(EXE)
 
 all:
 	$(CC) $(CFLAGS) $(SRC) -o $(FRONTEND)

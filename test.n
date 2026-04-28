@@ -1,7 +1,4 @@
-ptr malloc(i64 size);
-void free(ptr pointer);
-i64 llabs(i64 value);
-i32 putchar(i32 value);
+include "std.n";
 
 // this is a test
 // of /// comments // comment
@@ -1131,12 +1128,6 @@ i64 test_type_access()
     ret 1;
 }
 
-type str_t
-{
-    i8* data;
-    i64 size;
-};
-
 i64 test_putchar()
 {
     i8* string = "test";
@@ -1159,61 +1150,6 @@ i64 test_putchar()
     ret 0;
 }
 
-str_t str_init(i8* data)
-{
-    str_t self;
-    while(data[self.size] != <i8>(0))
-    {
-        self.size = self.size + 1;
-    }
-    self.data = new i8[self.size + 1];
-    i64 i;
-    while(i < self.size)
-    {
-        self.data[i] = data[i];
-        i = i + 1;
-    }
-    self.data[self.size] = <i8>(0);
-    ret self;
-}
-
-void str_cat(str_t* self, str_t* other)
-{
-    str_t out;
-    out.size = self.size + other.size;
-    out.data = new i8[out.size + 1];
-    i64 index;
-    i64 i;
-    while(i < self.size)
-    {
-        out.data[index] = self.data[i];
-        index = index + 1;
-        i = i + 1;
-    }
-    i64 j;
-    while(j < other.size)
-    {
-        out.data[index] = other.data[j];
-        index = index + 1;
-        j = j + 1;
-    }
-    out.data[index] = <i8>(0);
-    del self.data;
-    *self = out;
-    ret;
-}
-
-void str_print(str_t* self)
-{
-    i64 i;
-    while(i < self.size)
-    {
-        putchar(<i32>(self.data[i]));
-        i = i + 1;
-    }
-    ret;
-}
-
 i64 test_str()
 {
     str_t message = str_init("test test test");
@@ -1221,20 +1157,25 @@ i64 test_str()
     str_t b = str_init("this");
     str_t c = str_init(" ");
     str_t d = str_init("\tmessage\nx\nx\nx\n");
-    defer del message.data;
-    defer del a.data;
-    defer del b.data;
-    defer del c.data;
-    defer del d.data;
+    str_t expect = str_init("test test test this \tmessage\nx\nx\nx\n");
+
+    defer str_del(&message);
+    defer str_del(&a);
+    defer str_del(&b);
+    defer str_del(&c);
+    defer str_del(&d);
+    defer str_del(&expect);
 
     str_cat(&message, &a);
     str_cat(&message, &b);
     str_cat(&message, &c);
     str_cat(&message, &d);
 
-    str_print(&message);
-
-    ret 0;
+    if(str_equal(&message, &expect))
+    {
+        ret 0;
+    }
+    ret 1;
 }
 
 void test_type_no_change(int_t int)
@@ -1318,6 +1259,28 @@ i64 test_prefix_decrement()
     ret 1;
 }
 
+i64 test_printf()
+{
+    i64 x = 18231;
+    i8* message = "hi there";
+    i32 len = printf("test %ld %ld %ld %s\n", 1, 32, x, message);
+    if(len == <i32>(25))
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i64 test_defer_prints()
+{
+    defer puts("A");
+    defer puts("B");
+    defer puts("C");
+    defer puts("D");
+    defer puts("E");
+    ret 0;
+}
+
 i32 main()
 {
     ret <i32> (
@@ -1379,6 +1342,8 @@ i32 main()
       | test_postix_decrement()
       | test_prefix_increment()
       | test_prefix_decrement()
+      | test_defer_prints()
+      | test_printf()
     );
 }
 //
