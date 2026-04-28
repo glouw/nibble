@@ -1,8 +1,10 @@
 ptr malloc(i64 size);
 void free(ptr pointer);
 i64 llabs(i64 value);
+i32 putchar(i32 value);
 
 // this is a test
+// of /// comments // comment
 
 i64 add(i64 a, i64 b)
 {
@@ -633,6 +635,15 @@ i64 test_new_many()
     ret 1;
 }
 
+type zero_t
+{
+    i64 a;
+    i32 b;
+    i16 c;
+    i8 d;
+    i1 e;
+};
+
 i64 test_zero_init()
 {
     i1 a;
@@ -644,6 +655,7 @@ i64 test_zero_init()
     i64* pp;
     i64** ppp;
     i64* pppp;
+    zero_t zero;
 
     if(a == <i1>(0)
      & b == <i8>(0)
@@ -654,6 +666,11 @@ i64 test_zero_init()
      & pp == <i64*>(0)
      & ppp == <i64**>(0)
      & pppp == <i64*>(0)
+     & zero.a == <i64>(0)
+     & zero.b == <i32>(0)
+     & zero.c == <i16>(0)
+     & zero.d == <i8>(0)
+     & zero.e == <i1>(0)
     )
     {
         ret 0;
@@ -1096,6 +1113,130 @@ i64 test_type_copy()
     ret 1;
 }
 
+i64 test_type_access()
+{
+    blob_t* heap = new blob_t;
+    defer del heap;
+
+    blob_t stack;
+
+    heap.f = 42; // automatic deref, no need to struggle with ->
+    stack.f = 42;
+
+    if(heap.f == 42 & stack.f == 42)
+    {
+        ret 0;
+    }
+
+    ret 1;
+}
+
+type str_t
+{
+    i8* data;
+    i64 size;
+};
+
+i64 test_putchar()
+{
+    i8* string = "test";
+    i8* str = new i8[8];
+    defer del str;
+    str[0] = <i8>(104);
+    str[1] = <i8>(101);
+    str[2] = <i8>(108);
+    str[3] = <i8>(108);
+    str[4] = <i8>(111);
+    str[5] = <i8>( 10);
+    str[6] = <i8>(  0);
+    i64 len = 6;
+    i64 i;
+    while(i < len)
+    {
+        putchar(<i32>(str[i]));
+        i = i + 1;
+    }
+    ret 0;
+}
+
+str_t str_init(i8* data)
+{
+    str_t self;
+    while(data[self.size] != <i8>(0))
+    {
+        self.size = self.size + 1;
+    }
+    self.data = new i8[self.size + 1];
+    i64 i;
+    while(i < self.size)
+    {
+        self.data[i] = data[i];
+        i = i + 1;
+    }
+    self.data[self.size] = <i8>(0);
+    ret self;
+}
+
+void str_cat(str_t* self, str_t* other)
+{
+    str_t out;
+    out.size = self.size + other.size;
+    out.data = new i8[out.size + 1];
+    i64 index;
+    i64 i;
+    while(i < self.size)
+    {
+        out.data[index] = self.data[i];
+        index = index + 1;
+        i = i + 1;
+    }
+    i64 j;
+    while(j < other.size)
+    {
+        out.data[index] = other.data[j];
+        index = index + 1;
+        j = j + 1;
+    }
+    out.data[index] = <i8>(0);
+    del self.data;
+    *self = out;
+    ret;
+}
+
+void str_print(str_t* self)
+{
+    i64 i;
+    while(i < self.size)
+    {
+        putchar(<i32>(self.data[i]));
+        i = i + 1;
+    }
+    ret;
+}
+
+i64 test_str()
+{
+    str_t message = str_init("test test test");
+    str_t a = str_init(" ");
+    str_t b = str_init("this");
+    str_t c = str_init(" ");
+    str_t d = str_init("message");
+    defer del message.data;
+    defer del a.data;
+    defer del b.data;
+    defer del c.data;
+    defer del d.data;
+
+    str_cat(&message, &a);
+    str_cat(&message, &b);
+    str_cat(&message, &c);
+    str_cat(&message, &d);
+
+    str_print(&message);
+
+    ret 0;
+}
+
 i32 main()
 {
     ret <i32> (
@@ -1148,6 +1289,9 @@ i32 main()
       | test_types()
       | test_direct_function_deref()
       | test_type_copy()
+      | test_type_access()
+      | test_putchar()
+      | test_str()
     );
 }
 //

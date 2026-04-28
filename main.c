@@ -129,8 +129,9 @@ struct
     int tabs;
     int label;
 }
-g_file;
+g_file = { .line = 1 };
 
+char* const g_quotation               = "\"";
 char* const g_str                     = "%s";
 char* const g_red                     = "\033[31m";
 char* const g_white                   = "\033[1;37m";
@@ -160,6 +161,7 @@ char* const g_dot                     = ".";
 char* const g_add                     = "+";
 char* const g_subtract                = "-";
 char* const g_divide                  = "/";
+char* const g_escape                  = "\\";
 char* const g_multiply                = "*";
 char* const g_equals                  = "=";
 char* const g_equal_to                = "==";
@@ -225,6 +227,7 @@ char* const g_opcode_alloca           = "%%%d = alloca %s";
 char* const g_opcode_flat_gep         = "%%%d = getelementptr ptr, ptr %%%d, %s %d";
 char* const g_opcode_gep              = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
 char* const g_opcode_sizeof           = "%%%d = getelementptr %s, ptr null, i64 1";
+char* const g_opcode_type_field       = "%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d";
 char* const g_opcode_ptr_to_int       = "%%%d = ptrtoint ptr %%%d to %s";
 char* const g_opcode_int_to_ptr       = "%%%d = inttoptr %s %%%d to ptr";
 char* const g_opcode_load_immediate   = "%%%d = add %s %s, 0";
@@ -243,6 +246,8 @@ char* const g_opcode_signed_extend    = "%%%d = sext %s %%%d to %s";
 char* const g_opcode_trunc            = "%%%d = trunc %s %%%d to %s";
 char* const g_opcode_malloc           = "%%%d = call ptr @malloc(i64 %%%d)";
 char* const g_opcode_free             = "call void @free(ptr %%%d)";
+char* const g_opcode_alloca_string    = "%%%d = alloca [%d x i8]";
+char* const g_opcode_store_string     = "store [%d x i8] c\"%s\\00\", ptr %%%d";
 
 char* g_operator_chars[] = {
     g_not,
@@ -356,6 +361,14 @@ bool is_alnum_char(char c)
     return is_alpha_char(c)
         || is_digit_char(c)
         || c == *g_underscore;
+}
+
+bool is_string_char(char c)
+{
+    return is_alpha_char(c)
+        || c == *g_space
+        || c == *g_underscore
+        || c == *g_escape;
 }
 
 bool is_space_char(char c)
@@ -685,7 +698,6 @@ void match(char* expected)
 
 str_t read_chars(bool matches(char))
 {
-    skip_space_and_comment();
     str_t str = {};
     while(true)
     {
@@ -705,21 +717,30 @@ str_t read_chars(bool matches(char))
 
 str_t read_operator()
 {
+    skip_space_and_comment();
     return read_chars(is_operator_char);
 }
 
 str_t read_alnum()
 {
+    skip_space_and_comment();
     return read_chars(is_alnum_char);
+}
+
+str_t read_string()
+{
+    return read_chars(is_string_char);
 }
 
 str_t read_digit()
 {
+    skip_space_and_comment();
     return read_chars(is_digit_char);
 }
 
 str_t read_till_semicolon()
 {
+    skip_space_and_comment();
     return read_chars(is_not_semicolon);
 }
 
@@ -1377,6 +1398,22 @@ value_t load_direct()
     return value;
 }
 
+value_t load_string()
+{
+    match(g_quotation);
+    value_t value = {
+        .type.name = str_init(g_i8),
+        .slot = get_slot(),
+    };
+    value.type.stars = 1;
+    auto string = read_string();
+    auto size = string.size + 1;
+    emit(g_opcode_alloca_string, value.slot, size);
+    emit(g_opcode_store_string, size, string.begin, value.slot);
+    match(g_quotation);
+    return value;
+}
+
 int push_arg(type_t expected)
 {
     auto arg = read_expression();
@@ -1595,6 +1632,8 @@ value_t to_new(type_t type)
 
 value_t do_del(value_t value)
 {
+    auto operator = str_init(g_del);
+    assert_pointer(value.type, operator);
     value = to_rvalue(value);
 	emit(g_opcode_free, value.slot);
     value_t out = {
@@ -1758,7 +1797,7 @@ value_t read_unary()
         auto value = read_p0();
         return dereference(value);
     }
-    quit("compiler error: '%s'", __func__);
+    quit("unknown unary operator '%s'", alnum.begin);
     return (value_t) {};
 }
 
@@ -1799,6 +1838,10 @@ value_t index_access(value_t indirect)
 
 value_t field_access(value_t found)
 {
+    if(is_pointer(found.type))
+    {
+        found = dereference(found);
+    }
     match(g_dot);
     auto name = read_alnum();
     auto type = value_in_list(found.type.name, &g_file.types);
@@ -1814,13 +1857,17 @@ value_t field_access(value_t found)
         .is_lvalue = true,
     };
     auto llvm_type = to_llvm_type(found.type).begin;
-    emit("%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d", offset.slot, llvm_type, found.slot, index);
+    emit(g_opcode_type_field, offset.slot, llvm_type, found.slot, index);
     return chain_access(offset);
 }
 
 value_t read_p0()
 {
     auto peek = next_char();
+    if(peek == *g_quotation)
+    {
+        return load_string();
+    }
     if(is_digit_char(peek))
     {
         return load_direct();
@@ -1844,16 +1891,8 @@ value_t read_p0()
         {
             return call_function(value);
         }
-        if(peek == *g_dot)
-        {
-            return field_access(value);
-        }
         auto indirect = load_indirect(value);
-        if(peek == *g_left_square)
-        {
-            return index_access(indirect);
-        }
-        return indirect;
+        return chain_access(indirect);
     }
     if(peek == *g_left_paren)
     {
