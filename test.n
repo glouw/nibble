@@ -1217,9 +1217,12 @@ i64 test_mod()
 
 i64 test_postix_increment()
 {
+    int_t int;
+    int.value = 41;
+    int.value++;
     i64 x = 41;
     i64 y = x++;
-    if(y == 41 & x == 42)
+    if(y == 41 & x == 42 & int.value == 42)
     {
         ret 0;
     }
@@ -1228,9 +1231,12 @@ i64 test_postix_increment()
 
 i64 test_postix_decrement()
 {
+    int_t int;
+    int.value = 43;
+    int.value--;
     i64 x = 42;
     i64 y = x--;
-    if(y == 42 & x == 41)
+    if(y == 42 & x == 41 & int.value == 42)
     {
         ret 0;
     }
@@ -1239,9 +1245,12 @@ i64 test_postix_decrement()
 
 i64 test_prefix_increment()
 {
+    int_t int;
+    int.value = 41;
+    ++int.value;
     i64 x = 41;
     i64 y = ++x;
-    if(y == 42 & x == 42)
+    if(y == 42 & x == 42 & int.value == 42)
     {
         ret 0;
     }
@@ -1250,9 +1259,12 @@ i64 test_prefix_increment()
 
 i64 test_prefix_decrement()
 {
+    int_t int;
+    int.value = 43;
+    --int.value;
     i64 x = 43;
     i64 y = --x;
-    if(y == 42 & x == 42)
+    if(y == 42 & x == 42 & int.value == 42)
     {
         ret 0;
     }
@@ -1279,6 +1291,22 @@ i64 test_defer_prints()
     defer puts("D");
     defer puts("E");
     ret 0;
+}
+
+int_t* ret_int(int_t* int)
+{
+    ret int;
+}
+
+i64 test_ret_int_field_access()
+{
+    int_t int;
+    int.value = 42;
+    if(ret_int(&int).value == 42)
+    {
+        ret 0;
+    }
+    ret 1;
 }
 
 i32 main()
@@ -1344,6 +1372,7 @@ i32 main()
       | test_prefix_decrement()
       | test_defer_prints()
       | test_printf()
+      | test_ret_int_field_access()
     );
 }
 //

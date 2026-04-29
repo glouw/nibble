@@ -8,6 +8,12 @@ type rect_t
     i32 h;
 };
 
+type point_t
+{
+    i32 x;
+    i32 y;
+};
+
 i8 SDL_Init(i32 flags);
 i8 SDL_SetRenderDrawColor(ptr renderer, i8 r, i8 g, i8 b, i8 a);
 i8 SDL_RenderClear(ptr renderer);
@@ -22,6 +28,10 @@ void SDL_RenderPresent(ptr renderer);
 ptr SDL_RWFromFile(i8* path, i8* mode);
 ptr SDL_LoadBMP_RW(ptr source, i32 close_stream);
 void SDL_FreeSurface(ptr surface);
+ptr SDL_CreateTextureFromSurface(ptr renderer, ptr surface);
+void SDL_DestroyTexture(ptr texture);
+i32 SDL_RenderCopy(ptr renderer, ptr texture, rect_t* source, rect_t* dest);
+i32 SDL_RenderCopyEx(ptr renderer, ptr texture, rect_t* source, rect_t* dest, double angle, point_t* center, i32 flip);
 
 type sdl_t
 {
@@ -32,7 +42,8 @@ type sdl_t
     ptr renderer;
 };
 
-sdl_t* sdl_new()
+sdl_t*
+sdl_new()
 {
     SDL_Init(<i32>(32));
     sdl_t* self = new sdl_t;
@@ -51,7 +62,8 @@ sdl_t* sdl_new()
     ret self;
 }
 
-void sdl_del(sdl_t* self)
+void
+sdl_del(sdl_t* self)
 {
     SDL_DestroyRenderer(self.renderer);
     SDL_DestroyWindow(self.window);
@@ -59,26 +71,30 @@ void sdl_del(sdl_t* self)
     ret;
 }
 
-void sdl_clear_screen(sdl_t* self)
+void
+sdl_clear_screen(sdl_t* self)
 {
     SDL_SetRenderDrawColor(self.renderer, <i8>(0), <i8>(0), <i8>(0), <i8>(0));
     SDL_RenderClear(self.renderer);
     ret;
 }
 
-void sdl_present(sdl_t* self)
+void
+sdl_present(sdl_t* self)
 {
     SDL_RenderPresent(self.renderer);
     ret;
 }
 
-void sdl_delay(i64 ms)
+void
+sdl_delay(i64 ms)
 {
     SDL_Delay(<i32>(ms));
     ret;
 }
 
-ptr sdl_load_bmp(i8* path)
+ptr
+sdl_load_bmp(i8* path)
 {
     ptr data = SDL_RWFromFile(path, "rb");
     i32 close_stream = <i32>(1); // yes, close it.
@@ -91,8 +107,37 @@ ptr sdl_load_bmp(i8* path)
     ret bmp;
 }
 
-void sdl_del_bmp(ptr surface)
+void
+sdl_del_bmp(ptr surface)
 {
     SDL_FreeSurface(surface);
+    ret;
+}
+
+ptr
+sdl_surface_to_texture(sdl_t* self, ptr surface)
+{
+    ptr texture = SDL_CreateTextureFromSurface(self.renderer, surface);
+    ret texture;
+}
+
+void
+sdl_destroy_texture(ptr texture)
+{
+    SDL_DestroyTexture(texture);
+    ret;
+}
+
+void
+sdl_render_copy(sdl_t* self, ptr texture, rect_t* source, rect_t* dest)
+{
+    SDL_RenderCopy(self.renderer, texture, source, dest);
+    ret;
+}
+
+void
+sdl_render_copy_ex(sdl_t* self, ptr texture, rect_t* source, rect_t* dest, i32 flip)
+{
+    SDL_RenderCopyEx(self.renderer, texture, source, dest, 0.0, <point_t*>(0), flip);
     ret;
 }

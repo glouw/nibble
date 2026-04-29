@@ -1,16 +1,236 @@
 include "sdl.n";
 
+type sprite_sheet_t
+{
+    ptr surface;
+    ptr texture;
+    i64 tile_width;
+    i64 tile_height;
+    i64 frames;
+    i64 states;
+    i64 zoom;
+};
+
+sprite_sheet_t
+sprite_sheet_init(sdl_t* sdl, i8* path, i64 tile_width, i64 tile_height, i64 frames, i64 states, i64 zoom)
+{
+    sprite_sheet_t self;
+    self.surface = sdl_load_bmp(path);
+    self.texture = sdl_surface_to_texture(sdl, self.surface);
+    self.tile_width = tile_width;
+    self.tile_height = tile_height;
+    self.frames = frames;
+    self.states = states;
+    self.zoom = zoom;
+    ret self;
+}
+
+void
+sprite_sheet_del(sprite_sheet_t* self)
+{
+    sdl_del_bmp(self.surface);
+    sdl_destroy_texture(self.texture);
+    ret;
+}
+
+type sprite_page_t
+{
+    i64 black_chicken;
+    i64 white_chicken;
+    i64 brown_chicken;
+};
+
+sprite_page_t
+sprite_page_init()
+{
+    sprite_page_t self;
+    self.black_chicken = 0;
+    self.white_chicken = 1;
+    self.brown_chicken = 2;
+    ret self;
+}
+
+type sprite_book_t
+{
+    sprite_sheet_t* sheets;
+    i64 size;
+    i64 cap;
+    sprite_page_t page;
+};
+
+sprite_book_t
+sprite_book_init()
+{
+    sprite_book_t self;
+    self.cap = 32;
+    self.sheets = new sprite_sheet_t[self.cap];
+    self.page = sprite_page_init();
+    ret self;
+}
+
+void
+sprite_book_push(sprite_book_t* self, sprite_sheet_t sprite_sheet)
+{
+    if(self.size == self.cap)
+    {
+        puts("sprite book full");
+        exit(<i32>(1));
+    }
+    self.sheets[self.size++] = sprite_sheet;
+    ret;
+}
+
+void
+sprite_book_del(sprite_book_t* self)
+{
+    del self.sheets;
+    ret;
+}
+
+type sprite_t
+{
+    i64 x;
+    i64 y;
+    i64 state;
+    i64 zoom;
+    i64 frame;
+    i64 velx;
+    i64 vely;
+    sprite_sheet_t* sheet;
+};
+
+sprite_t
+sprite_init(i64 x, i64 y, i64 state, i64 frame, sprite_sheet_t* sheet)
+{
+    sprite_t self;
+    self.x = x;
+    self.y = y;
+    self.state = state;
+    self.sheet = sheet;
+    self.frame = frame;
+    ret self;
+}
+
+type sprites_t
+{
+    sprite_t* sprite;
+    i64 size;
+    i64 cap;
+};
+
+sprites_t
+sprites_init()
+{
+    sprites_t self;
+    self.cap = 512;
+    self.sprite = new sprite_t[self.cap];
+    ret self;
+}
+
+void
+sprites_push(sprites_t* self, sprite_t sprite)
+{
+    if(self.size == self.cap)
+    {
+        puts("sprites full");
+        exit(<i32>(1));
+    }
+    self.sprite[self.size++] = sprite;
+    ret;
+}
+
+void
+sprites_del(sprites_t* sprites)
+{
+    del sprites.sprite;
+    ret;
+}
+
 i32 main()
 {
     sdl_t* sdl = sdl_new();
+    {
+        // Empty
+    }
     defer sdl_del(sdl);
 
-    ptr chicken = sdl_load_bmp("chicken.bmp");
-    defer sdl_del_bmp(chicken);
+    sprite_book_t sprite_book = sprite_book_init();
+    {
+        sprite_book_push(&sprite_book, sprite_sheet_init(sdl, "black_chicken.bmp", 32, 32, 3, 1, 8));
+        sprite_book_push(&sprite_book, sprite_sheet_init(sdl, "white_chicken.bmp", 32, 32, 3, 1, 8));
+        sprite_book_push(&sprite_book, sprite_sheet_init(sdl, "brown_chicken.bmp", 32, 32, 3, 1, 8));
+    }
+    defer sprite_book_del(&sprite_book);
 
-    sdl_clear_screen(sdl);
-    sdl_present(sdl);
-    sdl_delay(1000);
+    sprites_t sprites = sprites_init();
+    {
+        sprites_push(&sprites, sprite_init(  0,   0, 0, 0, &sprite_book.sheets[sprite_book.page.black_chicken]));
+        sprites_push(&sprites, sprite_init(100, 100, 0, 2, &sprite_book.sheets[sprite_book.page.white_chicken]));
+        sprites_push(&sprites, sprite_init(200, 200, 0, 1, &sprite_book.sheets[sprite_book.page.brown_chicken]));
+        sprites_push(&sprites, sprite_init(300, 200, 0, 0, &sprite_book.sheets[sprite_book.page.brown_chicken]));
+        sprites_push(&sprites, sprite_init(400, 400, 0, 0, &sprite_book.sheets[sprite_book.page.white_chicken]));
+        sprites_push(&sprites, sprite_init(440, 480, 0, 0, &sprite_book.sheets[sprite_book.page.black_chicken]));
+        sprites_push(&sprites, sprite_init(600, 470, 0, 0, &sprite_book.sheets[sprite_book.page.black_chicken]));
+        sprites_push(&sprites, sprite_init(700, 370, 0, 0, &sprite_book.sheets[sprite_book.page.white_chicken]));
+    }
+    defer sprites_del(&sprites);
+
+    i64 cycle = 0;
+    i64 cycles = 1000;
+    while(cycle < cycles)
+    {
+        sdl_clear_screen(sdl);
+        i64 index = 0;
+        while(index < sprites.size)
+        {
+            sprite_t* sprite = &sprites.sprite[index];
+            sprite.x = sprite.x + sprite.velx;
+            sprite.y = sprite.y + sprite.vely;
+
+            if(<i64>(rand()) % 20 == 0)
+            {
+                i64 max = 4;
+                sprite.velx = <i64>(rand()) % max - max / 2;
+                sprite.vely = <i64>(rand()) % max - max / 2;
+            }
+
+            rect_t source;
+            {
+                source.x = <i32>(sprite.sheet.tile_width * (sprite.frame % sprite.sheet.frames));
+                source.y = <i32>(sprite.sheet.tile_height * (sprite.state % sprite.sheet.states));
+                source.w = <i32>(sprite.sheet.tile_width);
+                source.h = <i32>(sprite.sheet.tile_height);
+            }
+
+            rect_t dest;
+            {
+                dest.x = <i32>(sprite.x);
+                dest.y = <i32>(sprite.y);
+                dest.w = <i32>(sprite.sheet.zoom * sprite.sheet.tile_width);
+                dest.h = <i32>(sprite.sheet.zoom * sprite.sheet.tile_height);
+            }
+
+            i32 flip;
+            if(sprite.velx < 0)
+            {
+                flip = <i32>(0);
+            }
+            else
+            {
+                flip = <i32>(1);
+            }
+            sdl_render_copy_ex(sdl, sprite.sheet.texture, &source, &dest, flip);
+
+            if(cycle % 10 == 0)
+            {
+                sprite.frame++;
+            }
+            index++;
+        }
+        sdl_present(sdl);
+        sdl_delay(10);
+        cycle++;
+    }
 
     ret <i32>(0);
 }

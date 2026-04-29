@@ -1,7 +1,4 @@
-//
-// C Standard Libray Bindings
-//
-
+i32 rand();
 ptr malloc(i64 size);
 void free(ptr pointer);
 i64 llabs(i64 value);

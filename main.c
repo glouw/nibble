@@ -115,6 +115,7 @@ typedef struct
     int size;
     int at;
     int line;
+    str_t path;
 }
 code_t;
 
@@ -193,6 +194,7 @@ char* const g_i8                      = "i8";
 char* const g_i16                     = "i16";
 char* const g_i32                     = "i32";
 char* const g_i64                     = "i64";
+char* const g_double                  = "double";
 char* const g_ret                     = "ret";
 char* const g_ptr                     = "ptr";
 char* const g_if                      = "if";
@@ -238,7 +240,8 @@ char* const g_opcode_sizeof           = "%%%d = getelementptr %s, ptr null, i64 
 char* const g_opcode_type_field       = "%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d";
 char* const g_opcode_ptr_to_int       = "%%%d = ptrtoint ptr %%%d to %s";
 char* const g_opcode_int_to_ptr       = "%%%d = inttoptr %s %%%d to ptr";
-char* const g_opcode_load_immediate   = "%%%d = add %s %s, 0";
+char* const g_opcode_load_double      = "%%%d = fadd %s %s, 0.0";
+char* const g_opcode_load_signed      = "%%%d = add %s %s, 0";
 char* const g_opcode_ret              = "ret %s %%%d";
 char* const g_opcode_ret_void         = "ret %s";
 char* const g_opcode_define           = "define %s @%s";
@@ -260,6 +263,7 @@ char* const g_opcode_increment        = "%%%d = add %s %%%d, 1";
 char* const g_opcode_decrement        = "%%%d = sub %s %%%d, 1";
 
 char* g_operator_chars[] = {
+    g_dot,
     g_not,
     g_add,
     g_subtract,
@@ -291,6 +295,7 @@ char* g_type_keywords[] = {
     g_i16,
     g_i32,
     g_i64,
+    g_double,
     g_ptr,
     nullptr
 };
@@ -342,6 +347,11 @@ bool is_digit_char(char c)
 {
     return c >= *g_digit_begin
         && c <= *g_digit_end;
+}
+
+bool is_numeric_char(char c)
+{
+    return is_digit_char(c) || c == *g_dot;
 }
 
 bool is_not_semicolon(char c)
@@ -440,7 +450,7 @@ void quit(char* format, ...)
     auto out = stderr;
     va_list args = {};
     va_start(args, format);
-    fprintf(out, "%sline %d:%s %serror: %s", g_white, get_code()->line, g_normal, g_red, g_normal);
+    fprintf(out, "%s%s: line %d:%s %serror: %s", g_white, get_code()->path.begin, get_code()->line, g_normal, g_red, g_normal);
     vfprintf(out, format, args);
     fprintf(out, g_newline);
     va_end(args);
@@ -752,10 +762,10 @@ str_t read_string()
     return read_chars(is_string_char);
 }
 
-str_t read_digit()
+str_t read_numeric()
 {
     skip_space_and_comment();
-    return read_chars(is_digit_char);
+    return read_chars(is_numeric_char);
 }
 
 str_t read_till_semicolon()
@@ -1311,6 +1321,11 @@ bool is_relational(str_t operator)
 
 value_t operate(value_t left, value_t rite, str_t operator)
 {
+    if(str_equal(left.type.name.begin, g_double)
+    || str_equal(rite.type.name.begin, g_double))
+    {
+        quit("floating point operations currently not supported");
+    }
     value_t out = {};
     if(str_in(operator, get_operators(g_precedence_assignment)))
     {
@@ -1389,11 +1404,19 @@ value_t read_rtol(value_t with(), precedence_t precedence)
 value_t load_direct()
 {
     value_t value = {
-        .type.name = str_init(g_i64),
         .slot = get_slot(),
     };
-    auto name = read_digit();
-    emit(g_opcode_load_immediate, g_file.slot, value.type.name.begin, name.begin);
+    auto name = read_numeric();
+    if(strchr(name.begin, *g_dot))
+    {
+        value.type.name = str_init(g_double);
+        emit(g_opcode_load_double, g_file.slot, value.type.name.begin, name.begin);
+    }
+    else
+    {
+        value.type.name = str_init(g_i64);
+        emit(g_opcode_load_signed, g_file.slot, value.type.name.begin, name.begin);
+    }
     return value;
 }
 
@@ -1469,52 +1492,6 @@ slot_list_t read_function_call_arg_list(type_list_t* types)
     }
     match(g_rite_paren);
     return list;
-}
-
-value_t call_function(value_t found)
-{
-    type_list_t types = {};
-    auto slots = read_function_call_arg_list(&types);
-    if(found.unlock_args == false)
-    {
-        if(types.size != found.types.size)
-        {
-            quit("function '%s' expected '%d' args but got '%d' args", found.name.begin, found.types.size, types.size);
-        }
-        auto operator = str_init(g_function);
-        for(auto i = 0; i < slots.size; i++)
-        {
-            auto type = types.begin[i];
-            auto expected = found.types.begin[i];
-            assert_types_match(type, expected, operator);
-        }
-    }
-    value_t value = {
-        .slot = get_slot(),
-        .type = found.type,
-    };
-    auto llvm_type = to_llvm_type(found.type).begin;
-    if(str_equal(found.type.name.begin, g_void))
-    {
-        emit(g_opcode_void_call, llvm_type, found.name.begin);
-    }
-    else
-    {
-        emit(g_opcode_call, value.slot, llvm_type, found.name.begin);
-    }
-    emit(g_str, g_left_paren);
-    for(auto i = 0; i < slots.size; i++)
-    {
-        auto slot = slots.begin[i];
-        auto llvm_type = to_llvm_type(types.begin[i]).begin;
-        emit(g_opcode_type_slot, llvm_type, slot);
-        if(i < slots.size - 1)
-        {
-            emit(g_str, g_comma);
-        }
-    }
-    emit(g_str, g_rite_paren);
-    return value;
 }
 
 value_t increment(value_t value, bool prefix)
@@ -1919,6 +1896,12 @@ value_t read_prefix()
 value_t field_access(value_t);
 value_t index_access(value_t);
 
+bool is_increment_decrement(str_t operator)
+{
+    return str_equal(operator.begin, g_increment)
+        || str_equal(operator.begin, g_decrement);
+}
+
 value_t read_postfix_access(value_t offset)
 {
     auto c = next_char();
@@ -1929,6 +1912,11 @@ value_t read_postfix_access(value_t offset)
     if(c == *g_left_square)
     {
         return index_access(offset);
+    }
+    auto operator = peek_operator();
+    if(is_increment_decrement(operator))
+    {
+        return read_postfix_modify(offset, operator);
     }
     return offset;
 }
@@ -1960,11 +1948,11 @@ value_t field_access(value_t found)
     match(g_dot);
     auto name = read_alnum();
     auto type = value_in_list(found.type.name, &g_file.types);
-    if(type == nullptr)
+    auto exists = str_in_list(name, &type->names);
+    if(type == nullptr || exists == nullptr)
     {
         quit("could not access field '%s' in type '%s'", name.begin, found.type.name.begin);
     }
-    auto exists = str_in_list(name, &type->names);
     auto index = exists - type->names.begin;
     value_t offset = {
         .slot = get_slot(),
@@ -1974,6 +1962,57 @@ value_t field_access(value_t found)
     auto llvm_type = to_llvm_type(found.type).begin;
     emit(g_opcode_type_field, offset.slot, llvm_type, found.slot, index);
     return read_postfix_access(offset);
+}
+
+value_t call_function(value_t found)
+{
+    type_list_t types = {};
+    auto slots = read_function_call_arg_list(&types);
+    if(found.unlock_args == false)
+    {
+        if(types.size != found.types.size)
+        {
+            quit("function '%s' expected '%d' args but got '%d' args", found.name.begin, found.types.size, types.size);
+        }
+        auto operator = str_init(g_function);
+        for(auto i = 0; i < slots.size; i++)
+        {
+            auto type = types.begin[i];
+            auto expected = found.types.begin[i];
+            assert_types_match(type, expected, operator);
+        }
+    }
+    value_t value = {
+        .slot = get_slot(),
+        .type = found.type,
+    };
+    auto llvm_type = to_llvm_type(found.type).begin;
+    if(str_equal(found.type.name.begin, g_void))
+    {
+        emit(g_opcode_void_call, llvm_type, found.name.begin);
+    }
+    else
+    {
+        emit(g_opcode_call, value.slot, llvm_type, found.name.begin);
+    }
+    emit(g_str, g_left_paren);
+    for(auto i = 0; i < slots.size; i++)
+    {
+        auto slot = slots.begin[i];
+        auto llvm_type = to_llvm_type(types.begin[i]).begin;
+        emit(g_opcode_type_slot, llvm_type, slot);
+        if(i < slots.size - 1)
+        {
+            emit(g_str, g_comma);
+        }
+    }
+    emit(g_str, g_rite_paren);
+    if(peek_char() == *g_dot || peek_char() == *g_left_paren)
+    {
+        assert_pointer(value.type, peek_operator());
+        return read_postfix_access(value);
+    }
+    return value;
 }
 
 value_t read_postfix()
@@ -1991,12 +2030,6 @@ value_t read_postfix()
         return call_function(value);
     }
     auto indirect = load_indirect(value);
-    auto operator = peek_operator();
-    if(str_equal(operator.begin, g_increment)
-    || str_equal(operator.begin, g_decrement))
-    {
-        return read_postfix_modify(indirect, operator);
-    }
     return read_postfix_access(indirect);
 }
 
@@ -2078,16 +2111,17 @@ value_t read_expression()
     return read_p9();
 }
 
-void read_code(char* path)
+void read_code(str_t path)
 {
-    auto fp = fopen(path, "r");
+    auto fp = fopen(path.begin, "r");
     if(fp == nullptr)
     {
-        quit("could not open '%s'", path);
+        quit("could not open '%s'", path.begin);
     }
     auto max = g_code_size - 1;
+    get_code()->path = path;
     get_code()->size = fread(get_code()->begin, sizeof(char), max, fp);
-    fprintf(stderr, "%s: %d bytes (max %d bytes)\n", path, get_code()->size, g_code_size);
+    fprintf(stderr, "%s: %d bytes (max %d bytes)\n", path.begin, get_code()->size, g_code_size);
     fclose(fp);
     if(get_code()->size == max)
     {
@@ -2095,7 +2129,7 @@ void read_code(char* path)
     }
 }
 
-void push_code(char* path)
+void push_code(str_t path)
 {
     g_file.module += 1;
     get_code()->line= 1;
@@ -2119,7 +2153,7 @@ void read_include()
         quit("expected path");
     }
     match(g_semicolon);
-    push_code(path.begin);
+    push_code(path);
 }
 
 void write_header()
@@ -2168,6 +2202,6 @@ int main(int argc, char** argv)
         return 1;
     }
     auto path = argv[1];
-    read_code(path);
+    read_code(str_init(path));
     read_program();
 }
