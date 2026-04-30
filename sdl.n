@@ -1,6 +1,6 @@
 include "std.n";
 
-type rect_t
+type sdl_rect_t
 {
     i32 x;
     i32 y;
@@ -8,7 +8,7 @@ type rect_t
     i32 h;
 };
 
-type point_t
+type sdl_point_t
 {
     i32 x;
     i32 y;
@@ -19,7 +19,7 @@ i8 SDL_SetRenderDrawColor(ptr renderer, i8 r, i8 g, i8 b, i8 a);
 i8 SDL_RenderClear(ptr renderer);
 ptr SDL_CreateWindow(i8* title, i32 x, i32 y, i32 w, i32 h, i32 flags);
 ptr SDL_CreateRenderer(ptr window, i32 index, i32 flags);
-i32 SDL_RenderFillRect(ptr renderer, rect_t* rect);
+i32 SDL_RenderFillRect(ptr renderer, sdl_rect_t* rect);
 void SDL_DestroyWindow(ptr window);
 void SDL_Quit();
 void SDL_Delay(i32 ms);
@@ -30,8 +30,11 @@ ptr SDL_LoadBMP_RW(ptr source, i32 close_stream);
 void SDL_FreeSurface(ptr surface);
 ptr SDL_CreateTextureFromSurface(ptr renderer, ptr surface);
 void SDL_DestroyTexture(ptr texture);
-i32 SDL_RenderCopy(ptr renderer, ptr texture, rect_t* source, rect_t* dest);
-i32 SDL_RenderCopyEx(ptr renderer, ptr texture, rect_t* source, rect_t* dest, double angle, point_t* center, i32 flip);
+i32 SDL_RenderCopy(ptr renderer, ptr texture, sdl_rect_t* source, sdl_rect_t* dest);
+i32 SDL_RenderCopyEx(ptr renderer, ptr texture, sdl_rect_t* source, sdl_rect_t* dest, double angle, sdl_point_t* center, i32 flip);
+i8* SDL_GetKeyboardState(i8* numkeys);
+void SDL_PumpEvents();
+i32 SDL_GetMouseState(i32* x, i32* y);
 
 type sdl_t
 {
@@ -42,13 +45,13 @@ type sdl_t
     ptr renderer;
 };
 
-sdl_t*
-sdl_new()
+sdl_t
+sdl_init(i64 xres, i64 yres)
 {
     SDL_Init(<i32>(32));
-    sdl_t* self = new sdl_t;
-    self.xres = 1440;
-    self.yres = 900;
+    sdl_t self;
+    self.xres = xres;
+    self.yres = yres;
     self.name = "game";
     self.window = SDL_CreateWindow(
         self.name,
@@ -129,15 +132,41 @@ sdl_destroy_texture(ptr texture)
 }
 
 void
-sdl_render_copy(sdl_t* self, ptr texture, rect_t* source, rect_t* dest)
+sdl_render_copy(sdl_t* self, ptr texture, sdl_rect_t* source, sdl_rect_t* dest)
 {
     SDL_RenderCopy(self.renderer, texture, source, dest);
     ret;
 }
 
 void
-sdl_render_copy_ex(sdl_t* self, ptr texture, rect_t* source, rect_t* dest, i32 flip)
+sdl_render_copy_ex(sdl_t* self, ptr texture, sdl_rect_t* source, sdl_rect_t* dest, i32 flip)
 {
-    SDL_RenderCopyEx(self.renderer, texture, source, dest, 0.0, <point_t*>(0), flip);
+    SDL_RenderCopyEx(self.renderer, texture, source, dest, 0.0, <sdl_point_t*>(0), flip);
     ret;
+}
+
+void
+sdl_pump_events()
+{
+    SDL_PumpEvents();
+    ret;
+}
+
+i8*
+sdl_get_keyboard_state()
+{
+    sdl_pump_events();
+    ret SDL_GetKeyboardState(<i8*>(0));
+}
+
+i64
+sdl_get_mouse_state(i64* x, i64* y)
+{
+    sdl_pump_events();
+    i32 xx;
+    i32 yy;
+    i64 out = <i64>(SDL_GetMouseState(&xx, &yy));
+    *x = <i64>(xx);
+    *y = <i64>(yy);
+    ret out;
 }

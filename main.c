@@ -8,7 +8,7 @@
 constexpr auto g_str_size = 64;
 constexpr auto g_value_list_size = 1024;
 constexpr auto g_defer_list_size = 32;
-constexpr auto g_value_args = 9;
+constexpr auto g_value_args = 16;
 constexpr auto g_slot_list_size = g_value_args;
 constexpr auto g_type_list_size = g_value_args;
 constexpr auto g_str_list_size = g_value_args;
@@ -99,6 +99,7 @@ typedef struct
     int slot;
     bool is_lvalue;
     bool unlock_args;
+    bool is_function;
 }
 value_t;
 
@@ -414,11 +415,6 @@ bool is_operator_char(char c)
     return false;
 }
 
-void code_rewind(code_t* code, int by)
-{
-    code->at -= by;
-}
-
 bool str_equal(char* str, char* other)
 {
     return strcmp(str, other) == 0;
@@ -443,6 +439,11 @@ bool is_scalar(type_t type)
 code_t* get_code()
 {
     return &g_file.code[g_file.module];
+}
+
+void code_rewind(int by)
+{
+    get_code()->at -= by;
 }
 
 void quit(char* format, ...)
@@ -607,7 +608,7 @@ void assert_types_match(type_t left, type_t rite, str_t operator)
 {
     if(left.stars != rite.stars)
     {
-        quit("pointer level mismatch (%llu and %llu) with '%s'", left.stars, rite.stars, operator.begin);
+        quit("pointer level mismatch (%s %llu and %s %llu) with '%s'", left.name.begin, left.stars, rite.name.begin, rite.stars, operator.begin);
     }
     if(!str_equal(left.name.begin, rite.name.begin))
     {
@@ -679,7 +680,7 @@ int skip_space_and_comment()
             step();
             if(peek_char() != *g_divide)
             {
-                code_rewind(get_code(), 1);
+                code_rewind(1);
                 count -= len;
                 break;
             }
@@ -777,14 +778,14 @@ str_t read_till_semicolon()
 str_t peek_operator()
 {
     auto operator = read_operator();
-    code_rewind(get_code(), operator.size);
+    code_rewind(operator.size);
     return operator;
 }
 
 str_t peek_alnum()
 {
     auto alnum = read_alnum();
-    code_rewind(get_code(), alnum.size);
+    code_rewind(alnum.size);
     return alnum;
 }
 
@@ -793,7 +794,24 @@ int read_stars()
     auto stars = 0;
     while(true)
     {
-        if(next_char() == *g_multiply)
+        auto c = next_char();
+        if(c == *g_left_square)
+        {
+            step();
+            auto d = next_char();
+            if(d == *g_rite_square)
+            {
+                stars += 1;
+                step();
+            }
+            else
+            {
+                code_rewind(1);
+                break;
+            }
+        }
+        else
+        if(c == *g_multiply)
         {
             stars += 1;
             step();
@@ -1126,8 +1144,8 @@ bool read_statement(value_t ret_value, scope_t scope, int block)
         }
         else
         {
-            code_rewind(get_code(), read);
-            code_rewind(get_code(), value.name.size);
+            code_rewind(read);
+            code_rewind(value.name.size);
             read_expression();
             match(g_semicolon);
         }
@@ -1893,6 +1911,7 @@ value_t read_prefix()
     return (value_t) {};
 }
 
+value_t call_function(value_t);
 value_t field_access(value_t);
 value_t index_access(value_t);
 
@@ -1904,12 +1923,24 @@ bool is_increment_decrement(str_t operator)
 
 value_t read_postfix_access(value_t offset)
 {
-    auto c = next_char();
-    if(c == *g_dot)
+    auto peek = next_char();
+    if(peek == *g_left_paren)
     {
+        return call_function(offset);
+    }
+    if(offset.is_function == false)
+    {
+        offset = load_indirect(offset);
+    }
+    if(peek == *g_dot)
+    {
+        if(offset.is_function && !is_pointer(offset.type))
+        {
+            quit("expected pointer with '%s' access on type '%s' with direct function access", g_dot, offset.type.name.begin);
+        }
         return field_access(offset);
     }
-    if(c == *g_left_square)
+    if(peek == *g_left_square)
     {
         return index_access(offset);
     }
@@ -1985,6 +2016,7 @@ value_t call_function(value_t found)
     value_t value = {
         .slot = get_slot(),
         .type = found.type,
+        .is_function = true,
     };
     auto llvm_type = to_llvm_type(found.type).begin;
     if(str_equal(found.type.name.begin, g_void))
@@ -2007,12 +2039,7 @@ value_t call_function(value_t found)
         }
     }
     emit(g_str, g_rite_paren);
-    if(peek_char() == *g_dot || peek_char() == *g_left_paren)
-    {
-        assert_pointer(value.type, peek_operator());
-        return read_postfix_access(value);
-    }
-    return value;
+    return read_postfix_access(value);
 }
 
 value_t read_postfix()
@@ -2023,14 +2050,8 @@ value_t read_postfix()
     {
         quit("'%s' not declared", alnum.begin);
     }
-    auto value = *found;
-    auto peek = next_char();
-    if(peek == *g_left_paren)
-    {
-        return call_function(value);
-    }
-    auto indirect = load_indirect(value);
-    return read_postfix_access(indirect);
+    auto out = read_postfix_access(*found);
+    return out;
 }
 
 value_t read_p0()
