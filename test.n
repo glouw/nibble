@@ -1309,6 +1309,24 @@ i64 test_ret_int_field_access()
     ret 1;
 }
 
+i64 test_defer_continue()
+{
+    i64 i;
+    while(i < 32)
+    {
+        defer i++;
+        if(i > 16)
+        {
+            continue;
+        }
+    }
+    if(i == 32)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     ret <i32> (
@@ -1373,6 +1391,7 @@ i32 main()
       | test_defer_prints()
       | test_printf()
       | test_ret_int_field_access()
+      | test_defer_continue()
     );
 }
 //

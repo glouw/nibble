@@ -170,3 +170,9 @@ sdl_get_mouse_state(i64* x, i64* y)
     *y = <i64>(yy);
     ret out;
 }
+
+i1
+sdl_is_key_down(i64 key)
+{
+    ret <i64>(sdl_get_keyboard_state()[key]) == 1;
+}

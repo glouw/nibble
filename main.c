@@ -1963,7 +1963,6 @@ value_t index_access(value_t indirect)
     value_t offset = {
         .slot = get_slot(),
         .type = array.type,
-        .is_lvalue = true,
     };
     auto llvm_type = to_llvm_type(offset.type).begin;
     emit(g_opcode_gep, offset.slot, llvm_type, array.slot, g_i64, index.slot);
@@ -1988,7 +1987,6 @@ value_t field_access(value_t found)
     value_t offset = {
         .slot = get_slot(),
         .type = type->types.begin[index],
-        .is_lvalue = true,
     };
     auto llvm_type = to_llvm_type(found.type).begin;
     emit(g_opcode_type_field, offset.slot, llvm_type, found.slot, index);
@@ -2050,8 +2048,7 @@ value_t read_postfix()
     {
         quit("'%s' not declared", alnum.begin);
     }
-    auto out = read_postfix_access(*found);
-    return out;
+    return read_postfix_access(*found);
 }
 
 value_t read_p0()

@@ -51,3 +51,21 @@ i1 str_equal(str_t* self, str_t* other)
 {
     ret strcmp(self.data, other.data) == <i32>(0);
 }
+
+void
+abort(i8* message)
+{
+    puts(message);
+    exit(<i32>(1));
+    ret;
+}
+
+void
+assert(i1 condition, i8* message)
+{
+    if(!condition)
+    {
+        abort(message);
+    }
+    ret;
+}
