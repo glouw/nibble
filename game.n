@@ -463,15 +463,15 @@ sprites_t
 populate_sprites(sdl_t* sdl, const_t* const)
 {
     sprites_t self = sprites_init();
-    sprites_push(&self, sprite_init(  0,   0, const.sprite_tag.chicken.black,  4));
-    sprites_push(&self, sprite_init(100, 100, const.sprite_tag.chicken.white,  8));
-    sprites_push(&self, sprite_init(200, 200, const.sprite_tag.chicken.brown,  4));
-    sprites_push(&self, sprite_init(300, 200, const.sprite_tag.chicken.brown,  6));
-    sprites_push(&self, sprite_init(400, 200, const.sprite_tag.chicken.white,  4));
-    sprites_push(&self, sprite_init(440, 280, const.sprite_tag.chicken.black,  6));
-    sprites_push(&self, sprite_init(600, 270, const.sprite_tag.chicken.black,  4));
-    sprites_push(&self, sprite_init(700, 270, const.sprite_tag.chicken.white,  6));
-    sprites_push(&self, sprite_init(400, 400, const.sprite_tag.nest.brown,     4));
+    sprites_push(&self, sprite_init(  0,   0, const.sprite_tag.chicken.black, 4));
+    sprites_push(&self, sprite_init(100, 100, const.sprite_tag.chicken.white, 8));
+    sprites_push(&self, sprite_init(200, 200, const.sprite_tag.chicken.brown, 4));
+    sprites_push(&self, sprite_init(300, 200, const.sprite_tag.chicken.brown, 6));
+    sprites_push(&self, sprite_init(400, 200, const.sprite_tag.chicken.white, 4));
+    sprites_push(&self, sprite_init(440, 280, const.sprite_tag.chicken.black, 6));
+    sprites_push(&self, sprite_init(600, 270, const.sprite_tag.chicken.black, 4));
+    sprites_push(&self, sprite_init(700, 270, const.sprite_tag.chicken.white, 6));
+    sprites_push(&self, sprite_init(400, 400, const.sprite_tag.nest.brown,    4));
     ret self;
 }
 

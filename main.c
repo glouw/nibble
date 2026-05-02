@@ -136,157 +136,169 @@ struct
 }
 g_file;
 
-char* const g_escape_alert                = "\a";
-char* const g_escape_backspace            = "\b";
-char* const g_escape_form_feed            = "\f";
-char* const g_escape_newline              = "\n";
-char* const g_escape_carriage_return      = "\r";
-char* const g_escape_tab                  = "\t";
-char* const g_escape_vertical_tab         = "\v";
-char* const g_escape_backslash            = "\\";
-char* const g_escape_apostrophe           = "\'";
-char* const g_escape_quotation            = "\"";
-char* const g_escape_question_mark        = "\?";
-char* const g_escape_null                 = "\0";
-char* const g_llvm_escape_alert           = "\\07";
-char* const g_llvm_escape_backspace       = "\\08";
-char* const g_llvm_escape_tab             = "\\09";
-char* const g_llvm_escape_newline         = "\\0A";
-char* const g_llvm_escape_vertical_tab    = "\\0B";
-char* const g_llvm_escape_form_feed       = "\\0C";
-char* const g_llvm_escape_carriage_return = "\\0D";
-char* const g_llvm_escape_quotation       = "\\22";
-char* const g_llvm_escape_null            = "\\00";
-char* const g_llvm_escape_backslash       = "\\5C";
-char* const g_llvm_escape_question_mark   = "\\3F";
-char* const g_apostrophe                  = "'";
-char* const g_str                         = "%s";
-char* const g_red                         = "\033[31m";
-char* const g_white                       = "\033[1;37m";
-char* const g_normal                      = "\033[0m";
-char* const g_underscore                  = "_";
-char* const g_left_square                 = "[";
-char* const g_rite_square                 = "]";
-char* const g_left_curl                   = "{";
-char* const g_rite_curl                   = "}";
-char* const g_left_paren                  = "(";
-char* const g_rite_paren                  = ")";
-char* const g_semicolon                   = ";";
-char* const g_space                       = " ";
-char* const g_lower_begin                 = "a";
-char* const g_lower_end                   = "z";
-char* const g_upper_begin                 = "A";
-char* const g_upper_end                   = "Z";
-char* const g_digit_begin                 = "0";
-char* const g_digit_end                   = "9";
-char* const g_not                         = "!";
-char* const g_type_cast                   = "<>";
-char* const g_function                    = "()";
-char* const g_index                       = "[]";
-char* const g_dot                         = ".";
-char* const g_add                         = "+";
-char* const g_subtract                    = "-";
-char* const g_divide                      = "/";
-char* const g_mod                         = "%";
-char* const g_multiply                    = "*";
-char* const g_equals                      = "=";
-char* const g_equal_to                    = "==";
-char* const g_not_equal_to                = "!=";
-char* const g_less_equal_to               = "<=";
-char* const g_less                        = "<";
-char* const g_greater_equal_to            = ">=";
-char* const g_greater                     = ">";
-char* const g_shift_rite                  = ">>";
-char* const g_shift_left                  = "<<";
-char* const g_increment                   = "++";
-char* const g_decrement                   = "--";
-char* const g_bitwise_or                  = "|";
-char* const g_bitwise_xor                 = "^";
-char* const g_bitwise_and                 = "&";
-char* const g_bitwise_not                 = "~";
-char* const g_comma                       = ",";
-char* const g_ampersand                   = "&";
-char* const g_percent                     = "%";
-char* const g_hash                        = "#";
-char* const g_empty                       = "";
-char* const g_colon                       = ":";
-char* const g_question_mark               = "?";
-char* const g_dollar                      = "$";
-char* const g_at                          = "@";
-char* const g_void                        = "void";
-char* const g_i1                          = "i1";
-char* const g_i8                          = "i8";
-char* const g_i16                         = "i16";
-char* const g_i32                         = "i32";
-char* const g_i64                         = "i64";
-char* const g_double                      = "double";
-char* const g_ret                         = "ret";
-char* const g_ptr                         = "ptr";
-char* const g_if                          = "if";
-char* const g_else                        = "else";
-char* const g_while                       = "while";
-char* const g_break                       = "break";
-char* const g_continue                    = "continue";
-char* const g_type                        = "type";
-char* const g_defer                       = "defer";
-char* const g_new                         = "new";
-char* const g_del                         = "del";
-char* const g_sizeof                      = "sizeof";
-char* const g_comment                     = "//";
-char* const g_include                     = "include";
-char* const g_opcode_type_def             = "%%%s = type";
-char* const g_opcode_label                = "L%d:";
-char* const g_opcode_branch_if_else       = "br i1 %%%d, label %%L%d, label %%L%d";
-char* const g_opcode_branch               = "br label %%L%d";
-char* const g_opcode_target               = "target triple = \"x86_64-pc-linux-gnu\"";
-char* const g_opcode_not                  = "%%%d = xor %s %%%d, true";
-char* const g_opcode_negative             = "%%%d = mul %s %%%d, -1";
-char* const g_opcode_mul                  = "%%%d = mul %s %%%d, %%%d";
-char* const g_opcode_sdiv                 = "%%%d = sdiv %s %%%d, %%%d";
-char* const g_opcode_srem                 = "%%%d = srem %s %%%d, %%%d";
-char* const g_opcode_add                  = "%%%d = add %s %%%d, %%%d";
-char* const g_opcode_sub                  = "%%%d = sub %s %%%d, %%%d";
-char* const g_opcode_equal_to             = "%%%d = icmp eq %s %%%d, %%%d";
-char* const g_opcode_not_equal_to         = "%%%d = icmp ne %s %%%d, %%%d";
-char* const g_opcode_less                 = "%%%d = icmp slt %s %%%d, %%%d";
-char* const g_opcode_less_equal_to        = "%%%d = icmp sle %s %%%d, %%%d";
-char* const g_opcode_greater              = "%%%d = icmp sgt %s %%%d, %%%d";
-char* const g_opcode_greater_equal_to     = "%%%d = icmp sge %s %%%d, %%%d";
-char* const g_opcode_bitwise_or           = "%%%d = or %s %%%d, %%%d";
-char* const g_opcode_bitwise_not          = "%%%d = xor %s %%%d, -1";
-char* const g_opcode_bitwise_xor          = "%%%d = xor %s %%%d, %%%d";
-char* const g_opcode_bitwise_and          = "%%%d = and %s %%%d, %%%d";
-char* const g_opcode_shift_left           = "%%%d = shl %s %%%d, %%%d";
-char* const g_opcode_shift_rite           = "%%%d = ashr %s %%%d, %%%d";
-char* const g_opcode_alloca               = "%%%d = alloca %s";
-char* const g_opcode_flat_gep             = "%%%d = getelementptr ptr, ptr %%%d, %s %d";
-char* const g_opcode_gep                  = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
-char* const g_opcode_sizeof               = "%%%d = getelementptr %s, ptr null, i64 1";
-char* const g_opcode_type_field           = "%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d";
-char* const g_opcode_ptr_to_int           = "%%%d = ptrtoint ptr %%%d to %s";
-char* const g_opcode_int_to_ptr           = "%%%d = inttoptr %s %%%d to ptr";
-char* const g_opcode_load_double          = "%%%d = fadd %s %s, 0.0";
-char* const g_opcode_load_signed          = "%%%d = add %s %s, 0";
-char* const g_opcode_load_character       = "%%%d = add %s %d, 0";
-char* const g_opcode_ret                  = "ret %s %%%d";
-char* const g_opcode_ret_void             = "ret %s";
-char* const g_opcode_define               = "define %s @%s";
-char* const g_opcode_declare              = "declare %s @%s";
-char* const g_opcode_load                 = "%%%d = load %s, ptr %%%d";
-char* const g_opcode_store                = "store %s %%%d, ptr %%%d";
-char* const g_opcode_zero_init            = "store %s zeroinitializer, ptr %%%d";
-char* const g_opcode_type_slot            = "%s %%%d";
-char* const g_opcode_call                 = "%%%d = call %s @%s";
-char* const g_opcode_void_call            = "call %s @%s";
-char* const g_opcode_entry                = "entry:";
-char* const g_opcode_signed_extend        = "%%%d = sext %s %%%d to %s";
-char* const g_opcode_trunc                = "%%%d = trunc %s %%%d to %s";
-char* const g_opcode_malloc               = "%%%d = call ptr @malloc(i64 %%%d)";
-char* const g_opcode_free                 = "call void @free(ptr %%%d)";
-char* const g_opcode_alloca_string        = "%%%d = alloca [%d x i8]";
-char* const g_opcode_store_string         = "store [%d x i8] c\"%s\", ptr %%%d";
-char* const g_opcode_increment            = "%%%d = add %s %%%d, 1";
-char* const g_opcode_decrement            = "%%%d = sub %s %%%d, 1";
+char* const g_escape_alert                     = "\a";
+char* const g_escape_backspace                 = "\b";
+char* const g_escape_form_feed                 = "\f";
+char* const g_escape_newline                   = "\n";
+char* const g_escape_carriage_return           = "\r";
+char* const g_escape_tab                       = "\t";
+char* const g_escape_vertical_tab              = "\v";
+char* const g_escape_backslash                 = "\\";
+char* const g_escape_apostrophe                = "\'";
+char* const g_escape_quotation                 = "\"";
+char* const g_escape_question_mark             = "\?";
+char* const g_escape_null                      = "\0";
+char* const g_llvm_escape_alert                = "\\07";
+char* const g_llvm_escape_backspace            = "\\08";
+char* const g_llvm_escape_tab                  = "\\09";
+char* const g_llvm_escape_newline              = "\\0A";
+char* const g_llvm_escape_vertical_tab         = "\\0B";
+char* const g_llvm_escape_form_feed            = "\\0C";
+char* const g_llvm_escape_carriage_return      = "\\0D";
+char* const g_llvm_escape_quotation            = "\\22";
+char* const g_llvm_escape_null                 = "\\00";
+char* const g_llvm_escape_backslash            = "\\5C";
+char* const g_llvm_escape_question_mark        = "\\3F";
+char* const g_apostrophe                       = "'";
+char* const g_str                              = "%s";
+char* const g_red                              = "\033[31m";
+char* const g_white                            = "\033[1;37m";
+char* const g_normal                           = "\033[0m";
+char* const g_underscore                       = "_";
+char* const g_left_square                      = "[";
+char* const g_rite_square                      = "]";
+char* const g_left_curl                        = "{";
+char* const g_rite_curl                        = "}";
+char* const g_left_paren                       = "(";
+char* const g_rite_paren                       = ")";
+char* const g_semicolon                        = ";";
+char* const g_space                            = " ";
+char* const g_lower_begin                      = "a";
+char* const g_lower_end                        = "z";
+char* const g_upper_begin                      = "A";
+char* const g_upper_end                        = "Z";
+char* const g_digit_begin                      = "0";
+char* const g_digit_end                        = "9";
+char* const g_not                              = "!";
+char* const g_type_cast                        = "<>";
+char* const g_function                         = "()";
+char* const g_index                            = "[]";
+char* const g_dot                              = ".";
+char* const g_add                              = "+";
+char* const g_subtract                         = "-";
+char* const g_divide                           = "/";
+char* const g_mod                              = "%";
+char* const g_multiply                         = "*";
+char* const g_equals                           = "=";
+char* const g_equal_to                         = "==";
+char* const g_not_equal_to                     = "!=";
+char* const g_less_equal_to                    = "<=";
+char* const g_less                             = "<";
+char* const g_greater_equal_to                 = ">=";
+char* const g_greater                          = ">";
+char* const g_shift_rite                       = ">>";
+char* const g_shift_left                       = "<<";
+char* const g_increment                        = "++";
+char* const g_decrement                        = "--";
+char* const g_bitwise_or                       = "|";
+char* const g_bitwise_xor                      = "^";
+char* const g_bitwise_and                      = "&";
+char* const g_bitwise_not                      = "~";
+char* const g_comma                            = ",";
+char* const g_ampersand                        = "&";
+char* const g_percent                          = "%";
+char* const g_hash                             = "#";
+char* const g_empty                            = "";
+char* const g_colon                            = ":";
+char* const g_question_mark                    = "?";
+char* const g_dollar                           = "$";
+char* const g_at                               = "@";
+char* const g_void                             = "void";
+char* const g_i1                               = "i1";
+char* const g_i8                               = "i8";
+char* const g_i16                              = "i16";
+char* const g_i32                              = "i32";
+char* const g_i64                              = "i64";
+char* const g_double                           = "double";
+char* const g_ret                              = "ret";
+char* const g_ptr                              = "ptr";
+char* const g_if                               = "if";
+char* const g_else                             = "else";
+char* const g_while                            = "while";
+char* const g_break                            = "break";
+char* const g_continue                         = "continue";
+char* const g_type                             = "type";
+char* const g_defer                            = "defer";
+char* const g_new                              = "new";
+char* const g_del                              = "del";
+char* const g_sizeof                           = "sizeof";
+char* const g_comment                          = "//";
+char* const g_include                          = "include";
+char* const g_opcode_type_def                  = "%%%s = type";
+char* const g_opcode_label                     = "L%d:";
+char* const g_opcode_branch_if_else            = "br i1 %%%d, label %%L%d, label %%L%d";
+char* const g_opcode_branch                    = "br label %%L%d";
+char* const g_opcode_target                    = "target triple = \"x86_64-pc-linux-gnu\"";
+char* const g_opcode_not                       = "%%%d = xor %s %%%d, true";
+char* const g_opcode_negative                  = "%%%d = mul %s %%%d, -1";
+char* const g_opcode_mul                       = "%%%d = mul %s %%%d, %%%d";
+char* const g_opcode_sdiv                      = "%%%d = sdiv %s %%%d, %%%d";
+char* const g_opcode_srem                      = "%%%d = srem %s %%%d, %%%d";
+char* const g_opcode_add                       = "%%%d = add %s %%%d, %%%d";
+char* const g_opcode_sub                       = "%%%d = sub %s %%%d, %%%d";
+char* const g_opcode_equal_to                  = "%%%d = icmp eq %s %%%d, %%%d";
+char* const g_opcode_not_equal_to              = "%%%d = icmp ne %s %%%d, %%%d";
+char* const g_opcode_less                      = "%%%d = icmp slt %s %%%d, %%%d";
+char* const g_opcode_less_equal_to             = "%%%d = icmp sle %s %%%d, %%%d";
+char* const g_opcode_greater                   = "%%%d = icmp sgt %s %%%d, %%%d";
+char* const g_opcode_greater_equal_to          = "%%%d = icmp sge %s %%%d, %%%d";
+char* const g_opcode_bitwise_or                = "%%%d = or %s %%%d, %%%d";
+char* const g_opcode_bitwise_not               = "%%%d = xor %s %%%d, -1";
+char* const g_opcode_bitwise_xor               = "%%%d = xor %s %%%d, %%%d";
+char* const g_opcode_bitwise_and               = "%%%d = and %s %%%d, %%%d";
+char* const g_opcode_shift_left                = "%%%d = shl %s %%%d, %%%d";
+char* const g_opcode_shift_rite                = "%%%d = ashr %s %%%d, %%%d";
+char* const g_opcode_alloca                    = "%%%d = alloca %s";
+char* const g_opcode_flat_gep                  = "%%%d = getelementptr ptr, ptr %%%d, %s %d";
+char* const g_opcode_gep                       = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
+char* const g_opcode_sizeof                    = "%%%d = getelementptr %s, ptr null, i64 1";
+char* const g_opcode_type_field                = "%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d";
+char* const g_opcode_ptr_to_int                = "%%%d = ptrtoint ptr %%%d to %s";
+char* const g_opcode_int_to_ptr                = "%%%d = inttoptr %s %%%d to ptr";
+char* const g_opcode_load_double               = "%%%d = fadd %s %s, 0.0";
+char* const g_opcode_load_signed               = "%%%d = add %s %s, 0";
+char* const g_opcode_load_character            = "%%%d = add %s %d, 0";
+char* const g_opcode_ret                       = "ret %s %%%d";
+char* const g_opcode_ret_void                  = "ret %s";
+char* const g_opcode_define                    = "define %s @%s";
+char* const g_opcode_declare                   = "declare %s @%s";
+char* const g_opcode_load                      = "%%%d = load %s, ptr %%%d";
+char* const g_opcode_store                     = "store %s %%%d, ptr %%%d";
+char* const g_opcode_zero_init                 = "store %s zeroinitializer, ptr %%%d";
+char* const g_opcode_type_slot                 = "%s %%%d";
+char* const g_opcode_call                      = "%%%d = call %s @%s";
+char* const g_opcode_void_call                 = "call %s @%s";
+char* const g_opcode_entry                     = "entry:";
+char* const g_opcode_signed_extend             = "%%%d = sext %s %%%d to %s";
+char* const g_opcode_trunc                     = "%%%d = trunc %s %%%d to %s";
+char* const g_opcode_malloc                    = "%%%d = call ptr @malloc(i64 %%%d)";
+char* const g_opcode_free                      = "call void @free(ptr %%%d)";
+char* const g_opcode_alloca_string             = "%%%d = alloca [%d x i8]";
+char* const g_opcode_store_string              = "store [%d x i8] c\"%s\", ptr %%%d";
+char* const g_opcode_increment                 = "%%%d = add %s %%%d, 1";
+char* const g_opcode_decrement                 = "%%%d = sub %s %%%d, 1";
+char* const g_opcode_floating_mul              = "%%%d = fmul %s %%%d, %%%d";
+char* const g_opcode_floating_div              = "%%%d = fdiv %s %%%d, %%%d";
+char* const g_opcode_floating_add              = "%%%d = fadd %s %%%d, %%%d";
+char* const g_opcode_floating_sub              = "%%%d = fsub %s %%%d, %%%d";
+char* const g_opcode_floating_equal_to         = "%%%d = fcmp oeq %s %%%d, %%%d";
+char* const g_opcode_floating_not_equal_to     = "%%%d = fcmp one %s %%%d, %%%d";
+char* const g_opcode_floating_less             = "%%%d = fcmp olt %s %%%d, %%%d";
+char* const g_opcode_floating_less_equal_to    = "%%%d = fcmp ole %s %%%d, %%%d";
+char* const g_opcode_floating_greater          = "%%%d = fcmp ogt %s %%%d, %%%d";
+char* const g_opcode_floating_greater_equal_to = "%%%d = fcmp oge %s %%%d, %%%d";
+char* const g_opcode_float_to_signed           = "%%%d = fptosi %s %%%d to %s";
+char* const g_opcode_signed_to_float           = "%%%d = sitofp %s %%%d to %s";
 
 char* g_operator_chars[] = {
     g_dot,
@@ -314,7 +326,7 @@ char* g_operator_chars[] = {
     nullptr
 };
 
-char* g_type_keywords[] = {
+char* g_builtin_type_keywords[] = {
     g_void,
     g_i1,
     g_i8,
@@ -461,8 +473,7 @@ bool is_string_char(char c)
         || c == *g_left_square
         || c == *g_rite_square
         || c == *g_left_curl
-        || c == *g_rite_curl
-    ;
+        || c == *g_rite_curl;
 }
 
 bool is_operator_char(char c)
@@ -487,14 +498,72 @@ bool is_generic_pointer(type_t type)
     return str_equal(type.name.begin, g_ptr);
 }
 
+bool str_in(str_t str, char** array)
+{
+    while(*array)
+    {
+        if(str_equal(str.begin, *array))
+        {
+            return true;
+        }
+        array += 1;
+    }
+    return false;
+}
+
+bool is_builtin_type(str_t type)
+{
+    return str_in(type, g_builtin_type_keywords);
+}
+
+bool is_aggregate_type(str_t type)
+{
+    auto out = false;
+    for(auto i = 0; i < g_file.types.size; i++)
+    {
+        if(str_equal(type.begin, g_file.types.begin[i].name.begin))
+        {
+            out = true;
+            break;
+        }
+    }
+    return out;
+}
+
+bool is_type(str_t type)
+{
+    return is_builtin_type(type)
+        || is_aggregate_type(type);
+}
+
 bool is_scalar(type_t type)
 {
-    return type.stars == 0;
+    return type.stars == 0 && is_builtin_type(type.name);
+}
+
+bool is_floating(type_t type)
+{
+    return str_equal(type.name.begin, g_double);
+}
+
+bool is_signed(type_t type)
+{
+    return str_equal(type.name.begin, g_i1)
+        || str_equal(type.name.begin, g_i8)
+        || str_equal(type.name.begin, g_i16)
+        || str_equal(type.name.begin, g_i32)
+        || str_equal(type.name.begin, g_i64);
+}
+
+bool is_regular_pointer(type_t type)
+{
+    return type.stars > 0;
 }
 
 bool is_pointer(type_t type)
 {
-    return !is_scalar(type) || is_generic_pointer(type);
+    return is_regular_pointer(type)
+        || is_generic_pointer(type);
 }
 
 code_t* get_code()
@@ -549,22 +618,9 @@ str_t str_init(char* chars)
     return str;
 }
 
-bool str_in(str_t str, char** array)
-{
-    while(*array)
-    {
-        if(str_equal(str.begin, *array))
-        {
-            return true;
-        }
-        array += 1;
-    }
-    return false;
-}
-
 char* get_builtin_prefix(type_t type)
 {
-    return str_in(type.name, g_type_keywords)
+    return str_in(type.name, g_builtin_type_keywords)
         ? g_empty
         : g_percent;
 }
@@ -608,21 +664,6 @@ str_t* str_in_list(str_t str, str_list_t* list)
         }
     }
     return nullptr;
-}
-
-bool is_type(str_t type)
-{
-    bool is_builtin = str_in(type, g_type_keywords);
-    bool is_type = false;
-    for(int i = 0; i < g_file.types.size; i++)
-    {
-        if(str_equal(type.begin, g_file.types.begin[i].name.begin))
-        {
-            is_type = true;
-            break;
-        }
-    }
-    return is_builtin || is_type;
 }
 
 bool is_reserved_keyword(str_t keyword)
@@ -1423,11 +1464,6 @@ bool is_relational(str_t operator)
 
 value_t operate(value_t left, value_t rite, str_t operator)
 {
-    if(str_equal(left.type.name.begin, g_double)
-    || str_equal(rite.type.name.begin, g_double))
-    {
-        quit("floating point operations currently not supported");
-    }
     value_t out = {};
     if(str_in(operator, get_operators(g_precedence_assignment)))
     {
@@ -1440,38 +1476,61 @@ value_t operate(value_t left, value_t rite, str_t operator)
     }
     else
     {
-        left = to_rvalue(left);
-        rite = to_rvalue(rite);
         assert_types_match(left.type, rite.type, operator);
-        out.slot = get_slot();
-        out.type = left.type;
-        out.type.stars = 0;
-        auto format =
-            str_equal(operator.begin, g_multiply        ) ? g_opcode_mul              :
-            str_equal(operator.begin, g_divide          ) ? g_opcode_sdiv             :
-            str_equal(operator.begin, g_mod             ) ? g_opcode_srem             :
-            str_equal(operator.begin, g_add             ) ? g_opcode_add              :
-            str_equal(operator.begin, g_subtract        ) ? g_opcode_sub              :
-            str_equal(operator.begin, g_equal_to        ) ? g_opcode_equal_to         :
-            str_equal(operator.begin, g_not_equal_to    ) ? g_opcode_not_equal_to     :
-            str_equal(operator.begin, g_less            ) ? g_opcode_less             :
-            str_equal(operator.begin, g_less_equal_to   ) ? g_opcode_less_equal_to    :
-            str_equal(operator.begin, g_greater         ) ? g_opcode_greater          :
-            str_equal(operator.begin, g_greater_equal_to) ? g_opcode_greater_equal_to :
-            str_equal(operator.begin, g_bitwise_and     ) ? g_opcode_bitwise_and      :
-            str_equal(operator.begin, g_bitwise_or      ) ? g_opcode_bitwise_or       :
-            str_equal(operator.begin, g_bitwise_xor     ) ? g_opcode_bitwise_xor      :
-            str_equal(operator.begin, g_shift_left      ) ? g_opcode_shift_left       :
-            str_equal(operator.begin, g_shift_rite      ) ? g_opcode_shift_rite       : nullptr;
-        if(format == nullptr)
+        if(is_aggregate_type(left.type.name))
         {
-            quit("unknown operator '%s'", operator.begin);
+            quit("operators on aggregate types not supported");
         }
-        auto llvm_type = to_llvm_type(left.type).begin;
-        emit(format, out.slot, llvm_type, left.slot, rite.slot);
-        if(is_relational(operator))
+        else
         {
-            out.type.name = str_init(g_i1);
+            left = to_rvalue(left);
+            rite = to_rvalue(rite);
+            out.slot = get_slot();
+            out.type = left.type;
+            out.type.stars = 0;
+            char* format = nullptr;
+            if(is_floating(left.type))
+            {
+                if(str_equal(operator.begin, g_multiply        )) format = g_opcode_floating_mul;
+                if(str_equal(operator.begin, g_divide          )) format = g_opcode_floating_div;
+                if(str_equal(operator.begin, g_add             )) format = g_opcode_floating_add;
+                if(str_equal(operator.begin, g_subtract        )) format = g_opcode_floating_sub;
+                if(str_equal(operator.begin, g_equal_to        )) format = g_opcode_floating_equal_to;
+                if(str_equal(operator.begin, g_not_equal_to    )) format = g_opcode_floating_not_equal_to;
+                if(str_equal(operator.begin, g_less            )) format = g_opcode_floating_less;
+                if(str_equal(operator.begin, g_less_equal_to   )) format = g_opcode_floating_less_equal_to;
+                if(str_equal(operator.begin, g_greater         )) format = g_opcode_floating_greater;
+                if(str_equal(operator.begin, g_greater_equal_to)) format = g_opcode_floating_greater_equal_to;
+            }
+            else
+            {
+                if(str_equal(operator.begin, g_multiply        )) format = g_opcode_mul;
+                if(str_equal(operator.begin, g_divide          )) format = g_opcode_sdiv;
+                if(str_equal(operator.begin, g_mod             )) format = g_opcode_srem;
+                if(str_equal(operator.begin, g_add             )) format = g_opcode_add;
+                if(str_equal(operator.begin, g_subtract        )) format = g_opcode_sub;
+                if(str_equal(operator.begin, g_equal_to        )) format = g_opcode_equal_to;
+                if(str_equal(operator.begin, g_not_equal_to    )) format = g_opcode_not_equal_to;
+                if(str_equal(operator.begin, g_less            )) format = g_opcode_less;
+                if(str_equal(operator.begin, g_less_equal_to   )) format = g_opcode_less_equal_to;
+                if(str_equal(operator.begin, g_greater         )) format = g_opcode_greater;
+                if(str_equal(operator.begin, g_greater_equal_to)) format = g_opcode_greater_equal_to;
+                if(str_equal(operator.begin, g_bitwise_and     )) format = g_opcode_bitwise_and;
+                if(str_equal(operator.begin, g_bitwise_or      )) format = g_opcode_bitwise_or;
+                if(str_equal(operator.begin, g_bitwise_xor     )) format = g_opcode_bitwise_xor;
+                if(str_equal(operator.begin, g_shift_left      )) format = g_opcode_shift_left;
+                if(str_equal(operator.begin, g_shift_rite      )) format = g_opcode_shift_rite;
+            }
+            if(format == nullptr)
+            {
+                quit("unknown operator '%s'", operator.begin);
+            }
+            auto llvm_type = to_llvm_type(left.type).begin;
+            emit(format, out.slot, llvm_type, left.slot, rite.slot);
+            if(is_relational(operator))
+            {
+                out.type.name = str_init(g_i1);
+            }
         }
     }
     return out;
@@ -1832,50 +1891,80 @@ int type_power(type_t type)
     return 0;
 }
 
-// TODO: SUPPORT i8 ZEXT CONVERSION AND DOUBLE TO INT CONVERSION AND VICE VERSA.
-
 value_t type_cast(value_t value, type_t type)
 {
     value = to_rvalue(value);
     auto from = value.type.name.begin;
     auto to = type.name.begin;
-    if(is_pointer(type))
+    if(str_equal(value.type.name.begin, g_i1))
     {
-        if(is_pointer(value.type))
-        {
-            value.type = type;
-            return value;
-        }
-        value_t out = {
-            .slot = get_slot(),
-            .type = type,
-        };
-        if(is_scalar(value.type))
-        {
-            emit(g_opcode_int_to_ptr, out.slot, from, value.slot);
-            return out;
-        }
+        quit("typecasting from booleans not supported");
+    }
+    if(str_equal(type.name.begin, g_i1))
+    {
+        quit("typecasting to booleans not supported");
+    }
+    if(is_pointer(type) && is_pointer(value.type))
+    {
+        value_t out = value;
+        out.type = type;
+        return out;
     }
     else
+    if(is_pointer(type) && is_scalar(value.type))
     {
-        auto x = type_power(type);
-        auto y = type_power(value.type);
-        if(x == y)
-        {
-            return value;
-        }
         value_t out = {
             .slot = get_slot(),
             .type = type,
         };
-        if(x > y)
+        emit(g_opcode_int_to_ptr, out.slot, from, value.slot);
+        return out;
+    }
+    else
+    if(is_scalar(type) && is_scalar(value.type))
+    {
+        if(is_signed(type) && is_signed(value.type))
         {
-            emit(g_opcode_signed_extend, out.slot, from, value.slot, to);
+            if(type_power(type) > type_power(value.type))
+            {
+                value_t out = {
+                    .slot = get_slot(),
+                    .type = type,
+                };
+                emit(g_opcode_signed_extend, out.slot, from, value.slot, to);
+                return out;
+            }
+            else
+            if(type_power(type) < type_power(value.type))
+            {
+                value_t out = {
+                    .slot = get_slot(),
+                    .type = type,
+                };
+                emit(g_opcode_trunc, out.slot, from, value.slot, to);
+                return out;
+            }
+            else
+            {
+                return value;
+            }
+        }
+        if(is_signed(type) && is_floating(value.type))
+        {
+            value_t out = {
+                .slot = get_slot(),
+                .type = type,
+            };
+            emit(g_opcode_float_to_signed, out.slot, from, value.slot, to);
             return out;
         }
-        if(x < y)
+        if(is_floating(type) && is_signed(value.type))
         {
-            emit(g_opcode_trunc, out.slot, from, value.slot, to);
+            value_t out = {
+                .slot = get_slot(),
+                .type = type,
+            };
+            emit(g_opcode_signed_to_float, out.slot, from, value.slot, to);
             return out;
         }
     }

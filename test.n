@@ -1361,6 +1361,59 @@ i64 test_ascii_char()
     ret 1;
 }
 
+i64
+test_double_type_cast()
+{
+    i64 a = <i64>(42.42);
+    i32 b = <i32>(41.42);
+    i16 c = <i16>(40.42);
+    i8  d =  <i8>(39.42);
+
+    double e = <double>(<i64>(42));
+    double f = <double>(<i32>(41));
+    double g = <double>(<i16>(40));
+    double h = <double>( <i8>(39));
+
+    if(a == 42
+     & b == <i32>(41)
+     & c == <i16>(40)
+     & d == <i8>(39)
+     & e == 42.0
+     & f == 41.0
+     & g == 40.0
+     & h == 39.0
+    )
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i64
+test_double_math()
+{
+    double x = 2.0;
+    double y = 1.0;
+    x = y;
+    if(x == y
+     & 3.0 * 3.0 == 9.0
+     & 3.0 / 3.0 == 1.0
+     & 3.0 - 3.0 == 0.0
+     & 3.0 + 3.0 == 6.0
+     & 6.0 > 0.0
+     & 6.0 >= 6.0
+     & 6.0 <= 6.0
+     & 0.0 < 6.0
+     & 0.0 <= 6.0
+     & 8.0 != 6.0
+     & 8.0 == 8.0
+    )
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     ret <i32> (
@@ -1427,6 +1480,8 @@ i32 main()
       | test_ret_int_field_access()
       | test_defer_continue()
       | test_ascii_char()
+      | test_double_type_cast()
+      | test_double_math()
     );
 }
 //
