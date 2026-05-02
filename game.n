@@ -90,7 +90,7 @@ type scancode_t
     i64 end;
 };
 
-type const_t
+type glob_t
 {
     sprite_tag_t sprite_tag;
     sprite_state_t sprite_state;
@@ -102,10 +102,10 @@ type const_t
     i64 percent_cap;
 };
 
-const_t
-const_init()
+glob_t
+glob_init()
 {
-    const_t self;
+    glob_t self;
     self.sprite_tag.chicken.black = 0;
     self.sprite_tag.chicken.white = 1;
     self.sprite_tag.chicken.brown = 2;
@@ -291,35 +291,35 @@ sprites_del(sprites_t* self)
 }
 
 void
-sprite_set_idle_state(sprite_t* self, const_t* const)
+sprite_set_idle_state(sprite_t* self, glob_t* glob)
 {
     point_t zero;
     self.velocity = zero;
-    self.cycle = const.sprite_state_cycles.idle;
+    self.cycle = glob.sprite_state_cycles.idle;
     ret;
 }
 
 void
-sprite_set_walk_state(sprite_t* self, const_t* const)
+sprite_set_walk_state(sprite_t* self, glob_t* glob)
 {
     i64 shift = self.zoom / 2;
     self.velocity.x = <i64>(rand()) % (self.zoom + 1) - shift;
     self.velocity.y = <i64>(rand()) % (self.zoom + 1) - shift;
-    self.cycle = const.sprite_state_cycles.walk;
+    self.cycle = glob.sprite_state_cycles.walk;
     ret;
 }
 
 void
-sprite_set_sleep_state(sprite_t* self, const_t* const)
+sprite_set_sleep_state(sprite_t* self, glob_t* glob)
 {
     point_t zero;
     self.velocity = zero;
-    self.cycle = const.sprite_state_cycles.sleep;
+    self.cycle = glob.sprite_state_cycles.sleep;
     ret;
 }
 
 sdl_rect_t
-sprite_get_source_rect(sprite_t* self, sheets_t* sheets, const_t* const)
+sprite_get_source_rect(sprite_t* self, sheets_t* sheets, glob_t* glob)
 {
     sheet_t* sheet = sprite_get_sheet(sheets, self.tag);
     i64 frame = self.frame % sheet.frames;
@@ -343,16 +343,16 @@ sprite_is_out_of_bounds(sprite_t* self, sdl_t* sdl, sheets_t* sheets)
 }
 
 i1
-sprite_can_walk(sprite_t* self, sheets_t* sheets, const_t* const)
+sprite_can_walk(sprite_t* self, sheets_t* sheets, glob_t* glob)
 {
     i64 states = sprite_get_sheet(sheets, self.tag).states;
-    ret states > const.sprite_state.walk;
+    ret states > glob.sprite_state.walk;
 }
 
 void
-sprite_move(sprite_t* self, sdl_t* sdl, sheets_t* sheets, const_t* const)
+sprite_move(sprite_t* self, sdl_t* sdl, sheets_t* sheets, glob_t* glob)
 {
-    if(sprite_can_walk(self, sheets, const))
+    if(sprite_can_walk(self, sheets, glob))
     {
         point_t revert = self.where;
         self.where = point_add(self.where, self.velocity);
@@ -360,7 +360,7 @@ sprite_move(sprite_t* self, sdl_t* sdl, sheets_t* sheets, const_t* const)
         {
             self.where = revert;
         }
-        if(self.state != const.sprite_state.sleep)
+        if(self.state != glob.sprite_state.sleep)
         {
             self.is_facing_right = self.velocity.x > 0;
         }
@@ -369,36 +369,36 @@ sprite_move(sprite_t* self, sdl_t* sdl, sheets_t* sheets, const_t* const)
 }
 
 i64
-sprite_roll_state(sprite_t* self, const_t* const)
+sprite_roll_state(sprite_t* self, glob_t* glob)
 {
     i64 state;
-    i64 roll = <i64>(rand()) % const.percent_cap;
-    if(roll < const.sprite_state_roll_cap.idle)
-        state = const.sprite_state.idle;
+    i64 roll = <i64>(rand()) % glob.percent_cap;
+    if(roll < glob.sprite_state_roll_cap.idle)
+        state = glob.sprite_state.idle;
     else
-    if(roll < const.sprite_state_roll_cap.walk)
-        state = const.sprite_state.walk;
+    if(roll < glob.sprite_state_roll_cap.walk)
+        state = glob.sprite_state.walk;
     else
-    if(roll < const.sprite_state_roll_cap.sleep)
-        state = const.sprite_state.sleep;
+    if(roll < glob.sprite_state_roll_cap.sleep)
+        state = glob.sprite_state.sleep;
     ret state;
 }
 
 void
-sprite_set_state(sprite_t* self, sheets_t* sheets, const_t* const)
+sprite_set_state(sprite_t* self, sheets_t* sheets, glob_t* glob)
 {
     if(self.cycle == 0)
     {
         sheet_t* sheet = sprite_get_sheet(sheets, self.tag);
-        i64 state = sprite_roll_state(self, const);
-        if(state == const.sprite_state.idle)
-            sprite_set_idle_state(self, const);
+        i64 state = sprite_roll_state(self, glob);
+        if(state == glob.sprite_state.idle)
+            sprite_set_idle_state(self, glob);
         else
-        if(state == const.sprite_state.walk)
-            sprite_set_walk_state(self, const);
+        if(state == glob.sprite_state.walk)
+            sprite_set_walk_state(self, glob);
         else
-        if(state == const.sprite_state.sleep)
-            sprite_set_sleep_state(self, const);
+        if(state == glob.sprite_state.sleep)
+            sprite_set_sleep_state(self, glob);
         else
             abort("unknown sprite state encountered");
         self.state = state;
@@ -411,28 +411,28 @@ sprite_set_state(sprite_t* self, sheets_t* sheets, const_t* const)
 }
 
 void
-sprites_move(sprites_t* self, sdl_t* sdl, sheets_t* sheets, const_t* const)
+sprites_move(sprites_t* self, sdl_t* sdl, sheets_t* sheets, glob_t* glob)
 {
     i64 i = 0;
     while(i < self.size)
     {
         defer i++;
         sprite_t* sprite = &self.sprite[i];
-        sprite_set_state(sprite, sheets, const);
-        sprite_move(sprite, sdl, sheets, const);
+        sprite_set_state(sprite, sheets, glob);
+        sprite_move(sprite, sdl, sheets, glob);
     }
     ret;
 }
 
 void
-sprites_render(sprites_t* self, sdl_t* sdl, sheets_t* sheets, const_t* const, i64 cycle)
+sprites_render(sprites_t* self, sdl_t* sdl, sheets_t* sheets, glob_t* glob, i64 cycle)
 {
     i64 i = 0;
     while(i < self.size)
     {
         defer i++;
         sprite_t* sprite = &self.sprite[i];
-        sdl_rect_t source = sprite_get_source_rect(sprite, sheets, const);
+        sdl_rect_t source = sprite_get_source_rect(sprite, sheets, glob);
         sdl_rect_t dest = sprite_get_dest_rect(sprite, sheets);
         i32 flip;
         if(sprite.is_facing_right)
@@ -460,18 +460,18 @@ populate_sheets(sdl_t* sdl)
 }
 
 sprites_t
-populate_sprites(sdl_t* sdl, const_t* const)
+populate_sprites(sdl_t* sdl, glob_t* glob)
 {
     sprites_t self = sprites_init();
-    sprites_push(&self, sprite_init(  0,   0, const.sprite_tag.chicken.black, 4));
-    sprites_push(&self, sprite_init(100, 100, const.sprite_tag.chicken.white, 8));
-    sprites_push(&self, sprite_init(200, 200, const.sprite_tag.chicken.brown, 4));
-    sprites_push(&self, sprite_init(300, 200, const.sprite_tag.chicken.brown, 6));
-    sprites_push(&self, sprite_init(400, 200, const.sprite_tag.chicken.white, 4));
-    sprites_push(&self, sprite_init(440, 280, const.sprite_tag.chicken.black, 6));
-    sprites_push(&self, sprite_init(600, 270, const.sprite_tag.chicken.black, 4));
-    sprites_push(&self, sprite_init(700, 270, const.sprite_tag.chicken.white, 6));
-    sprites_push(&self, sprite_init(400, 400, const.sprite_tag.nest.brown,    4));
+    sprites_push(&self, sprite_init(  0,   0, glob.sprite_tag.chicken.black, 4));
+    sprites_push(&self, sprite_init(100, 100, glob.sprite_tag.chicken.white, 8));
+    sprites_push(&self, sprite_init(200, 200, glob.sprite_tag.chicken.brown, 4));
+    sprites_push(&self, sprite_init(300, 200, glob.sprite_tag.chicken.brown, 6));
+    sprites_push(&self, sprite_init(400, 200, glob.sprite_tag.chicken.white, 4));
+    sprites_push(&self, sprite_init(440, 280, glob.sprite_tag.chicken.black, 6));
+    sprites_push(&self, sprite_init(600, 270, glob.sprite_tag.chicken.black, 4));
+    sprites_push(&self, sprite_init(700, 270, glob.sprite_tag.chicken.white, 6));
+    sprites_push(&self, sprite_init(400, 400, glob.sprite_tag.nest.brown,    4));
     ret self;
 }
 
@@ -560,10 +560,10 @@ sdl_write_font(sdl_t* sdl, font_t* self, i8* message, i64 x, i64 y)
 
 i32 main()
 {
-    const_t const = const_init();
+    glob_t glob = glob_init();
     sdl_t sdl = sdl_init(1024, 768);
     sheets_t sheets = populate_sheets(&sdl);
-    sprites_t sprites = populate_sprites(&sdl, &const);
+    sprites_t sprites = populate_sprites(&sdl, &glob);
     font_t font = font_init(&sdl, "font.bmp", 2, 16, 8, 8, 8);
     defer sdl_del(&sdl);
     defer sheets_del(&sheets);
@@ -571,18 +571,18 @@ i32 main()
     defer font_del(&font);
 
     i64 cycle = 0;
-    while(const.true)
+    while(glob.true)
     {
         defer cycle++;
-        if(sdl_is_key_down(const.scancode.end))
+        if(sdl_is_key_down(glob.scancode.end))
         {
             puts("Thanks for playing...");
             ret <i32>(0);
         }
-        sprites_move(&sprites, &sdl, &sheets, &const);
+        sprites_move(&sprites, &sdl, &sheets, &glob);
         sprites_sort(&sprites, &sheets);
         sdl_clear_screen(&sdl);
-        sprites_render(&sprites, &sdl, &sheets, &const, cycle);
+        sprites_render(&sprites, &sdl, &sheets, &glob, cycle);
         sdl_write_font(&sdl, &font, "this is a test!!!!\nTHIS IS\'' A TEST", 0, 0);
         sdl_present(&sdl);
         sdl_delay(10);

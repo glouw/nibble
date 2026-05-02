@@ -654,7 +654,7 @@ i64 test_zero_init()
     i64* pppp;
     zero_t zero;
 
-    if( // a == <i1>(0) // FIX ME - I AM USING SEXT AND NOT ZEXT
+    if(
        b == <i8>(0)
      & c == <i16>(0)
      & d == <i64>(0)
@@ -667,7 +667,6 @@ i64 test_zero_init()
      & zero.b == <i32>(0)
      & zero.c == <i16>(0)
      & zero.d == <i8>(0)
-     // & zero.e == <i1>(0) // AND ME TOO -- SEE ABOVE
     )
     {
         ret 0;
@@ -1054,6 +1053,11 @@ i64 test_direct_function_deref()
     ret 1;
 }
 
+type double_t
+{
+    double value;
+};
+
 type int_t
 {
     i64 value;
@@ -1222,7 +1226,16 @@ i64 test_postix_increment()
     int.value++;
     i64 x = 41;
     i64 y = x++;
-    if(y == 41 & x == 42 & int.value == 42)
+
+    double_t d;
+
+    if(y == 41
+     & x == 42
+     & int.value == 42
+     & int.value++ == 42
+     & d.value++ == 0.0
+     & d.value == 1.0
+     )
     {
         ret 0;
     }
@@ -1236,7 +1249,13 @@ i64 test_postix_decrement()
     int.value--;
     i64 x = 42;
     i64 y = x--;
-    if(y == 42 & x == 41 & int.value == 42)
+    double_t d;
+    if(y == 42
+     & x == 41
+     & int.value == 42
+     & d.value-- == 0.0
+     & d.value == -1.0
+     )
     {
         ret 0;
     }
@@ -1250,7 +1269,12 @@ i64 test_prefix_increment()
     ++int.value;
     i64 x = 41;
     i64 y = ++x;
-    if(y == 42 & x == 42 & int.value == 42)
+    double_t d;
+    if(y == 42
+     & x == 42
+     & int.value == 42
+     & ++d.value == 1.0
+    )
     {
         ret 0;
     }
@@ -1264,7 +1288,12 @@ i64 test_prefix_decrement()
     --int.value;
     i64 x = 43;
     i64 y = --x;
-    if(y == 42 & x == 42 & int.value == 42)
+    double_t d;
+    if(y == 42
+     & x == 42
+     & int.value == 42
+     & --d.value == -1.0
+    )
     {
         ret 0;
     }
@@ -1392,7 +1421,7 @@ test_double_type_cast()
 i64
 test_double_math()
 {
-    double x = 2.0;
+    double x = 1.0;
     double y = 1.0;
     x = y;
     if(x == y
@@ -1408,6 +1437,18 @@ test_double_math()
      & 8.0 != 6.0
      & 8.0 == 8.0
     )
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i64
+test_float_math()
+{
+    float x = <float>(1.0);
+    float y = <float>(2.0);
+    if(x + y == <float>(3.0))
     {
         ret 0;
     }
@@ -1482,6 +1523,7 @@ i32 main()
       | test_ascii_char()
       | test_double_type_cast()
       | test_double_math()
+      | test_float_math()
     );
 }
 //

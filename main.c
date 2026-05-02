@@ -220,6 +220,7 @@ char* const g_i16                              = "i16";
 char* const g_i32                              = "i32";
 char* const g_i64                              = "i64";
 char* const g_double                           = "double";
+char* const g_float                            = "float";
 char* const g_ret                              = "ret";
 char* const g_ptr                              = "ptr";
 char* const g_if                               = "if";
@@ -287,6 +288,9 @@ char* const g_opcode_alloca_string             = "%%%d = alloca [%d x i8]";
 char* const g_opcode_store_string              = "store [%d x i8] c\"%s\", ptr %%%d";
 char* const g_opcode_increment                 = "%%%d = add %s %%%d, 1";
 char* const g_opcode_decrement                 = "%%%d = sub %s %%%d, 1";
+char* const g_opcode_floating_negative         = "%%%d = fmul %s %%%d, -1.0";
+char* const g_opcode_floating_increment        = "%%%d = fadd %s %%%d, 1.0";
+char* const g_opcode_floating_decrement        = "%%%d = fsub %s %%%d, 1.0";
 char* const g_opcode_floating_mul              = "%%%d = fmul %s %%%d, %%%d";
 char* const g_opcode_floating_div              = "%%%d = fdiv %s %%%d, %%%d";
 char* const g_opcode_floating_add              = "%%%d = fadd %s %%%d, %%%d";
@@ -299,6 +303,8 @@ char* const g_opcode_floating_greater          = "%%%d = fcmp ogt %s %%%d, %%%d"
 char* const g_opcode_floating_greater_equal_to = "%%%d = fcmp oge %s %%%d, %%%d";
 char* const g_opcode_float_to_signed           = "%%%d = fptosi %s %%%d to %s";
 char* const g_opcode_signed_to_float           = "%%%d = sitofp %s %%%d to %s";
+char* const g_opcode_floating_trunc            = "%%%d = fptrunc %s %%%d to %s";
+char* const g_opcode_floating_extend           = "%%%d = fpext %s %%%d to %s";
 
 char* g_operator_chars[] = {
     g_dot,
@@ -334,7 +340,22 @@ char* g_builtin_type_keywords[] = {
     g_i32,
     g_i64,
     g_double,
+    g_float,
     g_ptr,
+    nullptr
+};
+
+char* g_signed[] = {
+    g_i8,
+    g_i16,
+    g_i32,
+    g_i64,
+    nullptr
+};
+
+char* g_floating[] = {
+    g_double,
+    g_float,
     nullptr
 };
 
@@ -343,6 +364,8 @@ char* g_scalars[] = {
     g_i16,
     g_i32,
     g_i64,
+    g_double,
+    g_float,
     nullptr
 };
 
@@ -543,16 +566,12 @@ bool is_scalar(type_t type)
 
 bool is_floating(type_t type)
 {
-    return str_equal(type.name.begin, g_double);
+    return str_in(type.name, g_floating);
 }
 
 bool is_signed(type_t type)
 {
-    return str_equal(type.name.begin, g_i1)
-        || str_equal(type.name.begin, g_i8)
-        || str_equal(type.name.begin, g_i16)
-        || str_equal(type.name.begin, g_i32)
-        || str_equal(type.name.begin, g_i64);
+    return str_in(type.name, g_signed);
 }
 
 bool is_regular_pointer(type_t type)
@@ -620,9 +639,7 @@ str_t str_init(char* chars)
 
 char* get_builtin_prefix(type_t type)
 {
-    return str_in(type.name, g_builtin_type_keywords)
-        ? g_empty
-        : g_percent;
+    return str_in(type.name, g_builtin_type_keywords) ? g_empty : g_percent;
 }
 
 str_t to_llvm_type(type_t type)
@@ -1479,7 +1496,7 @@ value_t operate(value_t left, value_t rite, str_t operator)
         assert_types_match(left.type, rite.type, operator);
         if(is_aggregate_type(left.type.name))
         {
-            quit("operators on aggregate types not supported");
+            quit("operator '%s' on aggregate type not supported", operator.begin);
         }
         else
         {
@@ -1668,7 +1685,9 @@ value_t increment(value_t value, bool prefix)
         .type = value.type,
     };
     auto llvm_type = to_llvm_type(out.type).begin;
-    emit(g_opcode_increment, out.slot, llvm_type, value.slot);
+    is_floating(value.type)
+        ? emit(g_opcode_floating_increment, out.slot, llvm_type, value.slot)
+        : emit(g_opcode_increment, out.slot, llvm_type, value.slot);
     emit(g_opcode_store, llvm_type, out.slot, slot);
     return prefix ? out : value;
 }
@@ -1694,7 +1713,9 @@ value_t decrement(value_t value, bool prefix)
         .type = value.type,
     };
     auto llvm_type = to_llvm_type(out.type).begin;
-    emit(g_opcode_decrement, out.slot, llvm_type, value.slot);
+    is_floating(value.type)
+        ? emit(g_opcode_floating_decrement, out.slot, llvm_type, value.slot)
+        : emit(g_opcode_decrement, out.slot, llvm_type, value.slot);
     emit(g_opcode_store, llvm_type, out.slot, slot);
     return prefix ? out : value;
 }
@@ -1763,7 +1784,9 @@ value_t to_negative(value_t value)
         .type = value.type,
     };
     auto llvm_type = to_llvm_type(value.type).begin;
-    emit(g_opcode_negative, out.slot, llvm_type, value.slot);
+    is_floating(out.type)
+        ? emit(g_opcode_floating_negative, out.slot, llvm_type, value.slot)
+        : emit(g_opcode_negative, out.slot, llvm_type, value.slot);
     return out;
 }
 
@@ -1868,7 +1891,7 @@ value_t do_del(value_t value)
     return out;
 }
 
-int type_power(type_t type)
+int signed_power(type_t type)
 {
     char* at = type.name.begin;
     if(str_equal(at, g_i8))
@@ -1925,7 +1948,7 @@ value_t type_cast(value_t value, type_t type)
     {
         if(is_signed(type) && is_signed(value.type))
         {
-            if(type_power(type) > type_power(value.type))
+            if(signed_power(type) > signed_power(value.type))
             {
                 value_t out = {
                     .slot = get_slot(),
@@ -1935,7 +1958,7 @@ value_t type_cast(value_t value, type_t type)
                 return out;
             }
             else
-            if(type_power(type) < type_power(value.type))
+            if(signed_power(type) < signed_power(value.type))
             {
                 value_t out = {
                     .slot = get_slot(),
@@ -1966,6 +1989,28 @@ value_t type_cast(value_t value, type_t type)
             };
             emit(g_opcode_signed_to_float, out.slot, from, value.slot, to);
             return out;
+        }
+        if(is_floating(type) && is_floating(value.type))
+        {
+            if(str_equal(type.name.begin, g_float) && str_equal(value.type.name.begin, g_double))
+            {
+                value_t out = {
+                    .slot = get_slot(),
+                    .type = type,
+                };
+                emit(g_opcode_floating_trunc, out.slot, from, value.slot, to);
+                return out;
+            }
+            if(str_equal(type.name.begin, g_double) && str_equal(value.type.name.begin, g_float))
+            {
+                value_t out = {
+                    .slot = get_slot(),
+                    .type = type,
+                };
+                emit(g_opcode_floating_extend, out.slot, from, value.slot, to);
+                return out;
+            }
+            return value;
         }
     }
     quit("could not type cast '%s' to '%s'", from, to);
