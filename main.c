@@ -219,6 +219,10 @@ char* const g_i8                               = "i8";
 char* const g_i16                              = "i16";
 char* const g_i32                              = "i32";
 char* const g_i64                              = "i64";
+char* const g_u8                               = "u8";
+char* const g_u16                              = "u16";
+char* const g_u32                              = "u32";
+char* const g_u64                              = "u64";
 char* const g_double                           = "double";
 char* const g_float                            = "float";
 char* const g_ret                              = "ret";
@@ -280,6 +284,7 @@ char* const g_opcode_type_slot                 = "%s %%%d";
 char* const g_opcode_call                      = "%%%d = call %s @%s";
 char* const g_opcode_void_call                 = "call %s @%s";
 char* const g_opcode_entry                     = "entry:";
+char* const g_opcode_zero_extend               = "%%%d = zext %s %%%d to %s";
 char* const g_opcode_signed_extend             = "%%%d = sext %s %%%d to %s";
 char* const g_opcode_trunc                     = "%%%d = trunc %s %%%d to %s";
 char* const g_opcode_malloc                    = "%%%d = call ptr @malloc(i64 %%%d)";
@@ -302,7 +307,9 @@ char* const g_opcode_floating_less_equal_to    = "%%%d = fcmp ole %s %%%d, %%%d"
 char* const g_opcode_floating_greater          = "%%%d = fcmp ogt %s %%%d, %%%d";
 char* const g_opcode_floating_greater_equal_to = "%%%d = fcmp oge %s %%%d, %%%d";
 char* const g_opcode_float_to_signed           = "%%%d = fptosi %s %%%d to %s";
+char* const g_opcode_float_to_unsigned         = "%%%d = fptoui %s %%%d to %s";
 char* const g_opcode_signed_to_float           = "%%%d = sitofp %s %%%d to %s";
+char* const g_opcode_unsigned_to_float         = "%%%d = uitofp %s %%%d to %s";
 char* const g_opcode_floating_trunc            = "%%%d = fptrunc %s %%%d to %s";
 char* const g_opcode_floating_extend           = "%%%d = fpext %s %%%d to %s";
 
@@ -339,6 +346,10 @@ char* g_builtin_type_keywords[] = {
     g_i16,
     g_i32,
     g_i64,
+    g_u8,
+    g_u16,
+    g_u32,
+    g_u64,
     g_double,
     g_float,
     g_ptr,
@@ -353,6 +364,14 @@ char* g_signed[] = {
     nullptr
 };
 
+char* g_unsigned[] = {
+    g_u8,
+    g_u16,
+    g_u32,
+    g_u64,
+    nullptr
+};
+
 char* g_floating[] = {
     g_double,
     g_float,
@@ -364,6 +383,10 @@ char* g_scalars[] = {
     g_i16,
     g_i32,
     g_i64,
+    g_u8,
+    g_u16,
+    g_u32,
+    g_u64,
     g_double,
     g_float,
     nullptr
@@ -572,6 +595,11 @@ bool is_signed(type_t type)
     return str_in(type.name, g_signed);
 }
 
+bool is_unsigned(type_t type)
+{
+    return str_in(type.name, g_unsigned);
+}
+
 bool is_regular_pointer(type_t type)
 {
     return type.stars > 0;
@@ -648,9 +676,14 @@ str_t to_llvm_type(type_t type)
     }
     else
     {
-        auto prefix = get_builtin_prefix(type);
+        auto llvm_type = type;
+        if(is_unsigned(llvm_type))
+        {
+            llvm_type.name.begin[0] = 'i';
+        }
+        auto prefix = get_builtin_prefix(llvm_type);
         auto out = str_init(prefix);
-        str_append(&out, type.name.begin);
+        str_append(&out, llvm_type.name.begin);
         return out;
     }
 }
@@ -1231,6 +1264,16 @@ void read_while_statement(value_t ret_value, int block)
     g_file.loop_end.size -= 1;
 }
 
+value_t alloca_value()
+{
+    auto value = read_value_decl();
+    list_append(&g_file.values, value);
+    auto llvm_type = to_llvm_type(value.type).begin;
+    emit(g_opcode_alloca, value.slot, llvm_type);
+    emit(g_opcode_zero_init, llvm_type, value.slot);
+    return value;
+}
+
 bool read_block(value_t, scope_t);
 
 bool read_statement(value_t ret_value, scope_t scope, int block)
@@ -1275,11 +1318,7 @@ bool read_statement(value_t ret_value, scope_t scope, int block)
     else
     if(is_type(keyword))
     {
-        auto value = read_value_decl();
-        list_append(&g_file.values, value);
-        auto llvm_type = to_llvm_type(value.type).begin;
-        emit(g_opcode_alloca, value.slot, llvm_type);
-        emit(g_opcode_zero_init, llvm_type, value.slot);
+        auto value = alloca_value();
         auto read = skip_space_and_comment();
         if(next_char() == *g_semicolon)
         {
@@ -1519,6 +1558,11 @@ value_t operate(value_t left, value_t rite, str_t operator)
                 if(str_equal(operator.begin, g_less_equal_to   )) format = g_opcode_floating_less_equal_to;
                 if(str_equal(operator.begin, g_greater         )) format = g_opcode_floating_greater;
                 if(str_equal(operator.begin, g_greater_equal_to)) format = g_opcode_floating_greater_equal_to;
+            }
+            else
+            if(is_unsigned(left.type))
+            {
+                quit("operations on unsigned types not supported");
             }
             else
             {
@@ -1892,41 +1936,49 @@ value_t do_del(value_t value)
     return out;
 }
 
-int floating_power(type_t type)
+typedef enum
+{
+    g_power_8,
+    g_power_16,
+    g_power_32,
+    g_power_64,
+    g_power_float,
+    g_power_double,
+}
+type_power_t;
+
+type_power_t type_power(type_t type)
 {
     auto at = type.name.begin;
+    if(str_equal(at, g_i8)
+    || str_equal(at, g_u8))
+    {
+        return g_power_8;
+    }
+    if(str_equal(at, g_i16)
+    || str_equal(at, g_u16))
+    {
+        return g_power_16;
+    }
+    if(str_equal(at, g_i32)
+    || str_equal(at, g_u32))
+    {
+        return g_power_32;
+    }
+    if(str_equal(at, g_i64)
+    || str_equal(at, g_u64))
+    {
+        return g_power_64;
+    }
     if(str_equal(at, g_float))
     {
-        return 1;
+        return g_power_float;
     }
     if(str_equal(at, g_double))
     {
-        return 2;
+        return g_power_double;
     }
-    quit("unknown floating power for type '%s'", at);
-    return 0;
-}
-
-int signed_power(type_t type)
-{
-    auto at = type.name.begin;
-    if(str_equal(at, g_i8))
-    {
-        return 1;
-    }
-    if(str_equal(at, g_i16))
-    {
-        return 2;
-    }
-    if(str_equal(at, g_i32))
-    {
-        return 3;
-    }
-    if(str_equal(at, g_i64))
-    {
-        return 4;
-    }
-    quit("unknown signed power for type '%s'", at);
+    quit("unknown type power '%s'", at);
     return 0;
 }
 
@@ -1939,78 +1991,151 @@ value_t pointer_to_pointer(value_t value, type_t type)
 
 value_t signed_to_pointer(value_t value, type_t type)
 {
+    auto llvm_type = to_llvm_type(value.type).begin;
     value_t out = {
         .slot = get_slot(),
         .type = type,
     };
-    emit(g_opcode_int_to_ptr, out.slot, value.type.name.begin, value.slot);
+    emit(g_opcode_int_to_ptr, out.slot, llvm_type, value.slot);
     return out;
+}
+
+value_t unsigned_to_pointer(value_t value, type_t type)
+{
+    auto llvm_type = to_llvm_type(value.type).begin;
+    value_t out = {
+        .slot = get_slot(),
+        .type = type,
+    };
+    emit(g_opcode_int_to_ptr, out.slot, llvm_type, value.slot);
+    return out;
+}
+
+value_t integral_to_integral(value_t value, type_t type, bool from_signed)
+{
+    auto llvm_type_a = to_llvm_type(value.type).begin;
+    auto llvm_type_b = to_llvm_type(type).begin;
+    if(type_power(type) > type_power(value.type))
+    {
+        auto extend = from_signed ? g_opcode_signed_extend : g_opcode_zero_extend;
+        value_t out = {
+            .slot = get_slot(),
+            .type = type,
+        };
+        emit(extend, out.slot, llvm_type_a, value.slot, llvm_type_b);
+        return out;
+    }
+    if(type_power(type) < type_power(value.type))
+    {
+        value_t out = {
+            .slot = get_slot(),
+            .type = type,
+        };
+        emit(g_opcode_trunc, out.slot, llvm_type_a, value.slot, llvm_type_b);
+        return out;
+    }
+    value.type = type;
+    return value;
 }
 
 value_t signed_to_signed(value_t value, type_t type)
 {
-    if(signed_power(type) > signed_power(value.type))
-    {
-        value_t out = {
-            .slot = get_slot(),
-            .type = type,
-        };
-        emit(g_opcode_signed_extend, out.slot, value.type.name.begin, value.slot, type.name.begin);
-        return out;
-    }
-    if(signed_power(type) < signed_power(value.type))
-    {
-        value_t out = {
-            .slot = get_slot(),
-            .type = type,
-        };
-        emit(g_opcode_trunc, out.slot, value.type.name.begin, value.slot, type.name.begin);
-        return out;
-    }
-    return value;
+    return integral_to_integral(value, type, true);
+}
+
+value_t signed_to_unsigned(value_t value, type_t type)
+{
+    return integral_to_integral(value, type, true);
+}
+
+value_t unsigned_to_unsigned(value_t value, type_t type)
+{
+    return integral_to_integral(value, type, false);
+}
+
+value_t unsigned_to_signed(value_t value, type_t type)
+{
+    return integral_to_integral(value, type, false);
 }
 
 value_t floating_to_signed(value_t value, type_t type)
 {
+    auto llvm_type_a = to_llvm_type(value.type).begin;
+    auto llvm_type_b = to_llvm_type(type).begin;
     value_t out = {
         .slot = get_slot(),
         .type = type,
     };
-    emit(g_opcode_float_to_signed, out.slot, value.type.name.begin, value.slot, type.name.begin);
+    emit(g_opcode_float_to_signed, out.slot, llvm_type_a, value.slot, llvm_type_b);
+    return out;
+}
+
+value_t floating_to_unsigned(value_t value, type_t type)
+{
+    auto llvm_type_a = to_llvm_type(value.type).begin;
+    auto llvm_type_b = to_llvm_type(type).begin;
+    value_t out = {
+        .slot = get_slot(),
+        .type = type,
+    };
+    emit(g_opcode_float_to_unsigned, out.slot, llvm_type_a, value.slot, llvm_type_b);
     return out;
 }
 
 value_t signed_to_floating(value_t value, type_t type)
 {
+    auto llvm_type_a = to_llvm_type(value.type).begin;
+    auto llvm_type_b = to_llvm_type(type).begin;
     value_t out = {
         .slot = get_slot(),
         .type = type,
     };
-    emit(g_opcode_signed_to_float, out.slot, value.type.name.begin, value.slot, type.name.begin);
+    emit(g_opcode_signed_to_float, out.slot, llvm_type_a, value.slot, llvm_type_b);
+    return out;
+}
+
+value_t unsigned_to_floating(value_t value, type_t type)
+{
+    auto llvm_type_a = to_llvm_type(value.type).begin;
+    auto llvm_type_b = to_llvm_type(type).begin;
+    value_t out = {
+        .slot = get_slot(),
+        .type = type,
+    };
+    emit(g_opcode_unsigned_to_float, out.slot, llvm_type_a, value.slot, llvm_type_b);
     return out;
 }
 
 value_t floating_to_floating(value_t value, type_t type)
 {
-    if(floating_power(type) < floating_power(value.type))
+    auto llvm_type_a = to_llvm_type(value.type).begin;
+    auto llvm_type_b = to_llvm_type(type).begin;
+    if(type_power(type) < type_power(value.type))
     {
         value_t out = {
             .slot = get_slot(),
             .type = type,
         };
-        emit(g_opcode_floating_trunc, out.slot, value.type.name.begin, value.slot, type.name.begin);
+        emit(g_opcode_floating_trunc, out.slot, llvm_type_a, value.slot, llvm_type_b);
         return out;
     }
-    if(floating_power(type) > floating_power(value.type))
+    if(type_power(type) > type_power(value.type))
     {
         value_t out = {
             .slot = get_slot(),
             .type = type,
         };
-        emit(g_opcode_floating_extend, out.slot, value.type.name.begin, value.slot, type.name.begin);
+        emit(g_opcode_floating_extend, out.slot, llvm_type_a, value.slot, llvm_type_b);
         return out;
     }
     return value;
+}
+
+void could_not_type_cast(value_t value, type_t type)
+{
+    auto llvm_type_a = to_llvm_type(value.type).begin;
+    auto llvm_type_b = to_llvm_type(type).begin;
+    quit("could not type cast '%s' to '%s'", llvm_type_a, llvm_type_b);
 }
 
 value_t type_cast(value_t value, type_t type)
@@ -2018,37 +2143,74 @@ value_t type_cast(value_t value, type_t type)
     value = to_rvalue(value);
     if(str_equal(value.type.name.begin, g_i1))
     {
-        quit("typecasting from i8 not supported");
+        quit("type casting from i8 not supported");
     }
     if(str_equal(type.name.begin, g_i1))
     {
-        quit("typecasting to i8 not supported");
+        quit("type casting to i8 not supported");
     }
+    // pointer -> pointer
     if(is_pointer(value.type) && is_pointer(type))
     {
         return pointer_to_pointer(value, type);
     }
-    if(is_signed(value.type) && is_pointer(type))
+    // signed -> pointer | signed | unsigned | floating
+    if(is_signed(value.type))
     {
-        return signed_to_pointer(value, type);
+        if(is_pointer(type))
+        {
+            return signed_to_pointer(value, type);
+        }
+        if(is_signed(type))
+        {
+            return signed_to_signed(value, type);
+        }
+        if(is_unsigned(type))
+        {
+            return signed_to_unsigned(value, type);
+        }
+        if(is_floating(type))
+        {
+            return signed_to_floating(value, type);
+        }
     }
-    if(is_signed(value.type) && is_signed(type))
+    // unsigned -> pointer | signed | unsigned | floating
+    if(is_unsigned(value.type))
     {
-        return signed_to_signed(value, type);
+        if(is_pointer(type))
+        {
+            return unsigned_to_pointer(value, type);
+        }
+        if(is_signed(type))
+        {
+            return unsigned_to_signed(value, type);
+        }
+        if(is_unsigned(type))
+        {
+            return unsigned_to_unsigned(value, type);
+        }
+        if(is_floating(type))
+        {
+            return unsigned_to_floating(value, type);
+        }
     }
-    if(is_floating(value.type) && is_signed(type))
+    // floating -> signed | unsigned | floating
+    if(is_floating(value.type))
     {
-        return floating_to_signed(value, type);
+        if(is_signed(type))
+        {
+            return floating_to_signed(value, type);
+        }
+        if(is_unsigned(type))
+        {
+            return floating_to_unsigned(value, type);
+        }
+        if(is_floating(value.type))
+        {
+            return floating_to_floating(value, type);
+        }
     }
-    if(is_signed(value.type) && is_floating(type))
-    {
-        return signed_to_floating(value, type);
-    }
-    if(is_floating(type) && is_floating(value.type))
-    {
-        return floating_to_floating(value, type);
-    }
-    quit("could not type cast '%s' to '%s'", value.type.name.begin, type.name.begin);
+    could_not_type_cast(value, type);
     return (value_t) {};
 }
 

@@ -1448,11 +1448,47 @@ test_float_math()
 {
     float x = <float>(1.0);
     float y = <float>(2.0);
-    if(x + y == <float>(3.0))
+    x = y;
+    if(x == y
+     & <float>(3.0)  * <float>(3.0) == <float>(9.0)
+     & <float>(3.0)  / <float>(3.0) == <float>(1.0)
+     & <float>(3.0)  - <float>(3.0) == <float>(0.0)
+     & <float>(3.0)  + <float>(3.0) == <float>(6.0)
+     & <float>(6.0)  > <float>(0.0)
+     & <float>(6.0) >= <float>(6.0)
+     & <float>(6.0) <= <float>(6.0)
+     & <float>(0.0)  < <float>(6.0)
+     & <float>(0.0) <= <float>(6.0)
+     & <float>(8.0) != <float>(6.0)
+     & <float>(8.0) == <float>(8.0)
+    )
     {
         ret 0;
     }
     ret 1;
+}
+
+i64
+test_unsigned()
+{
+    u8  a =  <u8>(42);
+    u16 b = <u16>(42);
+    u32 c = <u32>(42);
+    u64 d = <u64>(42);
+
+    u8  fa =  <u8>(42.0);
+    u16 fb = <u16>(42.0);
+    u32 fc = <u32>(42.0);
+    u64 fd = <u64>(42.0);
+
+    a =  <u8>(a);
+    b = <u16>(b);
+    c = <u32>(c);
+    d = <u64>(d);
+
+    a + a;
+
+    ret 0;
 }
 
 i32 main()
