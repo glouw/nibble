@@ -39,6 +39,19 @@ void str_cat(str_t* self, str_t* other)
     ret;
 }
 
+void str_cats(str_t* self, i8* other)
+{
+    str_t out;
+    out.size = self.size + strlen(other);
+    out.data = new i8[out.size + 1];
+    i64 index;
+    strcpy(out.data, self.data);
+    strcat(out.data, other);
+    del self.data;
+    *self = out;
+    ret;
+}
+
 void str_del(str_t* self)
 {
     del self.data;

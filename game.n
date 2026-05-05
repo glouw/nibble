@@ -39,14 +39,14 @@ sheet_del(sheet_t* self)
 
 type chicken_t
 {
-    i64 black;
-    i64 white;
-    i64 brown;
+    i64 black = 0;
+    i64 white = 1;
+    i64 brown = 2;
 };
 
 type nest_t
 {
-    i64 brown;
+    i64 brown = 3;
 };
 
 type sprite_tag_t
@@ -57,63 +57,44 @@ type sprite_tag_t
 
 type sprite_state_t
 {
-    i64 idle;
-    i64 walk;
-    i64 sleep;
+    i64 idle = 0;
+    i64 walk = 1;
+    i64 sleep = 2;
 };
 
-type sprite_state_cycles_t
+type sprite_cycles_t
 {
-    i64 idle;
-    i64 walk;
-    i64 sleep;
+    i64 idle = 30;
+    i64 walk = 40;
+    i64 sleep = 500;
 };
 
-type sprite_state_roll_cap_t
+type sprite_dice_t
 {
-    i64 idle;
-    i64 walk;
-    i64 sleep;
+    i64 idle = 20;
+    i64 walk = 98;
+    i64 sleep = 100;
 };
 
 type scancode_t
 {
-    i64 end;
+    i64 end = 77;
 };
 
 type glob_t
 {
     sprite_tag_t sprite_tag;
     sprite_state_t sprite_state;
-    sprite_state_t sprite_state_cycles;
-    sprite_state_t sprite_state_roll_cap;
+    sprite_cycles_t sprite_cycles;
+    sprite_dice_t sprite_dice;
     scancode_t scancode;
-    i1 true;
-    i1 false;
-    i64 percent_cap;
+    i64 percent_cap = 100;
 };
 
 glob_t
 glob_init()
 {
     glob_t self;
-    self.sprite_tag.chicken.black = 0;
-    self.sprite_tag.chicken.white = 1;
-    self.sprite_tag.chicken.brown = 2;
-    self.sprite_tag.nest.brown = 3;
-    self.sprite_state.idle = 0;
-    self.sprite_state.walk = 1;
-    self.sprite_state.sleep = 2;
-    self.sprite_state_cycles.idle = 30;
-    self.sprite_state_cycles.walk = 40;
-    self.sprite_state_cycles.sleep = 500;
-    self.sprite_state_roll_cap.idle = 20;
-    self.sprite_state_roll_cap.walk = 98;
-    self.sprite_state_roll_cap.sleep = 100;
-    self.scancode.end = 77;
-    self.true = 1 == 1;
-    self.false = !self.true;
-    self.percent_cap = 100;
     ret self;
 }
 
@@ -286,7 +267,7 @@ sprite_set_idle_state(sprite_t* self, glob_t* glob)
 {
     point_t zero;
     self.velocity = zero;
-    self.cycle = glob.sprite_state_cycles.idle;
+    self.cycle = glob.sprite_cycles.idle;
     ret;
 }
 
@@ -296,7 +277,7 @@ sprite_set_walk_state(sprite_t* self, glob_t* glob)
     i64 shift = self.zoom / 2;
     self.velocity.x = <i64>(rand()) % (self.zoom + 1) - shift;
     self.velocity.y = <i64>(rand()) % (self.zoom + 1) - shift;
-    self.cycle = glob.sprite_state_cycles.walk;
+    self.cycle = glob.sprite_cycles.walk;
     ret;
 }
 
@@ -305,7 +286,7 @@ sprite_set_sleep_state(sprite_t* self, glob_t* glob)
 {
     point_t zero;
     self.velocity = zero;
-    self.cycle = glob.sprite_state_cycles.sleep;
+    self.cycle = glob.sprite_cycles.sleep;
     ret;
 }
 
@@ -364,13 +345,13 @@ sprite_roll_state(sprite_t* self, glob_t* glob)
 {
     i64 state;
     i64 roll = <i64>(rand()) % glob.percent_cap;
-    if(roll < glob.sprite_state_roll_cap.idle)
+    if(roll < glob.sprite_dice.idle)
         state = glob.sprite_state.idle;
     else
-    if(roll < glob.sprite_state_roll_cap.walk)
+    if(roll < glob.sprite_dice.walk)
         state = glob.sprite_state.walk;
     else
-    if(roll < glob.sprite_state_roll_cap.sleep)
+    if(roll < glob.sprite_dice.sleep)
         state = glob.sprite_state.sleep;
     ret state;
 }
@@ -562,7 +543,7 @@ i32 main()
     defer font_del(&font);
 
     i64 cycle = 0;
-    while(glob.true)
+    while(<i1>(1))
     {
         defer cycle++;
         if(sdl_is_key_down(glob.scancode.end))

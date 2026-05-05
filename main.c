@@ -94,6 +94,7 @@ typedef struct
     str_t name;
     type_list_t types;
     str_list_t names;
+    str_list_t init;
     int slot;
     bool is_lvalue;
     bool unlock_args;
@@ -169,8 +170,10 @@ char* const g_llvm_escape_question_mark        = "\\3F";
 char* const g_apostrophe                       = "'";
 char* const g_str                              = "%s";
 char* const g_red                              = "\033[31m";
+char* const g_green                            = "\033[1;32m";
 char* const g_white                            = "\033[1;37m";
 char* const g_normal                           = "\033[0m";
+char* const g_null                             = "null";
 char* const g_underscore                       = "_";
 char* const g_left_square                      = "[";
 char* const g_rite_square                      = "]";
@@ -305,6 +308,7 @@ char* const g_opcode_ret_void                  = "ret %s";
 char* const g_opcode_define                    = "define %s @%s";
 char* const g_opcode_declare                   = "declare %s @%s";
 char* const g_opcode_load                      = "%%%d = load %s, ptr %%%d";
+char* const g_opcode_store_direct              = "store %s %s, ptr %%%d ; MEMBER INIT";
 char* const g_opcode_store                     = "store %s %%%d, ptr %%%d";
 char* const g_opcode_zero_init                 = "store %s zeroinitializer, ptr %%%d";
 char* const g_opcode_type_slot                 = "%s %%%d";
@@ -335,10 +339,14 @@ char* const g_opcode_floating_greater          = "%%%d = fcmp ogt %s %%%d, %%%d"
 char* const g_opcode_floating_greater_equal_to = "%%%d = fcmp oge %s %%%d, %%%d";
 char* const g_opcode_float_to_signed           = "%%%d = fptosi %s %%%d to %s";
 char* const g_opcode_float_to_unsigned         = "%%%d = fptoui %s %%%d to %s";
-char* const g_opcode_signed_to_float           = "%%%d = sitofp %s %%%d to %s";
-char* const g_opcode_unsigned_to_float         = "%%%d = uitofp %s %%%d to %s";
+char* const g_opcode_signed_to_floating        = "%%%d = sitofp %s %%%d to %s";
+char* const g_opcode_unsigned_to_floating      = "%%%d = uitofp %s %%%d to %s";
 char* const g_opcode_floating_trunc            = "%%%d = fptrunc %s %%%d to %s";
 char* const g_opcode_floating_extend           = "%%%d = fpext %s %%%d to %s";
+char* const g_opcode_signed_to_boolean         = "%%%d = trunc %s %%%d to i1";
+char* const g_opcode_unsigned_to_boolean       = "%%%d = trunc %s %%%d to i1";
+char* const g_opcode_boolean_to_signed         = "%%%d = zext i1 %%%d to %s";
+char* const g_opcode_boolean_to_unsigned       = "%%%d = zext i1 %%%d to %s";
 
 char* g_operator_chars[] = {
     g_dot,
@@ -403,6 +411,12 @@ char* g_unsigned[] = {
 char* g_floating[] = {
     g_double,
     g_float,
+    nullptr
+};
+
+char* g_boolean[] = {
+    g_i1,
+    g_u1,
     nullptr
 };
 
@@ -665,9 +679,14 @@ bool is_pointer(type_t type)
     return is_regular_pointer(type) || is_generic_pointer(type);
 }
 
+bool is_aggregate(type_t type)
+{
+    return !is_pointer(type) && is_aggregate_type_name(type.name);
+}
+
 bool is_boolean(type_t type)
 {
-    return !is_pointer(type) && str_equal(type.name.begin, g_i1);
+    return !is_pointer(type) && str_in(type.name, g_boolean);
 }
 
 bool is_floating(type_t type)
@@ -730,7 +749,7 @@ str_t to_llvm_type(type_t type)
     else
     {
         auto llvm_type = type;
-        if(is_unsigned(llvm_type))
+        if(is_unsigned(llvm_type) || is_boolean(llvm_type))
         {
             llvm_type.name.begin[0] = 'i';
         }
@@ -1124,7 +1143,6 @@ void execute_defers(int total)
 
 value_t read_ret_statement(value_t ret_value)
 {
-    execute_defers(g_file.defers.size);
     read_alnum();
     if(str_equal(ret_value.type.name.begin, g_void))
     {
@@ -1132,6 +1150,7 @@ value_t read_ret_statement(value_t ret_value)
         auto value = (value_t) {
             .type.name = str_init(g_void)
         };
+        execute_defers(g_file.defers.size);
         emit(g_opcode_ret_void, g_void);
         return value;
     }
@@ -1140,6 +1159,7 @@ value_t read_ret_statement(value_t ret_value)
         auto value = read_expression();
         match(g_semicolon);
         auto llvm_type = to_llvm_type(value.type).begin;
+        execute_defers(g_file.defers.size);
         emit(g_opcode_ret, llvm_type, value.slot);
         return value;
     }
@@ -1152,11 +1172,8 @@ void read_if_statement(value_t ret_value, branch_t branch)
     read_alnum();
     match(g_left_paren);
     auto value = read_expression();
-    value_t expected = {
-        .type.name = str_init(g_i1)
-    };
     auto operator = str_init(g_if);
-    assert_types_match(value.type, expected.type, operator);
+    assert_type(value.type, operator, is_boolean);
     match(g_rite_paren);
     emit(g_opcode_branch_if_else, value.slot, branch.if_label, branch.else_label);
     emit(g_opcode_label, branch.if_label);
@@ -1281,11 +1298,8 @@ void read_while_statement(value_t ret_value, int block)
     match(g_left_paren);
     auto value = read_expression();
     match(g_rite_paren);
-    auto expected = (value_t) {
-        .type.name = str_init(g_i1)
-    };
     auto operator = str_init(g_while);
-    assert_types_match(value.type, expected.type, operator);
+    assert_type(value.type, operator, is_boolean);
     emit(g_opcode_branch_if_else, value.slot, while_label, end_label);
     emit(g_opcode_label, while_label);
     auto terminated = read_statement(ret_value, g_scope_while, block);
@@ -1298,11 +1312,38 @@ void read_while_statement(value_t ret_value, int block)
     g_file.loop_end.size -= 1;
 }
 
+value_t field_index(value_t, str_t);
+
+void default_init_aggregate(value_t value)
+{
+    if(is_aggregate(value.type))
+    {
+        auto members = value_in_list(value.type.name, &g_file.types);
+        for(auto i = 0; i < members->init.size; i++)
+        {
+            auto name = members->names.begin[i];
+            auto type = members->types.begin[i];
+            auto init = members->init.begin[i];
+            auto field = field_index(value, name);
+            if(is_numeric(field.type))
+            {
+                if(!str_equal(init.begin, g_null))
+                {
+                    auto llvm_type = to_llvm_type(type).begin;
+                    emit(g_opcode_store_direct, llvm_type, init.begin, field.slot);
+                }
+            }
+            default_init_aggregate(field);
+        }
+    }
+}
+
 value_t alloca_value(value_t value)
 {
     auto llvm_type = to_llvm_type(value.type).begin;
     emit(g_opcode_alloca, value.slot, llvm_type);
     emit(g_opcode_zero_init, llvm_type, value.slot);
+    default_init_aggregate(value);
     return value;
 }
 
@@ -1514,9 +1555,22 @@ void read_type_def()
         {
             quit("duplicate member '%s' in '%s'", name.begin, type_name.begin);
         }
+        if(next_char() == *g_equals)
+        {
+            auto operator = str_init(g_equals);
+            assert_type(type, operator, is_numeric);
+            match(g_equals);
+            auto numeric = read_numeric();
+            list_append(&value.init, numeric);
+        }
+        else
+        {
+            auto null = str_init(g_null);
+            list_append(&value.init, null);
+        }
+        match(g_semicolon);
         list_append(&value.types, type);
         list_append(&value.names, name);
-        match(g_semicolon);
         auto llvm_type = to_llvm_type(type).begin;
         emit(g_str, llvm_type);
         if(next_char() != *g_rite_curl)
@@ -1907,7 +1961,8 @@ type_power_t;
 type_power_t type_power(type_t type)
 {
     auto at = type.name.begin;
-    if(str_equal(at, g_i1))
+    if(str_equal(at, g_i1)
+    || str_equal(at, g_u1))
     {
         return g_power_1;
     }
@@ -1944,6 +1999,13 @@ type_power_t type_power(type_t type)
 }
 
 value_t pointer_to_pointer(value_t value, type_t type)
+{
+    auto out = value;
+    out.type = type;
+    return out;
+}
+
+value_t boolean_to_boolean(value_t value, type_t type)
 {
     auto out = value;
     out.type = type;
@@ -2051,7 +2113,55 @@ value_t signed_to_floating(value_t value, type_t type)
         .slot = get_slot(),
         .type = type,
     };
-    emit(g_opcode_signed_to_float, out.slot, llvm_type_a, value.slot, llvm_type_b);
+    emit(g_opcode_signed_to_floating, out.slot, llvm_type_a, value.slot, llvm_type_b);
+    return out;
+}
+
+value_t signed_to_boolean(value_t value, type_t type)
+{
+    auto llvm_type_a = to_llvm_type(value.type).begin;
+    auto llvm_type_b = to_llvm_type(type).begin;
+    auto out = (value_t) {
+        .slot = get_slot(),
+        .type = type,
+    };
+    emit(g_opcode_signed_to_boolean, out.slot, llvm_type_a, value.slot, llvm_type_b);
+    return out;
+}
+
+value_t unsigned_to_boolean(value_t value, type_t type)
+{
+    auto llvm_type_a = to_llvm_type(value.type).begin;
+    auto llvm_type_b = to_llvm_type(type).begin;
+    auto out = (value_t) {
+        .slot = get_slot(),
+        .type = type,
+    };
+    emit(g_opcode_unsigned_to_boolean, out.slot, llvm_type_a, value.slot, llvm_type_b);
+    return out;
+}
+
+value_t boolean_to_signed(value_t value, type_t type)
+{
+    auto llvm_type_a = to_llvm_type(value.type).begin;
+    auto llvm_type_b = to_llvm_type(type).begin;
+    auto out = (value_t) {
+        .slot = get_slot(),
+        .type = type,
+    };
+    emit(g_opcode_boolean_to_signed, out.slot, llvm_type_a, value.slot, llvm_type_b);
+    return out;
+}
+
+value_t boolean_to_unsigned(value_t value, type_t type)
+{
+    auto llvm_type_a = to_llvm_type(value.type).begin;
+    auto llvm_type_b = to_llvm_type(type).begin;
+    auto out = (value_t) {
+        .slot = get_slot(),
+        .type = type,
+    };
+    emit(g_opcode_boolean_to_unsigned, out.slot, llvm_type_a, value.slot, llvm_type_b);
     return out;
 }
 
@@ -2063,7 +2173,7 @@ value_t unsigned_to_floating(value_t value, type_t type)
         .slot = get_slot(),
         .type = type,
     };
-    emit(g_opcode_unsigned_to_float, out.slot, llvm_type_a, value.slot, llvm_type_b);
+    emit(g_opcode_unsigned_to_floating, out.slot, llvm_type_a, value.slot, llvm_type_b);
     return out;
 }
 
@@ -2120,6 +2230,10 @@ value_t type_cast(value_t value, type_t type)
         {
             return signed_to_floating(value, type);
         }
+        if(is_boolean(type))
+        {
+            return signed_to_boolean(value, type);
+        }
     }
     if(is_unsigned(value.type))
     {
@@ -2139,6 +2253,10 @@ value_t type_cast(value_t value, type_t type)
         {
             return unsigned_to_floating(value, type);
         }
+        if(is_boolean(type))
+        {
+            return unsigned_to_boolean(value, type);
+        }
     }
     if(is_floating(value.type))
     {
@@ -2153,6 +2271,21 @@ value_t type_cast(value_t value, type_t type)
         if(is_floating(value.type))
         {
             return floating_to_floating(value, type);
+        }
+    }
+    if(is_boolean(value.type))
+    {
+        if(is_signed(type))
+        {
+            return boolean_to_signed(value, type);
+        }
+        if(is_unsigned(type))
+        {
+            return boolean_to_unsigned(value, type);
+        }
+        if(is_boolean(type))
+        {
+            return boolean_to_boolean(value, type);
         }
     }
     auto print_type_a = to_print_type(value.type).begin;
@@ -2787,7 +2920,6 @@ void read_code(str_t path)
     get_code()->path = path;
     get_code()->line = 1;
     get_code()->size = fread(get_code()->begin, sizeof(char), max, fp);
-    fprintf(stderr, "%s: %d bytes (max %d bytes)\n", path.begin, get_code()->size, g_code_size);
     fclose(fp);
     if(get_code()->size == max)
     {
@@ -2803,6 +2935,8 @@ void push_code(str_t path)
 
 void pop_code()
 {
+    auto code = get_code();
+    fprintf(stderr, "%scompiled%s %s: %d bytes\n", g_green, g_normal, code->path.begin, code->size);
     *get_code() = (code_t) {};
     g_file.module -= 1;
 }
