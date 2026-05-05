@@ -1486,9 +1486,49 @@ test_unsigned()
     c = <u32>(c);
     d = <u64>(d);
 
-    a + a;
-
     ret 0;
+}
+
+type point_t
+{
+    i64 x;
+    i64 y;
+    i64 z;
+    i1 bool;
+    int_t int;
+};
+
+i64
+test_aggregate_operations()
+{
+    point_t a;
+    point_t b;
+    point_t c;
+
+    a.x = 1;
+    a.y = 2;
+    a.z = 3;
+
+    b.x = 10;
+    b.y = 10;
+    b.z = 10;
+
+    a = a + b;
+
+    c.x = 11;
+    c.y = 12;
+    c.z = 13;
+
+    if(a.x == c.x
+     & a.y == c.y
+     & a.z == c.z
+     & a.int.value == c.int.value
+    )
+    {
+        ret 0;
+    }
+
+    ret 1;
 }
 
 i32 main()
@@ -1560,6 +1600,7 @@ i32 main()
       | test_double_type_cast()
       | test_double_math()
       | test_float_math()
+      | test_aggregate_operations()
     );
 }
 //
