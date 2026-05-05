@@ -719,6 +719,11 @@ bool is_numeric(type_t type)
     return is_integral(type) || is_floating(type);
 }
 
+bool is_member_init(type_t type)
+{
+    return is_integral(type) || is_floating(type) || is_boolean(type);
+}
+
 void str_append(str_t* str, char* chars)
 {
     while(*chars)
@@ -867,6 +872,20 @@ void assert_type(type_t type, str_t operator, bool with(type_t))
     {
         auto print_type = to_print_type(type).begin;
         quit("'%s' does not support operator '%s'", print_type, operator.begin);
+    }
+}
+
+bool is_rvalue(value_t value)
+{
+    return !value.is_lvalue;
+}
+
+void assert_lvalue(value_t value, str_t operator)
+{
+    if(is_rvalue(value))
+    {
+        auto print_type = to_print_type(value.type).begin;
+        quit("expected lvalue with '%s' and operator '%s'", print_type, operator.begin);
     }
 }
 
@@ -1325,7 +1344,7 @@ void default_init_aggregate(value_t value)
             auto type = members->types.begin[i];
             auto init = members->init.begin[i];
             auto field = field_index(value, name);
-            if(is_numeric(field.type))
+            if(is_member_init(field.type))
             {
                 if(!str_equal(init.begin, g_null))
                 {
@@ -1558,7 +1577,7 @@ void read_type_def()
         if(next_char() == *g_equals)
         {
             auto operator = str_init(g_equals);
-            assert_type(type, operator, is_numeric);
+            assert_type(type, operator, is_member_init);
             match(g_equals);
             auto numeric = read_numeric();
             list_append(&value.init, numeric);
@@ -1786,14 +1805,10 @@ value_t postfix_decrement(value_t value)
 value_t get_address_of(value_t value)
 {
     auto operator = str_init(g_ampersand);
-    if(value.is_lvalue)
-    {
-        value.type.stars += 1;
-        value.is_lvalue = false;
-        return value;
-    }
-    quit("expected lvalue with address-of operator '%s'", operator.begin);
-    return (value_t) {};
+    assert_lvalue(value, operator);
+    value.type.stars += 1;
+    value.is_lvalue = false;
+    return value;
 }
 
 value_t dereference(value_t value)
@@ -2586,15 +2601,10 @@ value_t load_character()
 
 value_t assignment_operate(value_t left, value_t rite, str_t operator)
 {
-    if(left.is_lvalue)
-    {
-        auto llvm_type = to_llvm_type(rite.type).begin;
-        emit(g_opcode_store, llvm_type, rite.slot, left.slot);
-        return to_rvalue(left);
-    }
-    auto print_type = to_print_type(left.type).begin;
-    quit("expected lvalue with '%s' and operator '%s'", print_type, operator.begin);
-    return (value_t) {};
+    assert_lvalue(left, operator);
+    auto llvm_type = to_llvm_type(rite.type).begin;
+    emit(g_opcode_store, llvm_type, rite.slot, left.slot);
+    return to_rvalue(left);
 }
 
 value_t operate(value_t, value_t, str_t);
@@ -2767,8 +2777,10 @@ value_t operate(value_t left, value_t rite, str_t operator)
     }
     else
     {
-        if(is_aggregate_type_name(left.type.name))
+        if(is_aggregate(left.type))
         {
+            assert_lvalue(left, operator);
+            assert_lvalue(rite, operator);
             left = load_indirect(left);
             rite = load_indirect(rite);
             return aggregate_operate(left, rite, operator);

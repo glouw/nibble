@@ -1630,6 +1630,32 @@ test_aggregate_operations()
     ret 1;
 }
 
+type value_t
+{
+    i64 x = 1;
+    i64 y = 2;
+    i64 z = 3;
+};
+
+i64
+test_complex_aggregate_operations()
+{
+    value_t a;
+    value_t b;
+    value_t* aa = &a;
+    value_t* bb = &b;
+    *aa = *aa = *bb = *bb + b % b;
+    *aa = a + *bb + b / *bb;
+    *aa = *aa * *aa;
+    if(aa.x == 9
+     & aa.y == 25
+     & aa.z == 49)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 type default_internal_internal_init_t
 {
     i64 x = 11;
@@ -1653,6 +1679,8 @@ type default_init_t
     default_internal_init_t internal;
     double a = 2.0;
     float b = 1.0;
+    u1 c = 1;
+    i1 d = 1;
 };
 
 i64 test_default_type_init()
@@ -1670,6 +1698,8 @@ i64 test_default_type_init()
      & init.internal.internal.z == 13
      & init.a == <double>(2.0)
      & init.b == <float>(1.0)
+     & init.c == <u1>(1)
+     & init.d == <i1>(1)
     )
     {
         ret 0;
@@ -1765,6 +1795,7 @@ i32 main()
       | test_aggregate_operations()
       | test_default_type_init()
       | test_boolean_type_cast()
+      | test_complex_aggregate_operations()
     );
 }
 //
