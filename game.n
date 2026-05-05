@@ -6,15 +6,6 @@ type point_t
     i64 y;
 };
 
-point_t
-point_add(point_t a, point_t b)
-{
-    point_t self;
-    self.x = a.x + b.x;
-    self.y = a.y + b.y;
-    ret self;
-}
-
 type sheet_t
 {
     ptr surface;
@@ -355,7 +346,7 @@ sprite_move(sprite_t* self, sdl_t* sdl, sheets_t* sheets, glob_t* glob)
     if(sprite_can_walk(self, sheets, glob))
     {
         point_t revert = self.where;
-        self.where = point_add(self.where, self.velocity);
+        self.where = self.where + self.velocity;
         if(sprite_is_out_of_bounds(self, sdl, sheets))
         {
             self.where = revert;
