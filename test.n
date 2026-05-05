@@ -1486,7 +1486,19 @@ test_unsigned()
     c = <u32>(c);
     d = <u64>(d);
 
-    ret 0;
+    u8 byte = <u8>(255);
+    byte = byte >> <u8>(1);
+    byte = byte << <u8>(1);
+
+    byte = byte - <u8>(2);
+    byte = byte / <u8>(2);
+
+    if(byte == <u8>(126))
+    {
+        ret 0;
+    }
+
+    ret 1;
 }
 
 type point_t
@@ -1600,6 +1612,7 @@ i32 main()
       | test_double_type_cast()
       | test_double_math()
       | test_float_math()
+      | test_unsigned()
       | test_aggregate_operations()
     );
 }

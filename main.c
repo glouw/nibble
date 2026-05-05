@@ -242,25 +242,44 @@ char* const g_opcode_label                     = "L%d:";
 char* const g_opcode_branch_if_else            = "br i1 %%%d, label %%L%d, label %%L%d";
 char* const g_opcode_branch                    = "br label %%L%d";
 char* const g_opcode_target                    = "target triple = \"x86_64-pc-linux-gnu\"";
-char* const g_opcode_not                       = "%%%d = xor %s %%%d, true";
-char* const g_opcode_negative                  = "%%%d = mul %s %%%d, -1";
-char* const g_opcode_mul                       = "%%%d = mul %s %%%d, %%%d";
-char* const g_opcode_sdiv                      = "%%%d = sdiv %s %%%d, %%%d";
-char* const g_opcode_srem                      = "%%%d = srem %s %%%d, %%%d";
-char* const g_opcode_add                       = "%%%d = add %s %%%d, %%%d";
-char* const g_opcode_sub                       = "%%%d = sub %s %%%d, %%%d";
-char* const g_opcode_equal_to                  = "%%%d = icmp eq %s %%%d, %%%d";
-char* const g_opcode_not_equal_to              = "%%%d = icmp ne %s %%%d, %%%d";
-char* const g_opcode_less                      = "%%%d = icmp slt %s %%%d, %%%d";
-char* const g_opcode_less_equal_to             = "%%%d = icmp sle %s %%%d, %%%d";
-char* const g_opcode_greater                   = "%%%d = icmp sgt %s %%%d, %%%d";
-char* const g_opcode_greater_equal_to          = "%%%d = icmp sge %s %%%d, %%%d";
-char* const g_opcode_bitwise_or                = "%%%d = or %s %%%d, %%%d";
-char* const g_opcode_bitwise_not               = "%%%d = xor %s %%%d, -1";
-char* const g_opcode_bitwise_xor               = "%%%d = xor %s %%%d, %%%d";
-char* const g_opcode_bitwise_and               = "%%%d = and %s %%%d, %%%d";
-char* const g_opcode_shift_left                = "%%%d = shl %s %%%d, %%%d";
-char* const g_opcode_shift_rite                = "%%%d = ashr %s %%%d, %%%d";
+char* const g_opcode_signed_not                = "%%%d = xor %s %%%d, true";
+char* const g_opcode_signed_negative           = "%%%d = mul %s %%%d, -1";
+char* const g_opcode_signed_mul                = "%%%d = mul %s %%%d, %%%d";
+char* const g_opcode_signed_divide             = "%%%d = sdiv %s %%%d, %%%d";
+char* const g_opcode_signed_remainder          = "%%%d = srem %s %%%d, %%%d";
+char* const g_opcode_signed_add                = "%%%d = add %s %%%d, %%%d";
+char* const g_opcode_signed_sub                = "%%%d = sub %s %%%d, %%%d";
+char* const g_opcode_signed_equal_to           = "%%%d = icmp eq %s %%%d, %%%d";
+char* const g_opcode_signed_not_equal_to       = "%%%d = icmp ne %s %%%d, %%%d";
+char* const g_opcode_signed_less               = "%%%d = icmp slt %s %%%d, %%%d";
+char* const g_opcode_signed_less_equal_to      = "%%%d = icmp sle %s %%%d, %%%d";
+char* const g_opcode_signed_greater            = "%%%d = icmp sgt %s %%%d, %%%d";
+char* const g_opcode_signed_greater_equal_to   = "%%%d = icmp sge %s %%%d, %%%d";
+char* const g_opcode_signed_bitwise_or         = "%%%d = or %s %%%d, %%%d";
+char* const g_opcode_signed_bitwise_not        = "%%%d = xor %s %%%d, -1";
+char* const g_opcode_signed_bitwise_xor        = "%%%d = xor %s %%%d, %%%d";
+char* const g_opcode_signed_bitwise_and        = "%%%d = and %s %%%d, %%%d";
+char* const g_opcode_signed_shift_left         = "%%%d = shl %s %%%d, %%%d";
+char* const g_opcode_signed_shift_rite         = "%%%d = ashr %s %%%d, %%%d";
+char* const g_opcode_unsigned_not              = "%%%d = xor %s %%%d, true";
+char* const g_opcode_unsigned_negative         = "%%%d = mul %s %%%d, -1";
+char* const g_opcode_unsigned_mul              = "%%%d = mul %s %%%d, %%%d";
+char* const g_opcode_unsigned_divide           = "%%%d = udiv %s %%%d, %%%d";
+char* const g_opcode_unsigned_remainder        = "%%%d = urem %s %%%d, %%%d";
+char* const g_opcode_unsigned_add              = "%%%d = add %s %%%d, %%%d";
+char* const g_opcode_unsigned_sub              = "%%%d = sub %s %%%d, %%%d";
+char* const g_opcode_unsigned_equal_to         = "%%%d = icmp eq %s %%%d, %%%d";
+char* const g_opcode_unsigned_not_equal_to     = "%%%d = icmp ne %s %%%d, %%%d";
+char* const g_opcode_unsigned_less             = "%%%d = icmp ult %s %%%d, %%%d";
+char* const g_opcode_unsigned_less_equal_to    = "%%%d = icmp ule %s %%%d, %%%d";
+char* const g_opcode_unsigned_greater          = "%%%d = icmp ugt %s %%%d, %%%d";
+char* const g_opcode_unsigned_greater_equal_to = "%%%d = icmp uge %s %%%d, %%%d";
+char* const g_opcode_unsigned_bitwise_or       = "%%%d = or %s %%%d, %%%d";
+char* const g_opcode_unsigned_bitwise_not      = "%%%d = xor %s %%%d, -1";
+char* const g_opcode_unsigned_bitwise_xor      = "%%%d = xor %s %%%d, %%%d";
+char* const g_opcode_unsigned_bitwise_and      = "%%%d = and %s %%%d, %%%d";
+char* const g_opcode_unsigned_shift_left       = "%%%d = shl %s %%%d, %%%d";
+char* const g_opcode_unsigned_shift_rite       = "%%%d = lshr %s %%%d, %%%d";
 char* const g_opcode_alloca                    = "%%%d = alloca %s";
 char* const g_opcode_flat_gep                  = "%%%d = getelementptr ptr, ptr %%%d, %s %d";
 char* const g_opcode_gep                       = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
@@ -1559,39 +1578,63 @@ str_t fix_escape_chars(str_t string, int* size)
     {
         char ch = string.begin[i];
         if(ch == *g_escape_alert)
+        {
             str_append(&out, g_llvm_escape_alert);
+        }
         else
         if(ch == *g_escape_backspace)
+        {
             str_append(&out, g_llvm_escape_backspace);
+        }
         else
         if(ch == *g_escape_tab)
+        {
             str_append(&out, g_llvm_escape_tab);
+        }
         else
         if(ch == *g_escape_newline)
+        {
             str_append(&out, g_llvm_escape_newline);
+        }
         else
         if(ch == *g_escape_vertical_tab)
+        {
             str_append(&out, g_llvm_escape_vertical_tab);
+        }
         else
         if(ch == *g_escape_form_feed)
+        {
             str_append(&out, g_llvm_escape_form_feed);
+        }
         else
         if(ch == *g_escape_carriage_return)
+        {
             str_append(&out, g_llvm_escape_carriage_return);
+        }
         else
         if(ch == *g_escape_quotation)
+        {
             str_append(&out, g_llvm_escape_quotation);
+        }
         else
         if(ch == *g_escape_null)
+        {
             str_append(&out, g_llvm_escape_null);
+        }
         else
         if(ch == *g_escape_backslash)
+        {
             str_append(&out, g_llvm_escape_backslash);
+        }
         else
         if(ch == *g_escape_question_mark)
+        {
             str_append(&out, g_llvm_escape_question_mark);
+        }
         else
+        {
             list_append(&out, ch);
+        }
         *size += 1;
     }
     return out;
@@ -1730,7 +1773,7 @@ value_t to_negative(value_t value)
     auto llvm_type = to_llvm_type(value.type).begin;
     is_floating(out.type)
         ? emit(g_opcode_floating_negative, out.slot, llvm_type, value.slot)
-        : emit(g_opcode_negative, out.slot, llvm_type, value.slot);
+        : emit(g_opcode_signed_negative, out.slot, llvm_type, value.slot);
     return out;
 }
 
@@ -1744,7 +1787,7 @@ value_t to_bitwise_not(value_t value)
         .type = value.type,
     };
     auto llvm_type = to_llvm_type(value.type).begin;
-    emit(g_opcode_bitwise_not, out.slot, llvm_type, value.slot);
+    emit(g_opcode_signed_bitwise_not, out.slot, llvm_type, value.slot);
     return out;
 }
 
@@ -1758,7 +1801,7 @@ value_t to_not(value_t value)
         .type = value.type,
     };
     auto llvm_type = to_llvm_type(value.type).begin;
-    emit(g_opcode_not, out.slot, llvm_type, value.slot);
+    emit(g_opcode_signed_not, out.slot, llvm_type, value.slot);
     return out;
 }
 
@@ -1802,7 +1845,7 @@ value_t to_new(type_t type)
         };
         auto operator = str_init(g_index);
         assert_type(elems.type, operator, is_size);
-        emit(g_opcode_mul, total.slot, g_i64, elems.slot, size.slot);
+        emit(g_opcode_signed_mul, total.slot, g_i64, elems.slot, size.slot);
         value_t out = {
             .slot = get_slot(),
             .type = type,
@@ -2501,38 +2544,60 @@ value_t floating_operate(value_t left, value_t rite, str_t operator)
         str_equal(operator.begin, g_greater_equal_to) ? g_opcode_floating_greater_equal_to : nullptr);
 }
 
+value_t unsigned_operate(value_t left, value_t rite, str_t operator)
+{
+    auto out = new_temporary(left.type, operator);
+    return emit_operation(out, left, rite, operator,
+        str_equal(operator.begin, g_multiply        ) ? g_opcode_unsigned_mul              :
+        str_equal(operator.begin, g_divide          ) ? g_opcode_unsigned_divide           :
+        str_equal(operator.begin, g_mod             ) ? g_opcode_unsigned_remainder        :
+        str_equal(operator.begin, g_add             ) ? g_opcode_unsigned_add              :
+        str_equal(operator.begin, g_subtract        ) ? g_opcode_unsigned_sub              :
+        str_equal(operator.begin, g_equal_to        ) ? g_opcode_unsigned_equal_to         :
+        str_equal(operator.begin, g_not_equal_to    ) ? g_opcode_unsigned_not_equal_to     :
+        str_equal(operator.begin, g_less            ) ? g_opcode_unsigned_less             :
+        str_equal(operator.begin, g_less_equal_to   ) ? g_opcode_unsigned_less_equal_to    :
+        str_equal(operator.begin, g_greater         ) ? g_opcode_unsigned_greater          :
+        str_equal(operator.begin, g_greater_equal_to) ? g_opcode_unsigned_greater_equal_to :
+        str_equal(operator.begin, g_bitwise_and     ) ? g_opcode_unsigned_bitwise_and      :
+        str_equal(operator.begin, g_bitwise_or      ) ? g_opcode_unsigned_bitwise_or       :
+        str_equal(operator.begin, g_bitwise_xor     ) ? g_opcode_unsigned_bitwise_xor      :
+        str_equal(operator.begin, g_shift_left      ) ? g_opcode_unsigned_shift_left       :
+        str_equal(operator.begin, g_shift_rite      ) ? g_opcode_unsigned_shift_rite       : nullptr);
+}
+
 value_t signed_operate(value_t left, value_t rite, str_t operator)
 {
     auto out = new_temporary(left.type, operator);
     return emit_operation(out, left, rite, operator,
-        str_equal(operator.begin, g_multiply        ) ? g_opcode_mul              :
-        str_equal(operator.begin, g_divide          ) ? g_opcode_sdiv             :
-        str_equal(operator.begin, g_mod             ) ? g_opcode_srem             :
-        str_equal(operator.begin, g_add             ) ? g_opcode_add              :
-        str_equal(operator.begin, g_subtract        ) ? g_opcode_sub              :
-        str_equal(operator.begin, g_equal_to        ) ? g_opcode_equal_to         :
-        str_equal(operator.begin, g_not_equal_to    ) ? g_opcode_not_equal_to     :
-        str_equal(operator.begin, g_less            ) ? g_opcode_less             :
-        str_equal(operator.begin, g_less_equal_to   ) ? g_opcode_less_equal_to    :
-        str_equal(operator.begin, g_greater         ) ? g_opcode_greater          :
-        str_equal(operator.begin, g_greater_equal_to) ? g_opcode_greater_equal_to :
-        str_equal(operator.begin, g_bitwise_and     ) ? g_opcode_bitwise_and      :
-        str_equal(operator.begin, g_bitwise_or      ) ? g_opcode_bitwise_or       :
-        str_equal(operator.begin, g_bitwise_xor     ) ? g_opcode_bitwise_xor      :
-        str_equal(operator.begin, g_shift_left      ) ? g_opcode_shift_left       :
-        str_equal(operator.begin, g_shift_rite      ) ? g_opcode_shift_rite       : nullptr);
+        str_equal(operator.begin, g_multiply        ) ? g_opcode_signed_mul              :
+        str_equal(operator.begin, g_divide          ) ? g_opcode_signed_divide           :
+        str_equal(operator.begin, g_mod             ) ? g_opcode_signed_remainder        :
+        str_equal(operator.begin, g_add             ) ? g_opcode_signed_add              :
+        str_equal(operator.begin, g_subtract        ) ? g_opcode_signed_sub              :
+        str_equal(operator.begin, g_equal_to        ) ? g_opcode_signed_equal_to         :
+        str_equal(operator.begin, g_not_equal_to    ) ? g_opcode_signed_not_equal_to     :
+        str_equal(operator.begin, g_less            ) ? g_opcode_signed_less             :
+        str_equal(operator.begin, g_less_equal_to   ) ? g_opcode_signed_less_equal_to    :
+        str_equal(operator.begin, g_greater         ) ? g_opcode_signed_greater          :
+        str_equal(operator.begin, g_greater_equal_to) ? g_opcode_signed_greater_equal_to :
+        str_equal(operator.begin, g_bitwise_and     ) ? g_opcode_signed_bitwise_and      :
+        str_equal(operator.begin, g_bitwise_or      ) ? g_opcode_signed_bitwise_or       :
+        str_equal(operator.begin, g_bitwise_xor     ) ? g_opcode_signed_bitwise_xor      :
+        str_equal(operator.begin, g_shift_left      ) ? g_opcode_signed_shift_left       :
+        str_equal(operator.begin, g_shift_rite      ) ? g_opcode_signed_shift_rite       : nullptr);
 }
 
 value_t pointer_operate(value_t left, value_t rite, str_t operator)
 {
     auto out = new_temporary(left.type, operator);
     return emit_operation(out, left, rite, operator,
-        str_equal(operator.begin, g_equal_to        ) ? g_opcode_equal_to         :
-        str_equal(operator.begin, g_not_equal_to    ) ? g_opcode_not_equal_to     :
-        str_equal(operator.begin, g_less            ) ? g_opcode_less             :
-        str_equal(operator.begin, g_less_equal_to   ) ? g_opcode_less_equal_to    :
-        str_equal(operator.begin, g_greater         ) ? g_opcode_greater          :
-        str_equal(operator.begin, g_greater_equal_to) ? g_opcode_greater_equal_to : nullptr);
+        str_equal(operator.begin, g_equal_to        ) ? g_opcode_signed_equal_to         :
+        str_equal(operator.begin, g_not_equal_to    ) ? g_opcode_signed_not_equal_to     :
+        str_equal(operator.begin, g_less            ) ? g_opcode_signed_less             :
+        str_equal(operator.begin, g_less_equal_to   ) ? g_opcode_signed_less_equal_to    :
+        str_equal(operator.begin, g_greater         ) ? g_opcode_signed_greater          :
+        str_equal(operator.begin, g_greater_equal_to) ? g_opcode_signed_greater_equal_to : nullptr);
 }
 
 value_t operate(value_t left, value_t rite, str_t operator)
@@ -2561,7 +2626,7 @@ value_t operate(value_t left, value_t rite, str_t operator)
             }
             if(is_unsigned(left.type))
             {
-                quit("operations on unsigned types not supported");
+                return unsigned_operate(left, rite, operator);
             }
             if(is_signed(left.type) || is_boolean(left.type))
             {
@@ -2618,12 +2683,9 @@ value_t read_p0()
     {
         return load_direct();
     }
-    if(is_alpha_char(peek))
+    if(is_alpha_char(peek) && !str_in(peek_alnum(), g_construct_keywords))
     {
-        if(!str_in(peek_alnum(), g_construct_keywords))
-        {
-            return read_postfix();
-        }
+        return read_postfix();
     }
     if(peek == *g_left_paren)
     {
