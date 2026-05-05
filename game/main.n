@@ -1,4 +1,5 @@
-include "sdl.n";
+include "../lib/std.n";
+include "../lib/sdl.n";
 
 type point_t
 {

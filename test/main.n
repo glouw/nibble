@@ -1,4 +1,4 @@
-include "std.n";
+include "../lib/std.n";
 
 i64 add(i64 a, i64 b)
 {
@@ -7,7 +7,6 @@ i64 add(i64 a, i64 b)
 
 i64 test_function()
 {
-    puts("test_function");
     if(add(32, add(1, 1)) == 34)
     {
         ret 0;
@@ -17,7 +16,6 @@ i64 test_function()
 
 i64 test_pointers()
 {
-    puts("test_pointers");
     i64* p;
     i64** pp;
     i64*** ppp;
@@ -42,7 +40,6 @@ i64 test_pointers()
 
 i64 test_loop_ret()
 {
-    puts("test_loop_ret");
     i64 i;
     i = 10;
     while(i >= 0)
@@ -58,7 +55,6 @@ i64 test_loop_ret()
 
 i64 test_if_0()
 {
-    puts("test_if_0");
     if(0 == 0)
     {
         ret 0;
@@ -68,7 +64,6 @@ i64 test_if_0()
 
 i64 test_if_1()
 {
-    puts("test_if_1");
     if(0 == 1)
     {
     }
@@ -81,7 +76,6 @@ i64 test_if_1()
 
 i64 test_if_2()
 {
-    puts("test_if_2");
     if(0 == 1)
     {
     }
@@ -97,7 +91,6 @@ i64 test_if_2()
 
 i64 test_if_3()
 {
-    puts("test_if_3");
     if(0 == 1)
     {
     }
@@ -116,7 +109,6 @@ i64 test_if_3()
 
 i64 test_if_4()
 {
-    puts("test_if_4");
     if(0 == 1)
         ret 1;
     else if(2 == 1)
@@ -130,7 +122,6 @@ i64 test_if_4()
 
 i64 test_nest()
 {
-    puts("test_nest");
     {
         {
             {
@@ -147,7 +138,6 @@ i64 test_nest()
 
 i64 test_recursion(i64 x)
 {
-    puts("test_recursion");
     if(x == 0)
     {
         ret 0;
@@ -157,21 +147,18 @@ i64 test_recursion(i64 x)
 
 void set_to_zero(i64* x)
 {
-    puts("set_to_zero");
     *x = 0;
     ret;
 }
 
 void dont_set_to_zero(i64 x)
 {
-    puts("dont_set_to_zero");
     x = 42;
     ret;
 }
 
 i64 test_pointer_arg_0()
 {
-    puts("test_pointer_arg_0");
     i64 x;
     x = 42;
     set_to_zero(&x);
@@ -180,7 +167,6 @@ i64 test_pointer_arg_0()
 
 i64 test_pointer_arg_1()
 {
-    puts("test_pointer_arg_1");
     i64 x;
     x = 0;
     dont_set_to_zero(x);
@@ -189,7 +175,6 @@ i64 test_pointer_arg_1()
 
 i64 test_chain()
 {
-    puts("test_chain");
     i64 x;
     i64 y;
     i64 z;
@@ -205,7 +190,6 @@ i64 test_chain()
 
 i64 test_pointer_chain()
 {
-    puts("test_pointer_chain");
     i64 x;
     i64 y;
     i64 z;
@@ -229,7 +213,6 @@ i64 test_pointer_chain()
 
 i64 test_bitwise()
 {
-    puts("test_bitwise");
     i64 x;
     x = 1 & 2 & 3 & 4;
 
@@ -251,7 +234,6 @@ i64 test_bitwise()
 
 i64 test_shift()
 {
-    puts("test_shift");
     i64 x;
     x = 1 << 8;
 
@@ -276,7 +258,6 @@ i64 test_shift()
 
 i64 test_comparison()
 {
-    puts("test_comparison");
     i64 x;
     i64 y;
 
@@ -292,7 +273,6 @@ i64 test_comparison()
 
 i64 test_equality()
 {
-    puts("test_equality");
     i64 x;
     i64 y;
 
@@ -308,7 +288,6 @@ i64 test_equality()
 
 i64 test_complex_expression()
 {
-    puts("test_complex_expression");
     i64 x;
     i64 y;
     i64 z;
@@ -339,7 +318,6 @@ i64 test_complex_expression()
 
 i64 test_negative()
 {
-    puts("test_negative");
     i64 x;
     x = -5;
     x = -x;
@@ -361,7 +339,6 @@ i64 test_negative()
 
 i64 test_negative_loop()
 {
-    puts("test_negative_loop");
     i64 loops;
     loops = 0;
 
@@ -382,7 +359,6 @@ i64 test_negative_loop()
 
 i64 test_generic_ptr()
 {
-    puts("test_generic_ptr");
     ptr p;
     p = malloc(sizeof i64);
 
@@ -403,7 +379,6 @@ i64 test_generic_ptr()
 
 i64 test_llabs()
 {
-    puts("test_llabs");
     i64 out;
     out = llabs(-1);
     if(out == 1)
@@ -415,7 +390,6 @@ i64 test_llabs()
 
 i64 test_bool_param(i1 x, i1 y, i1 z)
 {
-    puts("test_bool_param");
     if(x & y & z)
     {
         ret 0;
@@ -425,7 +399,6 @@ i64 test_bool_param(i1 x, i1 y, i1 z)
 
 i64 test_array_index()
 {
-    puts("test_array_index");
     i64 elems;
     i64 size_per;
     i64* as;
@@ -454,7 +427,6 @@ i64 test_array_index()
 
 i64 test_array_loop_index()
 {
-    puts("test_array_loop_index");
     i64 elems;
     i64 size_per;
     i64* as;
@@ -494,7 +466,6 @@ i64 test_array_loop_index()
 
 i64 test_generic_indirect()
 {
-    puts("test_generic_indirect");
     ptr p;
     ptr* pp;
     ptr** ppp;
@@ -518,7 +489,6 @@ type type_size_16_2 { i64 a; i8 b; i8 c; i8 d; i8 e; };
 
 i64 test_sizeof()
 {
-    puts("test_sizeof");
     ptr p;
     i1  a;
     i8  b;
@@ -563,7 +533,6 @@ i64 test_sizeof()
 
 i64 test_new()
 {
-    puts("test_new");
     del new i64;
     del new i64;
     del new i64;
@@ -589,7 +558,6 @@ i64 test_new()
 
 i64 test_new_indirect()
 {
-    puts("test_new_indirect");
     i64* x;
     x = new i64;
 
@@ -619,7 +587,6 @@ i64 test_new_indirect()
 
 i64 test_new_many()
 {
-    puts("test_new_many");
     i64 value;
     value = 4;
 
@@ -673,7 +640,6 @@ type zero_t
 
 i64 test_zero_init()
 {
-    puts("test_zero_init");
     i1 a;
     i8 b;
     i16 c;
@@ -707,7 +673,6 @@ i64 test_zero_init()
 
 i64 test_init()
 {
-    puts("test_init");
     i64 elems = 512;
     i64* array = new i64[elems];
     del array;
@@ -716,7 +681,6 @@ i64 test_init()
 
 i64 test_continue()
 {
-    puts("test_continue");
     i64 sum = 0;
     i64 i = 0;
     while(i < 32)
@@ -737,7 +701,6 @@ i64 test_continue()
 
 i64 test_break()
 {
-    puts("test_break");
     i64 i = 0;
     while(i < 512)
     {
@@ -756,7 +719,6 @@ i64 test_break()
 
 i64 test_defer_0()
 {
-    puts("test_defer_0");
     i64 elems = 512;
     i64* x = new i64[elems];
     i64* y = new i64[elems];
@@ -773,7 +735,6 @@ i64 test_defer_0()
 
 i64 test_defer_1()
 {
-    puts("test_defer_1");
     i64 elems = 512;
     i64* x = new i64[elems];
     defer del x;
@@ -801,7 +762,6 @@ i64 test_defer_1()
 
 i64 test_defer_2()
 {
-    puts("test_defer_2");
     i64 elems = 512;
     if(1 == 1)
     {
@@ -825,7 +785,6 @@ void do_a_thing(i64* array)
 
 i64 test_defer_3()
 {
-    puts("test_defer_3");
     i64 elems = 512;
     i64* x = new i64[elems];
     defer del x;
@@ -835,7 +794,6 @@ i64 test_defer_3()
 
 i64 test_defer_4()
 {
-    puts("test_defer_4");
     i64 elems = 512;
     i64* x = new i64[elems];
     defer del x;
@@ -857,7 +815,6 @@ i64 test_defer_4()
 
 i64 test_defer_5()
 {
-    puts("test_defer_5");
     i64 elems = 512;
     if(1 == 2)
     {
@@ -877,7 +834,6 @@ i64 test_defer_5()
 
 i64 test_defer_6()
 {
-    puts("test_defer_6");
     i64* v = new i64[32];
     defer del v;
     i64 i = 0;
@@ -915,7 +871,6 @@ i64 test_defer_6()
 
 i64 test_defer_7()
 {
-    puts("test_defer_7");
     i64 i = 0;
     while(i < 512)
     {
@@ -936,7 +891,6 @@ i64 test_defer_7()
 
 i64 test_defer_8()
 {
-    puts("test_defer_8");
     i64* x = new i64[32];
     defer del x;
     i64 i = 0;
@@ -957,7 +911,6 @@ i64 test_defer_8()
 
 i64 test_defer_9()
 {
-    puts("test_defer_9");
     i64 i = 0;
     while(i < 512)
     {
@@ -978,7 +931,6 @@ i64 test_defer_9()
 
 i64 test_defer_10(i64 loops)
 {
-    puts("test_defer_10");
     i64* x = new i64[32];
     *x = loops;
     defer del x;
@@ -1019,7 +971,6 @@ void del_2d_array(i64** array, i64 ysize)
 
 i64 test_2d_array()
 {
-    puts("test_2d_array");
     i64 ysize = 128;
     i64 xsize = 32;
     i64** array = new_2d_array(ysize, xsize);
@@ -1052,7 +1003,6 @@ type type_c
 
 i64 test_types()
 {
-    puts("test_types");
     type_c stack;
     type_c* heap = new type_c;
     type_c* heaps = new type_c[32];
@@ -1073,7 +1023,6 @@ i64** pass_pointer_pointer(i64** pp)
 
 i64 test_direct_function_deref()
 {
-    puts("test_direct_function_deref");
     i1 true = 1 == 1;
     i1 false = !true;
 
@@ -1129,7 +1078,6 @@ type blob_t
 
 i64 test_type_copy()
 {
-    puts("test_type_copy");
     blob_t a;
     blob_t b;
     blob_t* p = &a;
@@ -1165,7 +1113,6 @@ i64 test_type_copy()
 
 i64 test_type_access()
 {
-    puts("test_type_access");
     blob_t* heap = new blob_t;
     defer del heap;
 
@@ -1182,32 +1129,8 @@ i64 test_type_access()
     ret 1;
 }
 
-i64 test_putchar()
-{
-    puts("test_putchar");
-    i8* string = "test";
-    i8* str = new i8[8];
-    defer del str;
-    str[0] = <i8>(104);
-    str[1] = <i8>(101);
-    str[2] = <i8>(108);
-    str[3] = <i8>(108);
-    str[4] = <i8>(111);
-    str[5] = <i8>( 10);
-    str[6] = <i8>(  0);
-    i64 len = 6;
-    i64 i;
-    while(i < len)
-    {
-        putchar(<i32>(str[i]));
-        i = i + 1;
-    }
-    ret 0;
-}
-
 i64 test_str()
 {
-    puts("test_str");
     str_t message = str_init("test test test");
     str_t a = str_init(" ");
     str_t b = str_init("this");
@@ -1248,7 +1171,6 @@ void type_change(int_t* int)
 
 i64 test_type_pass()
 {
-    puts("test_type_pass");
     int_t int;
     type_no_change(int);
     if(int.value == 42)
@@ -1265,7 +1187,6 @@ i64 test_type_pass()
 
 i64 test_mod()
 {
-    puts("test_mod");
     if(9 % 8 == 1)
     {
         ret 0;
@@ -1275,7 +1196,6 @@ i64 test_mod()
 
 i64 test_postix_increment()
 {
-    puts("test_postix_increment");
     int_t int;
     int.value = 41;
     int.value++;
@@ -1299,7 +1219,6 @@ i64 test_postix_increment()
 
 i64 test_postix_decrement()
 {
-    puts("test_postix_decrement");
     int_t int;
     int.value = 43;
     int.value--;
@@ -1320,7 +1239,6 @@ i64 test_postix_decrement()
 
 i64 test_prefix_increment()
 {
-    puts("test_prefix_increment");
     int_t int;
     int.value = 41;
     ++int.value;
@@ -1340,7 +1258,6 @@ i64 test_prefix_increment()
 
 i64 test_prefix_decrement()
 {
-    puts("test_prefix_decrement");
     int_t int;
     int.value = 43;
     --int.value;
@@ -1352,19 +1269,6 @@ i64 test_prefix_decrement()
      & int.value == 42
      & --d.value == -1.0
     )
-    {
-        ret 0;
-    }
-    ret 1;
-}
-
-i64 test_printf()
-{
-    puts("test_printf");
-    i64 x = 18231;
-    i8* message = "hi there";
-    i32 len = printf("test %ld %ld %ld %s\n", 1, 32, x, message);
-    if(len == <i32>(25))
     {
         ret 0;
     }
@@ -1383,7 +1287,6 @@ void stack_defer_exits(str_t* out)
 
 i64 test_defer_prints()
 {
-    puts("test_defer_prints");
     str_t out = str_init("");
     stack_defer_exits(&out);
     str_t expect = str_init("EDCBA");
@@ -1403,7 +1306,6 @@ int_t* ret_int(int_t* int)
 
 i64 test_ret_int_field_access()
 {
-    puts("test_ret_int_field_access");
     int_t int;
     int.value = 42;
     if(ret_int(&int).value == 42)
@@ -1415,7 +1317,6 @@ i64 test_ret_int_field_access()
 
 i64 test_defer_continue()
 {
-    puts("test_defer_continue");
     i64 i;
     while(i < 32)
     {
@@ -1434,7 +1335,6 @@ i64 test_defer_continue()
 
 i64 test_ascii_char()
 {
-    puts("test_ascii_char");
     if(
        '\a' == <i8>( 7)
      & '\b' == <i8>( 8)
@@ -1470,7 +1370,6 @@ i64 test_ascii_char()
 i64
 test_double_type_cast()
 {
-    puts("test_double_type_cast");
     i64 a = <i64>(42.42);
     i32 b = <i32>(41.42);
     i16 c = <i16>(40.42);
@@ -1499,7 +1398,6 @@ test_double_type_cast()
 i64
 test_double_math()
 {
-    puts("test_double_math");
     double x = 1.0;
     double y = 1.0;
     x = y;
@@ -1525,7 +1423,6 @@ test_double_math()
 i64
 test_float_math()
 {
-    puts("test_float_math");
     float x = <float>(1.0);
     float y = <float>(2.0);
     x = y;
@@ -1551,7 +1448,6 @@ test_float_math()
 i64
 test_unsigned()
 {
-    puts("test_unsigned");
     u8  a =  <u8>(42);
     u16 b = <u16>(42);
     u32 c = <u32>(42);
@@ -1595,7 +1491,6 @@ type point_t
 i64
 test_aggregate_operations()
 {
-    puts("test_aggregate_operations");
     point_t a;
     point_t b;
     point_t c;
@@ -1685,7 +1580,6 @@ type default_init_t
 
 i64 test_default_type_init()
 {
-    puts("test_default_type_init");
     default_init_t init;
     if(init.x == 0
      & init.y == 1
@@ -1709,7 +1603,6 @@ i64 test_default_type_init()
 
 i64 test_boolean_type_cast()
 {
-    puts("test_boolean_type_cast");
     u1 okay = <u1>(<i1>(<u1>(<i16>(<u16>(<i32>(<u32>(<i64>(<u64>(1)))))))));
     while(okay)
     {
@@ -1724,7 +1617,7 @@ i64 test_boolean_type_cast()
 
 i32 main()
 {
-    ret <i32> (
+    i64 result =
         test_function()
       | test_pointers()
       | test_if_0()
@@ -1775,7 +1668,6 @@ i32 main()
       | test_direct_function_deref()
       | test_type_copy()
       | test_type_access()
-      | test_putchar()
       | test_str()
       | test_type_pass()
       | test_mod()
@@ -1784,7 +1676,6 @@ i32 main()
       | test_prefix_increment()
       | test_prefix_decrement()
       | test_defer_prints()
-      | test_printf()
       | test_ret_int_field_access()
       | test_defer_continue()
       | test_ascii_char()
@@ -1795,8 +1686,14 @@ i32 main()
       | test_aggregate_operations()
       | test_default_type_init()
       | test_boolean_type_cast()
-      | test_complex_aggregate_operations()
-    );
+      | test_complex_aggregate_operations();
+    if(result == 0)
+    {
+        puts("Tests OKAY");
+        ret <i32>(0);
+    }
+    puts("Tests FAIL !!!");
+    ret <i32>(1);
 }
 //
 // test

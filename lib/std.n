@@ -1,15 +1,17 @@
-i32 rand();
 ptr malloc(i64 size);
 void free(ptr pointer);
-i64 llabs(i64 value);
 i32 putchar(i32 value);
 i32 puts(i8* string);
-i64 strlen(i8* string);
 i32 printf!(i8* format);
+
+i32 rand();
+i64 llabs(i64 value);
+void exit(i32 status);
+
+i64 strlen(i8* string);
 i8* strcpy(i8* dest, i8* source);
 i8* strcat(i8* dest, i8* source);
 i32 strcmp(i8* x, i8* y);
-void exit(i32 status);
 
 type str_t
 {

@@ -169,7 +169,7 @@ char* const g_llvm_escape_backslash            = "\\5C";
 char* const g_llvm_escape_question_mark        = "\\3F";
 char* const g_apostrophe                       = "'";
 char* const g_str                              = "%s";
-char* const g_red                              = "\033[31m";
+char* const g_red                              = "\033[1;31m";
 char* const g_green                            = "\033[1;32m";
 char* const g_white                            = "\033[1;37m";
 char* const g_normal                           = "\033[0m";
@@ -2929,11 +2929,12 @@ void read_code(str_t path)
         quit("could not open '%s'", path.begin);
     }
     auto max = code_last_index();
-    get_code()->path = path;
-    get_code()->line = 1;
-    get_code()->size = fread(get_code()->begin, sizeof(char), max, fp);
+    auto code = get_code();
+    code->path = path;
+    code->line = 1;
+    code->size = fread(code->begin, sizeof(char), max, fp);
     fclose(fp);
-    if(get_code()->size == max)
+    if(code->size == max)
     {
         quit("file size exceeds compiler buffer");
     }
@@ -2947,8 +2948,6 @@ void push_code(str_t path)
 
 void pop_code()
 {
-    auto code = get_code();
-    fprintf(stderr, "%scompiled%s %s: %d bytes\n", g_green, g_normal, code->path.begin, code->size);
     *get_code() = (code_t) {};
     g_file.module -= 1;
 }
@@ -2971,6 +2970,12 @@ void write_header()
     emit(g_str, g_empty);
 }
 
+void compiled()
+{
+    auto code = get_code();
+    fprintf(stderr, "%scompiled%s %s: %d bytes\n", g_green, g_normal, code->path.begin, code->size);
+}
+
 void read_program()
 {
     write_header();
@@ -2978,6 +2983,7 @@ void read_program()
     {
         if(is_end_of_file())
         {
+            compiled();
             if(g_file.module == 0)
             {
                 break;
@@ -3008,6 +3014,7 @@ int main(int argc, char** argv)
 {
     if(argc != 2)
     {
+        puts("./nibble file.n");
         return 1;
     }
     read_code(str_init(argv[1]));
