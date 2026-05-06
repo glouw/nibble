@@ -866,7 +866,7 @@ str_t to_print_type(type_t type)
 {
     auto print = (str_t) {};
     str_append(&print, type.name.begin);
-    if(type.is_function_pointer)
+    if(is_function_pointer(type))
     {
         str_append(&print, g_function);
     }
@@ -880,7 +880,7 @@ void assert_types_match(type_t left, type_t rite, str_t operator)
     auto print_type_b = to_print_type(rite).begin;
     auto stars_match = left.stars == rite.stars;
     auto type_names_match = str_equal(left.name.begin, rite.name.begin);
-    auto function_pointer_matches = left.is_function_pointer == rite.is_function_pointer;
+    auto function_pointer_matches = is_function_pointer(left) == is_function_pointer(rite);
     if(!stars_match || !type_names_match || !function_pointer_matches)
     {
         quit("types '%s' and '%s' mismatch with operator '%s'", print_type_a, print_type_b, operator.begin);
@@ -2469,7 +2469,10 @@ value_t read_prefix()
     return (value_t) {};
 }
 
-value_t call_function(value_t), field_access(value_t), index_access(value_t);
+value_t field_access(value_t);
+value_t index_access(value_t);
+value_t call_direct_function(value_t);
+value_t call_indirect_function(value_t);
 
 bool is_increment_decrement(str_t operator)
 {
@@ -2480,6 +2483,19 @@ bool is_increment_decrement(str_t operator)
 value_t read_postfix_access(value_t offset)
 {
     auto peek = next_char();
+    if(peek == *g_left_paren)
+    {
+        if(is_function_pointer(offset.type))
+        {
+            offset = load_indirect(offset);
+            offset = to_rvalue(offset);
+            return call_indirect_function(offset);
+        }
+        else
+        {
+            return call_direct_function(offset);
+        }
+    }
     offset = load_indirect(offset);
     if(peek == *g_dot)
     {
@@ -2564,60 +2580,81 @@ value_t field_access(value_t found)
     return read_postfix_access(offset);
 }
 
-value_t call_function(value_t found)
+void check_function_args(value_t* found, type_list_t* types)
 {
-    auto types = (type_list_t) {};
-    auto slots = read_function_call_arg_list(&types);
-    if(found.type.must_check_args)
+    if(found->type.must_check_args)
     {
-        if(types.size != found.types.size)
+        if(types->size != found->types.size)
         {
-            quit("function '%s' expected '%d' args but got '%d' args", found.name.begin, found.types.size, types.size);
+            quit("function '%s' expected '%d' args but got '%d' args", found->name.begin, found->types.size, types->size);
         }
         auto operator = str_init(g_function);
-        for(auto i = 0; i < slots.size; i++)
+        for(auto i = 0; i < types->size; i++)
         {
-            auto type = types.begin[i];
-            auto expected = found.types.begin[i];
+            auto type = types->begin[i];
+            auto expected = found->types.begin[i];
             assert_types_match(type, expected, operator);
         }
     }
-    if(found.type.is_function_pointer)
-    {
-        found.is_lvalue = true;
-        found = to_rvalue(found);
-    }
-    auto value = (value_t) {
-        .slot = get_slot(),
-        .type = found.type,
-    };
-    if(value.type.is_function_pointer)
-    {
-        value.type.is_function_pointer = false;
-        auto llvm_type = to_llvm_type(value.type).begin;
-        str_equal(value.type.name.begin, g_void)
-            ? emit(g_opcode_indirect_void_call, llvm_type, found.slot)
-            : emit(g_opcode_indirect_call, value.slot, llvm_type, found.slot);
-    }
-    else
-    {
-        auto llvm_type = to_llvm_type(value.type).begin;
-        str_equal(value.type.name.begin, g_void)
-            ? emit(g_opcode_void_call, llvm_type, found.name.begin)
-            : emit(g_opcode_call, value.slot, llvm_type, found.name.begin);
-    }
+}
+
+void emit_indirect_call(value_t value, value_t found)
+{
+    auto llvm_type = to_llvm_type(value.type).begin;
+    str_equal(value.type.name.begin, g_void)
+        ? emit(g_opcode_indirect_void_call, llvm_type, found.slot)
+        : emit(g_opcode_indirect_call, value.slot, llvm_type, found.slot);
+}
+
+void emit_direct_call(value_t value, value_t found)
+{
+    auto llvm_type = to_llvm_type(value.type).begin;
+    str_equal(value.type.name.begin, g_void)
+        ? emit(g_opcode_void_call, llvm_type, found.name.begin)
+        : emit(g_opcode_call, value.slot, llvm_type, found.name.begin);
+}
+
+void emit_parameter_slots(type_list_t* types, slot_list_t* slots)
+{
     emit(g_str, g_left_paren);
-    for(auto i = 0; i < slots.size; i++)
+    for(auto i = 0; i < slots->size; i++)
     {
-        auto slot = slots.begin[i];
-        auto llvm_type = to_llvm_type(types.begin[i]).begin;
+        auto slot = slots->begin[i];
+        auto llvm_type = to_llvm_type(types->begin[i]).begin;
         emit(g_opcode_type_slot, llvm_type, slot);
-        if(i < slots.size - 1)
+        if(i < slots->size - 1)
         {
             emit(g_str, g_comma);
         }
     }
     emit(g_str, g_rite_paren);
+}
+
+value_t call_direct_function(value_t found)
+{
+    auto types = (type_list_t) {};
+    auto slots = read_function_call_arg_list(&types);
+    check_function_args(&found, &types);
+    auto value = (value_t) {
+        .slot = get_slot(),
+        .type = found.type,
+    };
+    emit_direct_call(value, found);
+    emit_parameter_slots(&types, &slots);
+    return value;
+}
+
+value_t call_indirect_function(value_t found)
+{
+    auto types = (type_list_t) {};
+    auto slots = read_function_call_arg_list(&types);
+    auto value = (value_t) {
+        .slot = get_slot(),
+        .type = found.type,
+    };
+    value.type.is_function_pointer = false;
+    emit_indirect_call(value, found);
+    emit_parameter_slots(&types, &slots);
     return value;
 }
 
@@ -2629,16 +2666,7 @@ value_t read_postfix()
     {
         quit("'%s' not declared", alnum.begin);
     }
-    auto value = *found;
-    auto peek = next_char();
-    if(peek == *g_left_paren)
-    {
-        return call_function(value);
-    }
-    else
-    {
-        return read_postfix_access(value);
-    }
+    return read_postfix_access(*found);
 }
 
 value_t load_character()

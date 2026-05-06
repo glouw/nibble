@@ -1606,7 +1606,7 @@ i64 test_boolean_type_cast()
 
 i64 call_indirect(i64() f, i64 x, i64 y)
 {
-    ret f(x, y, y);
+    ret f(x, y);
 }
 
 i64 test_function_pointer()
@@ -1653,6 +1653,23 @@ i64 test_conversion()
 i32 compare_i64(i64* left, i64* rite)
 {
     ret <i32>(*left > *rite);
+}
+
+type pointer_in_type_t
+{
+    i64() add;
+};
+
+i64 test_pointer_in_type()
+{
+    pointer_in_type_t self;
+    self.add = add;
+    i64 out = self.add(1, 2);
+    if(out == 3 & self.add(1, 2) == 3)
+    {
+        ret 0;
+    }
+    ret 1;
 }
 
 i64 test_qsort()
@@ -1749,6 +1766,7 @@ i32 main()
       | test_function_pointer()
       | test_conversion()
       | test_qsort()
+      | test_pointer_in_type()
     ;
     if(result == 0)
     {
