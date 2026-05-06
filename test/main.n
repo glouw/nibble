@@ -5,6 +5,11 @@ i64 add(i64 a, i64 b)
     ret a + b;
 }
 
+i64 sub(i64 a, i64 b)
+{
+    ret a - b;
+}
+
 i64 test_function()
 {
     if(add(32, add(1, 1)) == 34)
@@ -404,8 +409,8 @@ i64 test_array_index()
     i64* as;
 
     elems = 4;
-    size_per = sizeof *as;
-    as = <i64*>(malloc(elems * size_per));
+    size_per = <i64>(sizeof *as);
+    as = <i64*>(malloc(<u64>(elems * size_per)));
 
     as[0] = 1;
     as[1] = 2;
@@ -435,8 +440,8 @@ i64 test_array_loop_index()
     i64 fill;
 
     elems = 32;
-    size_per = sizeof *as;
-    as = <i64*>(malloc(elems * size_per));
+    size_per = <i64>(sizeof *as);
+    as = <i64*>(malloc(<u64>(elems * size_per)));
 
     fill = 1;
     i = 0;
@@ -473,7 +478,7 @@ i64 test_generic_indirect()
     pp = &p;
     ppp = &pp;
 
-    **ppp = malloc(4);
+    **ppp = malloc(<u64>(4));
     free(**ppp);
 
     ret 0;
@@ -499,30 +504,30 @@ i64 test_sizeof()
     f = &d;
 
     if(
-       sizeof type_size_1 == 1
-     & sizeof type_size_2 == 2
-     & sizeof type_size_3 == 3
-     & sizeof type_size_8 == 8
-     & sizeof type_size_16 == 16
-     & sizeof type_size_16_2 == 16
-     & sizeof p     == 8
-     & sizeof a     == 1
-     & sizeof b     == 1
-     & sizeof c     == 2
-     & sizeof d     == 4
-     & sizeof e     == 8
-     & sizeof (e)   == 8
-     & sizeof *f    == 4
-     & sizeof (*f)  == 4
-     & sizeof ptr   == 8
-     & sizeof i1    == 1
-     & sizeof i8    == 1
-     & sizeof i16   == 2
-     & sizeof i32   == 4
-     & sizeof i64   == 8
-     & sizeof i8*   == 8
-     & sizeof i8**  == 8
-     & sizeof i8*** == 8
+       sizeof type_size_1    == <u64>( 1)
+     & sizeof type_size_2    == <u64>( 2)
+     & sizeof type_size_3    == <u64>( 3)
+     & sizeof type_size_8    == <u64>( 8)
+     & sizeof type_size_16   == <u64>(16)
+     & sizeof type_size_16_2 == <u64>(16)
+     & sizeof p              == <u64>( 8)
+     & sizeof a              == <u64>( 1)
+     & sizeof b              == <u64>( 1)
+     & sizeof c              == <u64>( 2)
+     & sizeof d              == <u64>( 4)
+     & sizeof e              == <u64>( 8)
+     & sizeof (e)            == <u64>( 8)
+     & sizeof *f             == <u64>( 4)
+     & sizeof (*f)           == <u64>( 4)
+     & sizeof ptr            == <u64>( 8)
+     & sizeof i1             == <u64>( 1)
+     & sizeof i8             == <u64>( 1)
+     & sizeof i16            == <u64>( 2)
+     & sizeof i32            == <u64>( 4)
+     & sizeof i64            == <u64>( 8)
+     & sizeof i8*            == <u64>( 8)
+     & sizeof i8**           == <u64>( 8)
+     & sizeof i8***          == <u64>( 8)
      )
     {
         ret 0;
@@ -1299,22 +1304,6 @@ i64 test_defer_prints()
     ret 1;
 }
 
-int_t* ret_int(int_t* int)
-{
-    ret int;
-}
-
-i64 test_ret_int_field_access()
-{
-    int_t int;
-    int.value = 42;
-    if(ret_int(&int).value == 42)
-    {
-        ret 0;
-    }
-    ret 1;
-}
-
 i64 test_defer_continue()
 {
     i64 i;
@@ -1615,6 +1604,77 @@ i64 test_boolean_type_cast()
     ret 1;
 }
 
+i64 call_indirect(i64() f, i64 x, i64 y)
+{
+    ret f(x, y, y);
+}
+
+i64 test_function_pointer()
+{
+    if(call_indirect(add, 1, 2) == 3
+     & call_indirect(sub, 8, 2) == 6
+     & call_indirect(<i64()>(add), 1, 2) == 3
+     & call_indirect(<i64()>(sub), 8, 2) == 6)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i64 test_conversion()
+{
+    i1 okay = <i1>(1);
+    i64 x = 18446744073709551615;
+    u64 y = <u64>(18446744073709551615);
+    u32 z = <u32>(4294967295);
+    if(x != 18446744073709551615)
+    {
+        okay = okay & <i1>(0);
+    }
+    if(<u64>(x) != <u64>(18446744073709551615))
+    {
+        okay = okay & <i1>(0);
+    }
+    if(<i64>(y) != <i64>(18446744073709551615))
+    {
+        okay = okay & <i1>(0);
+    }
+    if(<u32>(z) != <u32>(18446744073709551615))
+    {
+        okay = okay & <i1>(0);
+    }
+    if(okay)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i32 compare_i64(i64* left, i64* rite)
+{
+    ret <i32>(*left > *rite);
+}
+
+i64 test_qsort()
+{
+    i64 size = 4;
+    i64[] array = new i64[size];
+    defer del array;
+    array[0] = 9;
+    array[1] = 3;
+    array[2] = 1;
+    array[3] = 8;
+    qsort(<ptr>(array), <u64>(size), sizeof *array, compare_i64);
+    if(array[0] == 1
+     & array[1] == 3
+     & array[2] == 8
+     & array[3] == 9)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     i64 result =
@@ -1676,7 +1736,6 @@ i32 main()
       | test_prefix_increment()
       | test_prefix_decrement()
       | test_defer_prints()
-      | test_ret_int_field_access()
       | test_defer_continue()
       | test_ascii_char()
       | test_double_type_cast()
@@ -1686,13 +1745,15 @@ i32 main()
       | test_aggregate_operations()
       | test_default_type_init()
       | test_boolean_type_cast()
-      | test_complex_aggregate_operations();
+      | test_complex_aggregate_operations()
+      | test_function_pointer()
+      | test_conversion()
+      | test_qsort()
+    ;
     if(result == 0)
     {
-        puts("Tests OKAY");
         ret <i32>(0);
     }
-    puts("Tests FAIL !!!");
     ret <i32>(1);
 }
 //

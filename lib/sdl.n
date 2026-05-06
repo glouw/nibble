@@ -17,15 +17,15 @@ type sdl_scancode_t
     i64 end = 77;
 };
 
-i8 SDL_Init(i32 flags);
-i8 SDL_SetRenderDrawColor(ptr renderer, i8 r, i8 g, i8 b, i8 a);
-i8 SDL_RenderClear(ptr renderer);
-ptr SDL_CreateWindow(i8* title, i32 x, i32 y, i32 w, i32 h, i32 flags);
-ptr SDL_CreateRenderer(ptr window, i32 index, i32 flags);
+i32 SDL_Init(u32 flags);
+i32 SDL_SetRenderDrawColor(ptr renderer, u8 r, u8 g, u8 b, u8 a);
+i32 SDL_RenderClear(ptr renderer);
+ptr SDL_CreateWindow(i8* title, i32 x, i32 y, i32 w, i32 h, u32 flags);
+ptr SDL_CreateRenderer(ptr window, i32 index, u32 flags);
 i32 SDL_RenderFillRect(ptr renderer, sdl_rect_t* rect);
 void SDL_DestroyWindow(ptr window);
 void SDL_Quit();
-void SDL_Delay(i32 ms);
+void SDL_Delay(u32 ms);
 void SDL_DestroyRenderer(ptr renderer);
 void SDL_RenderPresent(ptr renderer);
 ptr SDL_RWFromFile(i8* path, i8* mode);
@@ -36,9 +36,9 @@ ptr SDL_CreateTexture(ptr renderer, u32 format, i32 access, i32 w, i32 h);
 void SDL_DestroyTexture(ptr texture);
 i32 SDL_RenderCopy(ptr renderer, ptr texture, sdl_rect_t* source, sdl_rect_t* dest);
 i32 SDL_RenderCopyEx(ptr renderer, ptr texture, sdl_rect_t* source, sdl_rect_t* dest, double angle, sdl_point_t* center, i32 flip);
-i8* SDL_GetKeyboardState(i8* numkeys);
+u8* SDL_GetKeyboardState(i8* numkeys);
 void SDL_PumpEvents();
-i32 SDL_GetMouseState(i32* x, i32* y);
+u32 SDL_GetMouseState(i32* x, i32* y);
 i32 SDL_LockTexture(ptr texture, sdl_rect_t* rect, ptr* pixels, i32* pitch);
 void SDL_UnlockTexture(ptr texture);
 u32 SDL_GetTicks();
@@ -57,7 +57,7 @@ type sdl_t
 sdl_t
 sdl_init(i64 xres, i64 yres)
 {
-    SDL_Init(<i32>(0));
+    SDL_Init(<u32>(0));
     sdl_t self;
     self.xres = xres;
     self.yres = yres;
@@ -70,9 +70,9 @@ sdl_init(i64 xres, i64 yres)
         <i32>(0),
         <i32>(self.xres),
         <i32>(self.yres),
-        <i32>(0)
+        <u32>(0)
     );
-    self.renderer= SDL_CreateRenderer(self.window, <i32>(0), <i32>(0));
+    self.renderer= SDL_CreateRenderer(self.window, <i32>(0), <u32>(0));
     ret self;
 }
 
@@ -88,7 +88,7 @@ sdl_del(sdl_t* self)
 void
 sdl_clear_screen(sdl_t* self)
 {
-    SDL_SetRenderDrawColor(self.renderer, <i8>(0), <i8>(0), <i8>(0), <i8>(0));
+    SDL_SetRenderDrawColor(self.renderer, <u8>(0), <u8>(0), <u8>(0), <u8>(0));
     SDL_RenderClear(self.renderer);
     ret;
 }
@@ -103,7 +103,10 @@ sdl_present(sdl_t* self)
 void
 sdl_delay(i64 ms)
 {
-    SDL_Delay(<i32>(ms));
+    if(ms > 0)
+    {
+        SDL_Delay(<u32>(ms));
+    }
     ret;
 }
 
@@ -163,7 +166,7 @@ sdl_pump_events()
     ret;
 }
 
-i8*
+u8*
 sdl_get_keyboard_state()
 {
     sdl_pump_events();
@@ -185,7 +188,8 @@ sdl_get_mouse_state(i64* x, i64* y)
 i1
 sdl_is_key_down(i64 key)
 {
-    ret <i64>(sdl_get_keyboard_state()[key]) == 1;
+    u8* state = sdl_get_keyboard_state();
+    ret <i64>(state[key]) == 1;
 }
 
 void sdl_lock_texture(ptr texture, sdl_rect_t* rect, ptr* pixels, i32* pitch)

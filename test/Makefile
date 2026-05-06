@@ -3,9 +3,10 @@ SRC = main.n
 TEMP = out.ll
 ASM = clang
 BIN = test
+ASAN = valgrind
 
 all:
-	$(CC) $(SRC) > $(TEMP) && $(ASM) $(TEMP) -o $(BIN) && ./$(BIN)
+	$(CC) $(SRC) > $(TEMP) && $(ASM) $(TEMP) -o $(BIN) && $(ASAN) ./$(BIN)
 
 clean:
 	rm -f $(TEMP)

@@ -1,14 +1,15 @@
-ptr malloc(i64 size);
+ptr malloc(u64 size);
 void free(ptr pointer);
 i32 putchar(i32 value);
 i32 puts(i8* string);
 i32 printf!(i8* format);
+void qsort(ptr base, u64 size, u64 elem_size, i32() comparator);
 
 i32 rand();
 i64 llabs(i64 value);
 void exit(i32 status);
 
-i64 strlen(i8* string);
+u64 strlen(i8* string);
 i8* strcpy(i8* dest, i8* source);
 i8* strcat(i8* dest, i8* source);
 i32 strcmp(i8* x, i8* y);
@@ -27,7 +28,7 @@ type str_t
 str_t str_init(i8* data)
 {
     str_t self;
-    self.size = strlen(data);
+    self.size = <i64>(strlen(data));
     self.data = new i8[self.size + 1];
     strcpy(self.data, data);
     ret self;
@@ -49,7 +50,7 @@ void str_cat(str_t* self, str_t* other)
 void str_cats(str_t* self, i8* other)
 {
     str_t out;
-    out.size = self.size + strlen(other);
+    out.size = self.size + <i64>(strlen(other));
     out.data = new i8[out.size + 1];
     i64 index;
     strcpy(out.data, self.data);
