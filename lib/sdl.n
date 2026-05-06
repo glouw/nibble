@@ -57,8 +57,7 @@ type sdl_t
 sdl_t
 sdl_init(i64 xres, i64 yres)
 {
-    i32 video_init = <i32>(32);
-    SDL_Init(video_init);
+    SDL_Init(<i32>(0));
     sdl_t self;
     self.xres = xres;
     self.yres = yres;
