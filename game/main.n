@@ -77,18 +77,13 @@ type sprite_dice_t
     i64 sleep = 100;
 };
 
-type scancode_t
-{
-    i64 end = 77;
-};
-
 type glob_t
 {
     sprite_tag_t sprite_tag;
     sprite_state_t sprite_state;
     sprite_cycles_t sprite_cycles;
     sprite_dice_t sprite_dice;
-    scancode_t scancode;
+    sdl_scancode_t scancode;
     i64 percent_cap = 100;
 };
 

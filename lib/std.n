@@ -13,6 +13,11 @@ i8* strcpy(i8* dest, i8* source);
 i8* strcat(i8* dest, i8* source);
 i32 strcmp(i8* x, i8* y);
 
+double sqrt(double);
+double sin(double);
+double fabs(double);
+double floor(double);
+
 type str_t
 {
     i8* data;

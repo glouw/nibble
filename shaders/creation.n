@@ -1,0 +1,89 @@
+include "../lib/std.n";
+include "../lib/sdl.n";
+
+sdl_vec4
+calc_pixel(sdl_t* sdl, i64 x, i64 y, double seconds)
+{
+    sdl_vec2 resolution;
+    resolution.x = <double>(sdl.xres);
+    resolution.y = <double>(sdl.yres);
+    sdl_vec2 coord;
+    coord.x = <double>(x);
+    coord.y = <double>(y);
+    sdl_vec2 distance;
+    sdl_vec3 color;
+    double time = seconds;
+    double step = 0.07;
+    double frequency = 9.0;
+    i64 slots = 3;
+    i64 slot;
+    while(slot < slots)
+    {
+        defer slot++;
+        sdl_vec2 ratio = coord / resolution;
+        sdl_vec2 uv = ratio;
+        sdl_vec2 shift;
+        shift.x = shift.y = 0.5;
+        ratio = ratio - shift;
+        ratio.x = ratio.x * resolution.x / resolution.y;
+        distance.x = distance.y = sdl_len2(ratio);
+        sdl_vec2 envelope;
+        envelope.x = envelope.y = sin(time) + 1.0;
+        sdl_vec2 wave;
+        wave.x = wave.y = fabs(sin(distance.x * frequency - 2.0 * time));
+        sdl_vec2 sample = sdl_mod2d(uv + ratio / distance * envelope * wave, 1.0);
+        double out = 0.01 / sdl_len2(sample - shift);
+        if(slot == 0) color.x = out;
+        if(slot == 1) color.y = out;
+        if(slot == 2) color.z = out;
+        time = time + step;
+    }
+    sdl_vec4 out;
+    out.r = color.x / distance.x;
+    out.g = color.y / distance.x;
+    out.b = color.z / distance.x;
+    out.a = seconds;
+    ret out;
+}
+
+void draw(sdl_t* sdl, sdl_stream_t* stream)
+{
+    i64 y;
+    while(y < sdl.yres)
+    {
+        defer y++;
+        i64 x;
+        while(x < sdl.xres)
+        {
+            defer x++;
+            double seconds = sdl_get_seconds();
+            sdl_vec4 pixel = calc_pixel(sdl, x, y, seconds);
+            sdl_stream_put(stream, sdl, x, y, pixel);
+        }
+    }
+    ret;
+}
+
+i32 main()
+{
+    sdl_scancode_t scancode;
+    sdl_t sdl = sdl_init(1024, 768);
+    defer sdl_del(&sdl);
+    sdl_stream_t stream = sdl_stream_init(&sdl);
+    defer sdl_stream_del(&stream);
+    i64 cycle;
+    while(<i1>(1))
+    {
+        defer cycle++;
+        if(sdl_is_key_down(scancode.end))
+        {
+            break;
+        }
+        sdl_clear_screen(&sdl);
+        sdl_lock_stream(&stream);
+        draw(&sdl, &stream);
+        sdl_send_stream(&stream, &sdl);
+        sdl_present(&sdl);
+    }
+    ret <i32>(0);
+}

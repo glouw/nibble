@@ -12,6 +12,11 @@ type sdl_point_t
     i32 y;
 };
 
+type sdl_scancode_t
+{
+    i64 end = 77;
+};
+
 i8 SDL_Init(i32 flags);
 i8 SDL_SetRenderDrawColor(ptr renderer, i8 r, i8 g, i8 b, i8 a);
 i8 SDL_RenderClear(ptr renderer);
@@ -27,17 +32,23 @@ ptr SDL_RWFromFile(i8* path, i8* mode);
 ptr SDL_LoadBMP_RW(ptr source, i32 close_stream);
 void SDL_FreeSurface(ptr surface);
 ptr SDL_CreateTextureFromSurface(ptr renderer, ptr surface);
+ptr SDL_CreateTexture(ptr renderer, u32 format, i32 access, i32 w, i32 h);
 void SDL_DestroyTexture(ptr texture);
 i32 SDL_RenderCopy(ptr renderer, ptr texture, sdl_rect_t* source, sdl_rect_t* dest);
 i32 SDL_RenderCopyEx(ptr renderer, ptr texture, sdl_rect_t* source, sdl_rect_t* dest, double angle, sdl_point_t* center, i32 flip);
 i8* SDL_GetKeyboardState(i8* numkeys);
 void SDL_PumpEvents();
 i32 SDL_GetMouseState(i32* x, i32* y);
+i32 SDL_LockTexture(ptr texture, sdl_rect_t* rect, ptr* pixels, i32* pitch);
+void SDL_UnlockTexture(ptr texture);
+u32 SDL_GetTicks();
 
 type sdl_t
 {
     i64 xres;
     i64 yres;
+    i64 xmid;
+    i64 ymid;
     i8* name;
     ptr window;
     ptr renderer;
@@ -46,10 +57,13 @@ type sdl_t
 sdl_t
 sdl_init(i64 xres, i64 yres)
 {
-    SDL_Init(<i32>(32));
+    i32 video_init = <i32>(32);
+    SDL_Init(video_init);
     sdl_t self;
     self.xres = xres;
     self.yres = yres;
+    self.xmid = xres / 2;
+    self.ymid = yres / 2;
     self.name = "game";
     self.window = SDL_CreateWindow(
         self.name,
@@ -173,4 +187,157 @@ i1
 sdl_is_key_down(i64 key)
 {
     ret <i64>(sdl_get_keyboard_state()[key]) == 1;
+}
+
+void sdl_lock_texture(ptr texture, sdl_rect_t* rect, ptr* pixels, i32* pitch)
+{
+    SDL_LockTexture(texture, rect, pixels, pitch);
+    ret;
+}
+
+void sdl_unlock_texture(ptr texture)
+{
+    SDL_UnlockTexture(texture);
+    ret;
+}
+
+type sdl_stream_t
+{
+    ptr texture;
+    u32* buffer;
+    i32 pitch;
+};
+
+sdl_stream_t
+sdl_stream_init(sdl_t* self)
+{
+    sdl_stream_t stream;
+    u32 pixel_format_argb8888 = <u32>(372645892);
+    i32 texure_access_streaming = <i32>(1);
+    stream.texture = SDL_CreateTexture(
+        self.renderer,
+        pixel_format_argb8888,
+        texure_access_streaming,
+        <i32>(self.xres),
+        <i32>(self.yres)
+    );
+    ret stream;
+}
+
+void
+sdl_lock_stream(sdl_stream_t* self)
+{
+    sdl_lock_texture(self.texture, <sdl_rect_t*>(0), <ptr*>(&self.buffer), &self.pitch);
+    ret;
+}
+
+void
+sdl_send_stream(sdl_stream_t* self, sdl_t* sdl)
+{
+    sdl_unlock_texture(self.texture);
+    sdl_render_copy(sdl, self.texture, <sdl_rect_t*>(0), <sdl_rect_t*>(0));
+    ret;
+}
+
+void
+sdl_stream_del(sdl_stream_t* self)
+{
+    sdl_destroy_texture(self.texture);
+    ret;
+}
+
+type sdl_vec2
+{
+    double x;
+    double y;
+};
+
+type sdl_vec3
+{
+    double x;
+    double y;
+    double z;
+};
+
+type sdl_vec4
+{
+    double r;
+    double g;
+    double b;
+    double a;
+};
+
+double
+sdl_clamp(double x, double min, double max)
+{
+    if(x < min) ret min;
+    if(x > max) ret max;
+    ret x;
+}
+
+sdl_vec4
+sdl_clamp_vec4(sdl_vec4 color)
+{
+    color.r = sdl_clamp(color.r, 0.0, 1.0);
+    color.g = sdl_clamp(color.g, 0.0, 1.0);
+    color.b = sdl_clamp(color.b, 0.0, 1.0);
+    color.a = sdl_clamp(color.a, 0.0, 1.0);
+    ret color;
+}
+
+void
+sdl_stream_put(sdl_stream_t* self, sdl_t* sdl, i64 x, i64 y, sdl_vec4 color)
+{
+    double max = 255.0;
+    i64 a_bit = 24;
+    i64 r_bit = 16;
+    i64 g_bit = 8;
+    i64 b_bit = 0;
+    color = sdl_clamp_vec4(color);
+    i64 r = <i64>(color.r * max);
+    i64 g = <i64>(color.g * max);
+    i64 b = <i64>(color.b * max);
+    i64 a = <i64>(color.a * max);
+    i64 pixel = (a << a_bit) | (r << r_bit) | (g << g_bit) | (b << b_bit);
+    self.buffer[sdl.xres * y + x] = <u32>(pixel);
+    ret;
+}
+
+double
+sdl_get_seconds()
+{
+    double ms = <double>(SDL_GetTicks());
+    double ms_per_second = 1000.0;
+    ret ms / ms_per_second;
+}
+
+double
+sdl_len2(sdl_vec2 self)
+{
+    self = self * self;
+    ret sqrt(self.x + self.y);
+}
+
+double
+sdl_mod(double x, double y)
+{
+    ret x - y * floor(x / y);
+}
+
+sdl_vec2
+sdl_mod2(sdl_vec2 a, sdl_vec2 b)
+{
+    sdl_vec2 self;
+    self.x = sdl_mod(a.x, b.x);
+    self.y = sdl_mod(a.y, b.y);
+    ret self;
+}
+
+sdl_vec2
+sdl_mod2d(sdl_vec2 a, double value)
+{
+    sdl_vec2 self;
+    self.x = sdl_mod(a.x, value);
+    self.y = sdl_mod(a.y, value);
+    ret self;
 }
