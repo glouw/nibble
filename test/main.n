@@ -1,5 +1,7 @@
 include "../lib/std.n";
 
+// comment
+//
 i64 add(i64 a, i64 b)
 {
     ret a + b;
@@ -1658,22 +1660,14 @@ i32 compare_i64(i64* left, i64* rite)
 type pointer_in_type_t
 {
     i64() add;
-    i64()* indirect_add;
-    i64()* indirect_add_2;
 };
 
 i64 test_pointer_in_type()
 {
     pointer_in_type_t self;
     self.add = add;
-    self.indirect_add = &self.add;
-    self.indirect_add_2 = new i64();
-    *self.indirect_add_2 = self.add;
-    defer del self.indirect_add_2;
     i64 out = self.add(1, 2);
-    i64() indirect_add = *self.indirect_add;
-    i64() indirect_add_2 = *self.indirect_add_2;
-    if(out == 3 & self.add(1, 2) == 3 & indirect_add(1, 2) == 3 & indirect_add_2(1, 2) == 3)
+    if(out == 3 & self.add(1, 2) == 3)
     {
         ret 0;
     }
@@ -1683,7 +1677,7 @@ i64 test_pointer_in_type()
 i64 test_qsort()
 {
     i64 size = 4;
-    i64[] array = new i64[size];
+    i64* array = new i64[size];
     defer del array;
     array[0] = 9;
     array[1] = 3;

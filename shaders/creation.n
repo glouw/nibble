@@ -16,7 +16,6 @@ creation(sdl_vec2 resolution, sdl_vec2 coord, double seconds)
     i64 slot;
     while(slot < slots)
     {
-        defer slot++;
         sdl_vec2 ratio = coord / resolution;
         sdl_vec2 uv = ratio;
         sdl_vec2 shift;
@@ -28,12 +27,13 @@ creation(sdl_vec2 resolution, sdl_vec2 coord, double seconds)
         envelope.x = envelope.y = sin(time) + 1.0;
         sdl_vec2 wave;
         wave.x = wave.y = fabs(sin(distance.x * frequency - 2.0 * time));
-        sdl_vec2 sample = sdl_mod2d(uv + ratio / distance * envelope * wave, 1.0);
+        sdl_vec2 sample = sdl_mod2s(uv + ratio / distance * envelope * wave, 1.0);
         double out = 0.01 / sdl_len2(sample - shift);
         if(slot == 0) color.x = out;
         if(slot == 1) color.y = out;
         if(slot == 2) color.z = out;
         time = time + step;
+        slot++;
     }
     sdl_vec4 out;
     out.r = color.x / distance.x;
@@ -46,6 +46,6 @@ creation(sdl_vec2 resolution, sdl_vec2 coord, double seconds)
 i32
 main()
 {
-    run(creation, 800, 600, "creation");
+    run(creation, "creation\nby danilo guanabara");
     ret <i32>(0);
 }

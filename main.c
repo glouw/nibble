@@ -596,6 +596,22 @@ bool is_string_char(char c)
         || c == *g_rite_curl;
 }
 
+void str_append(str_t* str, char* chars)
+{
+    while(*chars)
+    {
+        list_append(str, *chars);
+        chars += 1;
+    }
+}
+
+str_t str_init(char* chars)
+{
+    auto str = (str_t) {};
+    str_append(&str, chars);
+    return str;
+}
+
 bool is_operator_char(char c)
 {
     for(auto operator = g_operator_chars; *operator; operator++)
@@ -626,11 +642,24 @@ bool str_in(str_t str, char** array)
     return false;
 }
 
+str_t* str_in_list(str_t str, str_list_t* list)
+{
+    for(auto i = 0; i < list->size; i++)
+    {
+        auto check = &list->begin[i];
+        if(str_equal(str.begin, check->begin))
+        {
+            return check;
+        }
+    }
+    return nullptr;
+}
+
 char** get_operators(precedence_t precedence)
 {
     if(precedence >= g_precedence_count)
     {
-        quit("unknown precedence level");
+        quit("unknown precedence level `%d`", precedence);
     }
     return g_operators_by_precedence[precedence];
 }
@@ -639,6 +668,12 @@ bool is_relational(str_t operator)
 {
     return str_in(operator, get_operators(g_precedence_relational_0))
         || str_in(operator, get_operators(g_precedence_relational_1));
+}
+
+bool is_increment_decrement(str_t operator)
+{
+    return str_equal(operator.begin, g_increment)
+        || str_equal(operator.begin, g_decrement);
 }
 
 bool is_assignment_operator(str_t operator)
@@ -733,25 +768,21 @@ bool is_member_init(type_t type)
     return is_integral(type) || is_floating(type) || is_boolean(type);
 }
 
-void str_append(str_t* str, char* chars)
+bool is_control_keyword(str_t keyword)
 {
-    while(*chars)
-    {
-        list_append(str, *chars);
-        chars += 1;
-    }
+    return str_in(keyword, g_control_keywords);
 }
 
-str_t str_init(char* chars)
+bool is_construct_keyword(str_t keyword)
 {
-    auto str = (str_t) {};
-    str_append(&str, chars);
-    return str;
+    return str_in(keyword, g_construct_keywords);
 }
 
-char* get_builtin_prefix(type_t type)
+bool is_reserved_keyword(str_t keyword)
 {
-    return str_in(type.name, g_builtin_type_keywords) ? g_empty : g_percent;
+    return is_type_name(keyword)
+        || is_control_keyword(keyword)
+        || is_construct_keyword(keyword);
 }
 
 str_t to_llvm_type(type_t type)
@@ -765,7 +796,7 @@ str_t to_llvm_type(type_t type)
     {
         llvm_type.name.begin[0] = 'i';
     }
-    auto prefix = get_builtin_prefix(llvm_type);
+    auto prefix = str_in(llvm_type.name, g_builtin_type_keywords) ? g_empty : g_percent;
     auto out = str_init(prefix);
     str_append(&out, llvm_type.name.begin);
     return out;
@@ -782,36 +813,6 @@ value_t* value_in_list(str_t str, value_list_t* list)
         }
     }
     return nullptr;
-}
-
-str_t* str_in_list(str_t str, str_list_t* list)
-{
-    for(auto i = 0; i < list->size; i++)
-    {
-        auto check = &list->begin[i];
-        if(str_equal(str.begin, check->begin))
-        {
-            return check;
-        }
-    }
-    return nullptr;
-}
-
-bool is_control_keyword(str_t keyword)
-{
-    return str_in(keyword, g_control_keywords);
-}
-
-bool is_construct_keyword(str_t keyword)
-{
-    return str_in(keyword, g_construct_keywords);
-}
-
-bool is_reserved_keyword(str_t keyword)
-{
-    return is_type_name(keyword)
-        || is_control_keyword(keyword)
-        || is_construct_keyword(keyword);
 }
 
 int get_block()
@@ -910,9 +911,17 @@ void assert_lvalue(value_t value, str_t operator)
     }
 }
 
+void read_comment()
+{
+    step();
+    while(peek_char() != *g_escape_newline)
+    {
+        step();
+    }
+}
+
 int skip_space_and_comment()
 {
-    auto len = (int) strlen(g_comment);
     auto count = 0;
     while(true)
     {
@@ -930,18 +939,14 @@ int skip_space_and_comment()
         if(c == *g_divide)
         {
             step();
-            if(peek_char() != *g_divide)
+            if(peek_char() == *g_divide)
+            {
+                read_comment();
+            }
+            else
             {
                 code_rewind(1);
-                count -= len;
                 break;
-            }
-            step();
-            count += len;
-            while(peek_char() != *g_escape_newline)
-            {
-                step();
-                count += 1;
             }
         }
         else
@@ -1073,22 +1078,6 @@ int read_stars()
     while(true)
     {
         auto c = next_char();
-        if(c == *g_left_square)
-        {
-            step();
-            auto d = next_char();
-            if(d == *g_rite_square)
-            {
-                stars += 1;
-                step();
-            }
-            else
-            {
-                code_rewind(1);
-                break;
-            }
-        }
-        else
         if(c == *g_multiply)
         {
             stars += 1;
@@ -1104,8 +1093,10 @@ int read_stars()
 
 type_t read_type()
 {
-    auto type = (type_t) {};
-    type.name = read_alnum();
+    auto type = (type_t) {
+        .name = read_alnum(),
+        .stars = read_stars(),
+    };
     if(next_char() == *g_left_paren)
     {
         match(g_left_paren);
@@ -1113,7 +1104,6 @@ type_t read_type()
         type.is_function_pointer = true;
         type.must_check_args = false;
     }
-    type.stars = read_stars();
     return type;
 }
 
@@ -1121,13 +1111,10 @@ value_list_t read_function_decl_arg_list();
 
 value_t read_value()
 {
-    auto type = read_type();
-    auto name = read_alnum();
-    auto slot = get_slot();
     return (value_t) {
-        .type = type,
-        .name = name,
-        .slot = slot,
+        .type = read_type(),
+        .name = read_alnum(),
+        .slot = get_slot(),
     };
 }
 
@@ -1166,7 +1153,8 @@ value_list_t read_function_decl_arg_list()
             match(g_comma);
             if(next_char() == *g_rite_paren)
             {
-                quit("expected arg");
+                auto print_type = to_print_type(arg.type).begin;
+                quit("expected '%s' after '%s %s' but got '%s%s'", g_rite_paren, print_type, arg.name.begin, g_comma, g_rite_paren);
             }
         }
         else
@@ -1781,7 +1769,8 @@ slot_list_t read_function_call_arg_list(type_list_t* types)
             match(g_comma);
             if(next_char() == *g_rite_paren)
             {
-                quit("expected arg");
+                auto print_type = to_print_type(value.type).begin;
+                quit("expected '%s' after type '%s' but got '%s%s'", g_rite_paren, print_type, g_comma, g_rite_paren);
             }
         }
         else
@@ -2473,12 +2462,6 @@ value_t index_access(value_t);
 value_t call_direct_function(value_t);
 value_t call_indirect_function(value_t);
 
-bool is_increment_decrement(str_t operator)
-{
-    return str_equal(operator.begin, g_increment)
-        || str_equal(operator.begin, g_decrement);
-}
-
 value_t read_postfix_access(value_t offset)
 {
     auto peek = next_char();
@@ -2600,17 +2583,27 @@ void check_function_args(value_t* found, type_list_t* types)
 void emit_indirect_call(value_t value, value_t found)
 {
     auto llvm_type = to_llvm_type(value.type).begin;
-    str_equal(value.type.name.begin, g_void)
-        ? emit(g_opcode_indirect_void_call, llvm_type, found.slot)
-        : emit(g_opcode_indirect_call, value.slot, llvm_type, found.slot);
+    if(str_equal(value.type.name.begin, g_void))
+    {
+        emit(g_opcode_indirect_void_call, llvm_type, found.slot);
+    }
+    else
+    {
+        emit(g_opcode_indirect_call, value.slot, llvm_type, found.slot);
+    }
 }
 
 void emit_direct_call(value_t value, value_t found)
 {
     auto llvm_type = to_llvm_type(value.type).begin;
-    str_equal(value.type.name.begin, g_void)
-        ? emit(g_opcode_void_call, llvm_type, found.name.begin)
-        : emit(g_opcode_call, value.slot, llvm_type, found.name.begin);
+    if(str_equal(value.type.name.begin, g_void))
+    {
+        emit(g_opcode_void_call, llvm_type, found.name.begin);
+    }
+    else
+    {
+        emit(g_opcode_call, value.slot, llvm_type, found.name.begin);
+    }
 }
 
 void emit_parameter_slots(type_list_t* types, slot_list_t* slots)

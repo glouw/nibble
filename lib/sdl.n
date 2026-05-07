@@ -14,6 +14,8 @@ type sdl_point_t
 
 type sdl_scancode_t
 {
+    i64 escape = 41;
+    i64 capslock = 57;
     i64 end = 77;
 };
 
@@ -196,6 +198,16 @@ sdl_is_key_down(i64 key)
     ret <i64>(state[key]) == 1;
 }
 
+i1
+sdl_is_done()
+{
+    sdl_scancode_t scancode;
+    ret sdl_is_key_down(scancode.end)
+      | sdl_is_key_down(scancode.escape)
+      | sdl_is_key_down(scancode.capslock)
+    ;
+}
+
 void sdl_lock_texture(ptr texture, sdl_rect_t* rect, ptr* pixels, i32* pitch)
 {
     SDL_LockTexture(texture, rect, pixels, pitch);
@@ -253,11 +265,95 @@ sdl_stream_del(sdl_stream_t* self)
     ret;
 }
 
+double
+sdl_mod(double x, double y)
+{
+    ret x - y * floor(x / y);
+}
+
 type sdl_vec2
 {
     double x;
     double y;
 };
+
+sdl_vec2
+sdl_vec2_init(double x, double y)
+{
+    sdl_vec2 self;
+    self.x = x;
+    self.y = y;
+    ret self;
+}
+
+double
+sdl_len2(sdl_vec2 self)
+{
+    self = self * self;
+    ret sqrt(self.x + self.y);
+}
+
+sdl_vec2
+sdl_mod2(sdl_vec2 a, sdl_vec2 b)
+{
+    sdl_vec2 self;
+    self.x = sdl_mod(a.x, b.x);
+    self.y = sdl_mod(a.y, b.y);
+    ret self;
+}
+
+sdl_vec2
+sdl_exp2(sdl_vec2 self)
+{
+    self.x = exp(self.x);
+    self.y = exp(self.y);
+    ret self;
+}
+
+double sdl_fract(double x)
+{
+    ret x - floor(x);
+}
+
+sdl_vec2 sdl_fract2(sdl_vec2 a)
+{
+    sdl_vec2 self;
+    self.x = sdl_fract(a.x);
+    self.y = sdl_fract(a.y);
+    ret self;
+}
+
+sdl_vec2
+sdl_mod2s(sdl_vec2 self, double scalar)
+{
+    self.x = sdl_mod(self.x, scalar);
+    self.y = sdl_mod(self.y, scalar);
+    ret self;
+}
+
+sdl_vec2
+sdl_mul2s(sdl_vec2 self, double scalar)
+{
+    self.x = self.x * scalar;
+    self.y = self.y * scalar;
+    ret self;
+}
+
+sdl_vec2
+sdl_div2s(sdl_vec2 self, double scalar)
+{
+    self.x = self.x / scalar;
+    self.y = self.y / scalar;
+    ret self;
+}
+
+sdl_vec2
+sdl_sub2s(sdl_vec2 self, double scalar)
+{
+    self.x = self.x - scalar;
+    self.y = self.y - scalar;
+    ret self;
+}
 
 type sdl_vec3
 {
@@ -266,6 +362,35 @@ type sdl_vec3
     double z;
 };
 
+sdl_vec3
+sdl_vec3_init(double x, double y, double z)
+{
+    sdl_vec3 self;
+    self.x = x;
+    self.y = y;
+    self.z = z;
+    ret self;
+}
+
+sdl_vec3
+sdl_cos3(sdl_vec3 vec)
+{
+    sdl_vec3 self;
+    self.x = cos(vec.x);
+    self.y = cos(vec.y);
+    self.z = cos(vec.z);
+    ret self;
+}
+
+sdl_vec3
+sdl_mul3s(sdl_vec3 self, double scalar)
+{
+    self.x = self.x * scalar;
+    self.y = self.y * scalar;
+    self.z = self.z * scalar;
+    ret self;
+}
+
 type sdl_vec4
 {
     double r;
@@ -273,6 +398,17 @@ type sdl_vec4
     double b;
     double a;
 };
+
+sdl_vec4
+sdl_vec4_init(double r, double g, double b, double a)
+{
+    sdl_vec4 self;
+    self.r = r;
+    self.g = g;
+    self.b = b;
+    self.a = a;
+    ret self;
+}
 
 double
 sdl_clamp(double x, double min, double max)
@@ -318,39 +454,91 @@ sdl_get_seconds()
     ret ms / ms_per_second;
 }
 
-double
-sdl_len2(sdl_vec2 self)
-{
-    self = self * self;
-    ret sqrt(self.x + self.y);
-}
-
-double
-sdl_mod(double x, double y)
-{
-    ret x - y * floor(x / y);
-}
-
-sdl_vec2
-sdl_mod2(sdl_vec2 a, sdl_vec2 b)
-{
-    sdl_vec2 self;
-    self.x = sdl_mod(a.x, b.x);
-    self.y = sdl_mod(a.y, b.y);
-    ret self;
-}
-
-sdl_vec2
-sdl_mod2d(sdl_vec2 a, double value)
-{
-    sdl_vec2 self;
-    self.x = sdl_mod(a.x, value);
-    self.y = sdl_mod(a.y, value);
-    ret self;
-}
-
 i64
 sdl_get_cpu_count()
 {
     ret <i64>(SDL_GetCPUCount());
+}
+
+type sdl_font_t
+{
+    ptr surface;
+    ptr texture;
+    i64 zoom;
+    i64 xtiles;
+    i64 ytiles;
+    i64 tile_width;
+    i64 tile_height;
+};
+
+sdl_font_t
+sdl_font_init(sdl_t* sdl, i8* path, i64 zoom, i64 xtiles, i64 ytiles, i64 tile_width, i64 tile_height)
+{
+    sdl_font_t self;
+    self.surface = sdl_load_bmp(path);
+    self.texture = sdl_surface_to_texture(sdl, self.surface);
+    self.zoom = zoom;
+    self.xtiles = xtiles;
+    self.ytiles = ytiles;
+    self.tile_width = tile_width;
+    self.tile_height = tile_height;
+    ret self;
+}
+
+void
+sdl_font_del(sdl_font_t* self)
+{
+    sdl_del_bmp(self.surface);
+    sdl_destroy_texture(self.texture);
+    ret;
+}
+
+sdl_rect_t
+sdl_font_get_source_rect(sdl_font_t* self, i8 ch)
+{
+    i64 index = <i64>(ch);
+    i64 x = index % self.xtiles;
+    i64 y = index / self.xtiles;
+    sdl_rect_t rect;
+    rect.x = <i32>(x * self.tile_width);
+    rect.y = <i32>(y * self.tile_height);
+    rect.w = <i32>(self.tile_width);
+    rect.h = <i32>(self.tile_height);
+    ret rect;
+}
+
+sdl_rect_t
+sdl_font_get_dest_rect(sdl_font_t* self, i64 x, i64 y)
+{
+    sdl_rect_t rect;
+    rect.x = <i32>(x);
+    rect.y = <i32>(y);
+    rect.w = <i32>(self.zoom * self.tile_width);
+    rect.h = <i32>(self.zoom * self.tile_height);
+    ret rect;
+}
+
+void
+sdl_write_font(sdl_t* sdl, sdl_font_t* self, i8* message, i64 x, i64 y)
+{
+    i8 ch;
+    i64 i;
+    i64 begin = x;
+    while((ch = message[i]) != '\0')
+    {
+        defer i++;
+        sdl_rect_t source = sdl_font_get_source_rect(self, ch);
+        sdl_rect_t dest = sdl_font_get_dest_rect(self, x, y);
+        if(ch == '\n')
+        {
+            y = y + <i64>(dest.h);
+            x = begin;
+        }
+        else
+        {
+            sdl_render_copy_ex(sdl, self.texture, &source, &dest, <i32>(0));
+            x = x + <i64>(dest.w);
+        }
+    }
+    ret;
 }

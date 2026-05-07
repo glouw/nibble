@@ -96,7 +96,7 @@ glob_init()
 
 type sheets_t
 {
-    sheet_t[] sheet;
+    sheet_t* sheet;
     i64 size;
     i64 cap;
 };
@@ -153,7 +153,7 @@ sprite_init(i64 x, i64 y, sheets_t* sheets, i64 tag, i64 zoom)
 
 type sprites_t
 {
-    sprite_t[] sprite;
+    sprite_t* sprite;
     i64 size;
     i64 cap;
 };
@@ -405,106 +405,22 @@ populate_sprites(sdl_t* sdl, glob_t* glob, sheets_t* sheets)
     ret self;
 }
 
-type font_t
-{
-    ptr surface;
-    ptr texture;
-    i64 zoom;
-    i64 xtiles;
-    i64 ytiles;
-    i64 tile_width;
-    i64 tile_height;
-};
-
-font_t
-font_init(sdl_t* sdl, i8* path, i64 zoom, i64 xtiles, i64 ytiles, i64 tile_width, i64 tile_height)
-{
-    font_t self;
-    self.surface = sdl_load_bmp(path);
-    self.texture = sdl_surface_to_texture(sdl, self.surface);
-    self.zoom = zoom;
-    self.xtiles = xtiles;
-    self.ytiles = ytiles;
-    self.tile_width = tile_width;
-    self.tile_height = tile_height;
-    ret self;
-}
-
-void
-font_del(font_t* self)
-{
-    sdl_del_bmp(self.surface);
-    sdl_destroy_texture(self.texture);
-    ret;
-}
-
-sdl_rect_t
-font_get_source_rect(font_t* self, i8 ch)
-{
-    i64 index = <i64>(ch);
-    i64 x = index % self.xtiles;
-    i64 y = index / self.xtiles;
-    sdl_rect_t rect;
-    rect.x = <i32>(x * self.tile_width);
-    rect.y = <i32>(y * self.tile_height);
-    rect.w = <i32>(self.tile_width);
-    rect.h = <i32>(self.tile_height);
-    ret rect;
-}
-
-sdl_rect_t
-font_get_dest_rect(font_t* self, i64 x, i64 y)
-{
-    sdl_rect_t rect;
-    rect.x = <i32>(x);
-    rect.y = <i32>(y);
-    rect.w = <i32>(self.zoom * self.tile_width);
-    rect.h = <i32>(self.zoom * self.tile_height);
-    ret rect;
-}
-
-void
-sdl_write_font(sdl_t* sdl, font_t* self, i8* message, i64 x, i64 y)
-{
-    i8 ch;
-    i64 i;
-    i64 begin = x;
-    while((ch = message[i]) != '\0')
-    {
-        defer i++;
-        sdl_rect_t source = font_get_source_rect(self, ch);
-        sdl_rect_t dest = font_get_dest_rect(self, x, y);
-        if(ch == '\n')
-        {
-            y = y + <i64>(dest.h);
-            x = begin;
-        }
-        else
-        {
-            sdl_render_copy_ex(sdl, self.texture, &source, &dest, <i32>(0));
-            x = x + <i64>(dest.w);
-        }
-    }
-    ret;
-}
-
 i32 main()
 {
     glob_t glob = glob_init();
     sdl_t sdl = sdl_init(1024, 768, "chickens?");
     sheets_t sheets = populate_sheets(&sdl);
     sprites_t sprites = populate_sprites(&sdl, &glob, &sheets);
-    font_t font = font_init(&sdl, "font.bmp", 2, 16, 8, 8, 8);
+    sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     defer sdl_del(&sdl);
     defer sheets_del(&sheets);
     defer sprites_del(&sprites);
-    defer font_del(&font);
+    defer sdl_font_del(&font);
 
     i64 cycle = 0;
     while(<i1>(1))
     {
-        defer cycle++;
-        if(sdl_is_key_down(glob.scancode.end))
+        if(sdl_is_done())
         {
             puts("Thanks for playing...");
             ret <i32>(0);
@@ -513,9 +429,10 @@ i32 main()
         sprites_sort(&sprites);
         sdl_clear_screen(&sdl);
         sprites_render(&sprites, &sdl, &glob, cycle);
-        sdl_write_font(&sdl, &font, "this is a test!!!!\nTHIS IS\'' A TEST", 0, 0);
+        sdl_write_font(&sdl, &font, "cluck cluck\n...cluck", 0, 0);
         sdl_present(&sdl);
         sdl_delay(10);
+        cycle++;
     }
 
     ret <i32>(0);

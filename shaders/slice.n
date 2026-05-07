@@ -40,12 +40,12 @@ slice_run(ptr with)
     ret <ptr>(0);
 }
 
-slice_t[]
+slice_t*
 slice_setup_cores(sdl_t* sdl, sdl_stream_t* stream, sdl_vec4() shader, i64 cores)
 {
     i64 width = sdl.xres / cores;
     i64 x = 0;
-    slice_t[] slices = new slice_t[cores];
+    slice_t* slices = new slice_t[cores];
     i64 core;
     while(core < cores)
     {
@@ -63,9 +63,9 @@ slice_setup_cores(sdl_t* sdl, sdl_stream_t* stream, sdl_vec4() shader, i64 cores
 }
 
 void
-slice_run_cores(slice_t[] slices, i64 cores)
+slice_run_cores(slice_t* slices, i64 cores)
 {
-    u64[] threads = new u64[cores];
+    u64* threads = new u64[cores];
     defer del threads;
     i64 i;
     while(i < cores)
@@ -85,27 +85,30 @@ slice_run_cores(slice_t[] slices, i64 cores)
 }
 
 void
-run(sdl_vec4() shader, i64 xres, i64 yres, i8* name)
+run(sdl_vec4() shader, i8* name)
 {
     sdl_scancode_t scancode;
-    sdl_t sdl = sdl_init(xres, yres, name);
+    sdl_t sdl = sdl_init(1024, 768, name);
+    sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     sdl_stream_t stream = sdl_stream_init(&sdl);
     defer sdl_del(&sdl);
     defer sdl_stream_del(&stream);
+    defer sdl_font_del(&font);
     i64 cycle;
     while(<i1>(1))
     {
-        if(sdl_is_key_down(scancode.end))
+        if(sdl_is_done())
         {
             ret;
         }
         sdl_clear_screen(&sdl);
         sdl_lock_stream(&stream);
         i64 cores = sdl_get_cpu_count();
-        slice_t[] slices = slice_setup_cores(&sdl, &stream, shader, cores);
+        slice_t* slices = slice_setup_cores(&sdl, &stream, shader, cores);
         defer del slices;
         slice_run_cores(slices, cores);
         sdl_send_stream(&stream, &sdl);
+        sdl_write_font(&sdl, &font, name, 0, 0);
         sdl_present(&sdl);
         cycle++;
     }
