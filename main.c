@@ -10,6 +10,7 @@ constexpr auto g_value_args = 16;
 constexpr auto g_slot_list_size = g_value_args;
 constexpr auto g_type_list_size = g_value_args;
 constexpr auto g_str_list_size = g_value_args;
+constexpr auto g_str_const_list_size = 1024;
 constexpr auto g_code_size = 65536;
 constexpr auto g_operator_precedences = 8;
 constexpr auto g_module_stack_size = 8;
@@ -40,7 +41,6 @@ typedef enum : int
 {
     g_scope_function,
     g_scope_while,
-    g_scope_brace,
     g_scope_if,
 }
 scope_t;
@@ -92,6 +92,20 @@ str_list_t;
 
 typedef struct
 {
+    str_t name;
+    int size;
+}
+str_const_t;
+
+typedef struct
+{
+    str_const_t begin[g_str_const_list_size];
+    int size;
+}
+str_const_list_t;
+
+typedef struct
+{
     type_t type;
     str_t name;
     type_list_t types;
@@ -128,6 +142,7 @@ struct
     slot_list_t loop_end;
     value_list_t values;
     value_list_t types;
+    str_const_list_t const_strings;
     int block;
     int slot;
     int tabs;
@@ -324,8 +339,8 @@ char* const g_opcode_signed_extend             = "%%%d = sext %s %%%d to %s";
 char* const g_opcode_trunc                     = "%%%d = trunc %s %%%d to %s";
 char* const g_opcode_malloc                    = "%%%d = call ptr @malloc(i64 %%%d)";
 char* const g_opcode_free                      = "call void @free(ptr %%%d)";
-char* const g_opcode_alloca_string             = "%%%d = alloca [%d x i8]";
-char* const g_opcode_store_string              = "store [%d x i8] c\"%s\", ptr %%%d";
+char* const g_opcode_gep_string                = "%%%d = getelementptr [%d x i8], ptr @%d, i64 0";
+char* const g_opcode_string_constant           = "@%d = private constant [%d x i8] c\"%s\"";
 char* const g_opcode_increment                 = "%%%d = add %s %%%d, 1";
 char* const g_opcode_decrement                 = "%%%d = sub %s %%%d, 1";
 char* const g_opcode_floating_negative         = "%%%d = fmul %s %%%d, -1.0";
@@ -1203,9 +1218,9 @@ value_t read_ret_statement(value_t ret_value)
     }
 }
 
-bool read_statement(value_t, scope_t, int);
+bool read_statement(value_t, scope_t, int, bool);
 
-void read_if_statement(value_t ret_value, branch_t branch)
+void read_if_statement(value_t ret_value, branch_t branch, bool single_line)
 {
     read_alnum();
     match(g_left_paren);
@@ -1215,21 +1230,21 @@ void read_if_statement(value_t ret_value, branch_t branch)
     match(g_rite_paren);
     emit(g_opcode_branch_if_else, value.slot, branch.if_label, branch.else_label);
     emit(g_opcode_label, branch.if_label);
-    auto terminated = read_statement(ret_value, g_scope_if, branch.block);
+    auto terminated = read_statement(ret_value, g_scope_if, branch.block, single_line);
     if(!terminated)
     {
         emit(g_opcode_branch, branch.end_label);
     }
 }
 
-void read_else_statement(value_t ret_value, branch_t branch)
+void read_else_statement(value_t ret_value, branch_t branch, bool single_line)
 {
     emit(g_opcode_label, branch.else_label);
     auto keyword = peek_alnum();
     if(str_equal(keyword.begin, g_else))
     {
         read_alnum();
-        auto terminated = read_statement(ret_value, g_scope_if, branch.block);
+        auto terminated = read_statement(ret_value, g_scope_if, branch.block, single_line);
         if(!terminated)
         {
             emit(g_opcode_branch, branch.end_label);
@@ -1241,7 +1256,7 @@ void read_else_statement(value_t ret_value, branch_t branch)
     }
 }
 
-void read_if_else_statement(value_t ret_value, int block)
+void read_if_else_statement(value_t ret_value, int block, bool single_line)
 {
     auto branch = (branch_t) {
         .if_label = get_label(),
@@ -1249,8 +1264,8 @@ void read_if_else_statement(value_t ret_value, int block)
         .end_label = get_label(),
         .block = block,
     };
-    read_if_statement(ret_value, branch);
-    read_else_statement(ret_value, branch);
+    read_if_statement(ret_value, branch, single_line);
+    read_else_statement(ret_value, branch, single_line);
     emit(g_opcode_label, branch.end_label);
 }
 
@@ -1323,7 +1338,7 @@ void read_continue_statement()
     emit(g_opcode_branch, to);
 }
 
-void read_while_statement(value_t ret_value, int block)
+void read_while_statement(value_t ret_value, int block, bool single_line)
 {
     auto again_label = get_label();
     auto while_label = get_label();
@@ -1340,7 +1355,7 @@ void read_while_statement(value_t ret_value, int block)
     assert_type(value.type, operator, is_boolean);
     emit(g_opcode_branch_if_else, value.slot, while_label, end_label);
     emit(g_opcode_label, while_label);
-    auto terminated = read_statement(ret_value, g_scope_while, block);
+    auto terminated = read_statement(ret_value, g_scope_while, block, single_line);
     if(!terminated)
     {
         emit(g_opcode_branch, again_label);
@@ -1392,9 +1407,9 @@ value_t declare_local_value()
     return alloca_value(value);
 }
 
-bool read_block(value_t, scope_t);
+bool read_block(value_t, scope_t, bool);
 
-bool read_statement(value_t ret_value, scope_t scope, int block)
+bool read_statement(value_t ret_value, scope_t scope, int block, bool single_line)
 {
     auto keyword = peek_alnum();
     if(str_in(keyword, g_control_keywords))
@@ -1422,7 +1437,7 @@ bool read_statement(value_t ret_value, scope_t scope, int block)
         }
         if(str_equal(keyword.begin, g_if))
         {
-            read_if_else_statement(ret_value, block);
+            read_if_else_statement(ret_value, block, true);
         }
         if(str_equal(keyword.begin, g_else))
         {
@@ -1430,13 +1445,18 @@ bool read_statement(value_t ret_value, scope_t scope, int block)
         }
         if(str_equal(keyword.begin, g_while))
         {
-            read_while_statement(ret_value, block);
+            read_while_statement(ret_value, block, true);
         }
     }
     else
     if(is_type_name(keyword))
     {
         auto value = declare_local_value();
+        if(single_line)
+        {
+            auto print_type = to_print_type(value.type).begin;
+            quit("variable declaration '%s %s' must occur in block", print_type, value.name.begin);
+        }
         auto read = skip_space_and_comment();
         if(next_char() == *g_semicolon)
         {
@@ -1454,7 +1474,7 @@ bool read_statement(value_t ret_value, scope_t scope, int block)
     {
         if(next_char() == *g_left_curl)
         {
-            return read_block(ret_value, scope);
+            return read_block(ret_value, scope, false);
         }
         else
         {
@@ -1465,13 +1485,15 @@ bool read_statement(value_t ret_value, scope_t scope, int block)
     return false;
 }
 
-bool read_block(value_t ret_value, scope_t scope)
+bool read_block(value_t ret_value, scope_t scope, bool single_line)
 {
     auto block = get_block();
     auto defers = g_file.defers.size;
     auto values = g_file.values.size;
     bool terminated = false;
     g_file.tabs += 1;
+    auto slot = get_slot();
+    emit("%%%d = call ptr @llvm.stacksave()", slot);
     match(g_left_curl);
     while(true)
     {
@@ -1483,13 +1505,14 @@ bool read_block(value_t ret_value, scope_t scope)
         {
             quit("block was terminated");
         }
-        terminated = read_statement(ret_value, scope, block);
+        terminated = read_statement(ret_value, scope, block, single_line);
     }
+    match(g_rite_curl);
     if(!terminated)
     {
         execute_defers(g_file.defers.size - defers);
+        emit("call void @llvm.stackrestore(ptr %%%d)", slot);
     }
-    match(g_rite_curl);
     g_file.tabs -= 1;
     g_file.defers.size = defers;
     g_file.values.size = values;
@@ -1554,7 +1577,7 @@ void read_function()
             arg.slot = slot;
             list_append(&g_file.values, arg);
         }
-        bool terminated = read_block(ret_value, g_scope_function);
+        bool terminated = read_block(ret_value, g_scope_function, false);
         if(!terminated)
         {
             quit("block missing '%s' statement", g_ret);
@@ -2515,15 +2538,21 @@ value_t index_access(value_t indirect)
 value_t load_string()
 {
     auto value = (value_t) {
-        .type.name = str_init(g_i8),
+        .type = {
+            .name = str_init(g_i8),
+            .stars = 1,
+        },
         .slot = get_slot(),
     };
-    value.type.stars = 1;
     auto string = read_string();
     auto size = 0;
     auto fixed = fix_escape_chars(string, &size);
-    emit(g_opcode_alloca_string, value.slot, size);
-    emit(g_opcode_store_string, size, fixed.begin, value.slot);
+    emit(g_opcode_gep_string, value.slot, size, g_file.const_strings.size);
+    auto str_const = (str_const_t) {
+        .name = fixed,
+        .size = size,
+    };
+    list_append(&g_file.const_strings, str_const);
     if(next_char() == *g_left_square)
     {
         return index_access(value);
@@ -3094,6 +3123,15 @@ void read_program()
     }
 }
 
+void dump_string_constants()
+{
+    for(int i = 0; i < g_file.const_strings.size; i++)
+    {
+        auto str_const = g_file.const_strings.begin[i];
+        emit(g_opcode_string_constant, i, str_const.size, str_const.name.begin);
+    }
+}
+
 int main(int argc, char** argv)
 {
     if(argc != 2)
@@ -3103,4 +3141,5 @@ int main(int argc, char** argv)
     }
     read_code(str_init(argv[1]));
     read_program();
+    dump_string_constants();
 }

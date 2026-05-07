@@ -85,6 +85,7 @@ type glob_t
     sprite_dice_t sprite_dice;
     sdl_scancode_t scancode;
     i64 percent_cap = 100;
+    i64 cycles_per_frame = 5;
 };
 
 glob_t
@@ -291,7 +292,7 @@ sprite_move(sprite_t* self, sdl_t* sdl, glob_t* glob)
         {
             self.where = revert;
         }
-        if(self.state != glob.sprite_state.sleep)
+        if(self.state == glob.sprite_state.walk)
         {
             self.is_facing_right = self.velocity.x > 0;
         }
@@ -302,17 +303,11 @@ sprite_move(sprite_t* self, sdl_t* sdl, glob_t* glob)
 i64
 sprite_roll_state(sprite_t* self, glob_t* glob)
 {
-    i64 state;
     i64 roll = <i64>(rand()) % glob.percent_cap;
-    if(roll < glob.sprite_dice.idle)
-        state = glob.sprite_state.idle;
-    else
-    if(roll < glob.sprite_dice.walk)
-        state = glob.sprite_state.walk;
-    else
-    if(roll < glob.sprite_dice.sleep)
-        state = glob.sprite_state.sleep;
-    ret state;
+    if(roll < glob.sprite_dice.idle ) ret glob.sprite_state.idle;
+    if(roll < glob.sprite_dice.walk ) ret glob.sprite_state.walk;
+    if(roll < glob.sprite_dice.sleep) ret glob.sprite_state.sleep;
+    ret glob.sprite_state.idle;
 }
 
 void
@@ -344,12 +339,13 @@ void
 sprites_move(sprites_t* self, sdl_t* sdl, glob_t* glob)
 {
     i64 i = 0;
+    sprite_t* sprite;
     while(i < self.size)
     {
-        defer i++;
-        sprite_t* sprite = &self.sprite[i];
+        sprite = &self.sprite[i];
         sprite_set_state(sprite, glob);
         sprite_move(sprite, sdl, glob);
+        i++;
     }
     ret;
 }
@@ -358,22 +354,29 @@ void
 sprites_render(sprites_t* self, sdl_t* sdl, glob_t* glob, i64 cycle)
 {
     i64 i = 0;
+    sprite_t* sprite;
+    sdl_rect_t source;
+    sdl_rect_t dest;
+    i32 flip;
     while(i < self.size)
     {
-        defer i++;
-        sprite_t* sprite = &self.sprite[i];
-        sdl_rect_t source = sprite_get_source_rect(sprite, glob);
-        sdl_rect_t dest = sprite_get_dest_rect(sprite);
-        i32 flip;
+        sprite = &self.sprite[i];
+        source = sprite_get_source_rect(sprite, glob);
+        dest = sprite_get_dest_rect(sprite);
         if(sprite.is_facing_right)
         {
             flip = <i32>(1);
         }
+        else
+        {
+            flip = <i32>(0);
+        }
         sdl_render_copy_ex(sdl, sprite.sheet.texture, &source, &dest, flip);
-        if(cycle % 10 == 0)
+        if(cycle % glob.cycles_per_frame == 0)
         {
             sprite.frame++;
         }
+        i++;
     }
     ret;
 }
@@ -405,6 +408,71 @@ populate_sprites(sdl_t* sdl, glob_t* glob, sheets_t* sheets)
     ret self;
 }
 
+type sdl_average_t
+{
+    double* array;
+    i64 size;
+    i64 cap;
+};
+
+sdl_average_t
+sdl_average_init(i64 cap)
+{
+    sdl_average_t self;
+    self.cap = cap;
+    self.array = new double[self.cap];
+    ret self;
+}
+
+double
+sdl_average_get(sdl_average_t* self)
+{
+    if(self.size == 0)
+    {
+        ret 0.0;
+    }
+    double total;
+    i64 i;
+    while(i < self.size)
+    {
+        total = total + self.array[i];
+        i++;
+    }
+    ret total / <double>(self.size);
+}
+
+void
+sdl_average_push(sdl_average_t* self, double value)
+{
+    if(self.size == self.cap)
+    {
+        i64 i;
+        while(i < self.size - 1)
+        {
+            self.array[i] = self.array[i + 1];
+            i++;
+        }
+    }
+    else
+    {
+        self.array[self.size] = value;
+        self.size++;
+    }
+    ret;
+}
+
+void
+sdl_average_del(sdl_average_t* self)
+{
+    del self.array;
+    ret;
+}
+
+u32 getticks()
+{
+    ret <u32>(1);
+}
+
 i32 main()
 {
     glob_t glob = glob_init();
@@ -412,26 +480,36 @@ i32 main()
     sheets_t sheets = populate_sheets(&sdl);
     sprites_t sprites = populate_sprites(&sdl, &glob, &sheets);
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
+    sdl_average_t fps = sdl_average_init(16);
+    i8* buffer = new i8[32];
     defer sdl_del(&sdl);
     defer sheets_del(&sheets);
     defer sprites_del(&sprites);
     defer sdl_font_del(&font);
-
-    i64 cycle = 0;
+    defer sdl_average_del(&fps);
+    defer del buffer;
+    double dt;
+    i64 cycle;
     while(<i1>(1))
     {
+        double t0 = sdl_get_seconds();
         if(sdl_is_done())
         {
-            puts("Thanks for playing...");
-            ret <i32>(0);
+            break;
         }
         sprites_move(&sprites, &sdl, &glob);
         sprites_sort(&sprites);
         sdl_clear_screen(&sdl);
         sprites_render(&sprites, &sdl, &glob, cycle);
-        sdl_write_font(&sdl, &font, "cluck cluck\n...cluck", 0, 0);
+        sprintf(buffer, "FPS: %4.1f", sdl_average_get(&fps));
+        sdl_write_font(&sdl, &font, buffer, 8, 8);
         sdl_present(&sdl);
-        sdl_delay(10);
+        double t1 = sdl_get_seconds();
+        dt = t1 - t0;
+        if(dt > 0.0)
+        {
+            sdl_average_push(&fps, 1.0 / dt);
+        }
         cycle++;
     }
 

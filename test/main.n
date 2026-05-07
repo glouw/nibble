@@ -845,20 +845,24 @@ i64 test_defer_6()
     defer del v;
     i64 i = 0;
     i64 j = 0;
+    i64* w;
+    i64* x;
+    i64* y;
+    i64* z;
     while(j < 1)
     {
-        i64* w = new i64[32];
+        w = new i64[32];
         defer del w;
         while(i < 512)
         {
-            i64* x = new i64[32];
+            x = new i64[32];
             defer del x;
-            i64* y = new i64[32];
+            y = new i64[32];
             defer del y;
             if(i == 32)
             {
                 {
-                    i64* z = new i64[32];
+                    z = new i64[32];
                     defer del z;
                     {
                         break;
@@ -879,9 +883,10 @@ i64 test_defer_6()
 i64 test_defer_7()
 {
     i64 i = 0;
+    i64* x;
     while(i < 512)
     {
-        i64* x = new i64[32];
+        x = new i64[32];
         defer del x;
         if(i == 32)
         {
@@ -919,11 +924,12 @@ i64 test_defer_8()
 i64 test_defer_9()
 {
     i64 i = 0;
+    i64* x;
     while(i < 512)
     {
         if(i == 32)
         {
-            i64* x = new i64[32];
+            x = new i64[32];
             defer del x;
             break;
         }

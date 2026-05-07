@@ -524,11 +524,13 @@ sdl_write_font(sdl_t* sdl, sdl_font_t* self, i8* message, i64 x, i64 y)
     i8 ch;
     i64 i;
     i64 begin = x;
+    sdl_rect_t source;
+    sdl_rect_t dest;
     while((ch = message[i]) != '\0')
     {
         defer i++;
-        sdl_rect_t source = sdl_font_get_source_rect(self, ch);
-        sdl_rect_t dest = sdl_font_get_dest_rect(self, x, y);
+        source = sdl_font_get_source_rect(self, ch);
+        dest = sdl_font_get_dest_rect(self, x, y);
         if(ch == '\n')
         {
             y = y + <i64>(dest.h);
