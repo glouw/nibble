@@ -1,0 +1,2 @@
+i32 pthread_create(u64* thread, ptr attributes, ptr() exec, ptr arguments);
+i32 pthread_join(u64 thread, ptr* out);

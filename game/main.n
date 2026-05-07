@@ -491,7 +491,7 @@ sdl_write_font(sdl_t* sdl, font_t* self, i8* message, i64 x, i64 y)
 i32 main()
 {
     glob_t glob = glob_init();
-    sdl_t sdl = sdl_init(1024, 768);
+    sdl_t sdl = sdl_init(1024, 768, "chickens?");
     sheets_t sheets = populate_sheets(&sdl);
     sprites_t sprites = populate_sprites(&sdl, &glob, &sheets);
     font_t font = font_init(&sdl, "font.bmp", 2, 16, 8, 8, 8);

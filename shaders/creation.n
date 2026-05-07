@@ -1,15 +1,12 @@
 include "../lib/std.n";
 include "../lib/sdl.n";
+include "../lib/pthread.n";
+
+include "slice.n";
 
 sdl_vec4
-calc_pixel(sdl_t* sdl, i64 x, i64 y, double seconds)
+creation(sdl_vec2 resolution, sdl_vec2 coord, double seconds)
 {
-    sdl_vec2 resolution;
-    resolution.x = <double>(sdl.xres);
-    resolution.y = <double>(sdl.yres);
-    sdl_vec2 coord;
-    coord.x = <double>(x);
-    coord.y = <double>(y);
     sdl_vec2 distance;
     sdl_vec3 color;
     double time = seconds;
@@ -46,44 +43,9 @@ calc_pixel(sdl_t* sdl, i64 x, i64 y, double seconds)
     ret out;
 }
 
-void draw(sdl_t* sdl, sdl_stream_t* stream)
+i32
+main()
 {
-    i64 y;
-    while(y < sdl.yres)
-    {
-        defer y++;
-        i64 x;
-        while(x < sdl.xres)
-        {
-            defer x++;
-            double seconds = sdl_get_seconds();
-            sdl_vec4 pixel = calc_pixel(sdl, x, y, seconds);
-            sdl_stream_put(stream, sdl, x, y, pixel);
-        }
-    }
-    ret;
-}
-
-i32 main()
-{
-    sdl_scancode_t scancode;
-    sdl_t sdl = sdl_init(1024, 768);
-    defer sdl_del(&sdl);
-    sdl_stream_t stream = sdl_stream_init(&sdl);
-    defer sdl_stream_del(&stream);
-    i64 cycle;
-    while(<i1>(1))
-    {
-        defer cycle++;
-        if(sdl_is_key_down(scancode.end))
-        {
-            break;
-        }
-        sdl_clear_screen(&sdl);
-        sdl_lock_stream(&stream);
-        draw(&sdl, &stream);
-        sdl_send_stream(&stream, &sdl);
-        sdl_present(&sdl);
-    }
+    run(creation, 640, 480, "creation");
     ret <i32>(0);
 }

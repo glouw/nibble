@@ -1104,10 +1104,8 @@ int read_stars()
 
 type_t read_type()
 {
-    auto type = (type_t) {
-        .name = read_alnum(),
-        .stars = read_stars(),
-    };
+    auto type = (type_t) {};
+    type.name = read_alnum();
     if(next_char() == *g_left_paren)
     {
         match(g_left_paren);
@@ -1115,6 +1113,7 @@ type_t read_type()
         type.is_function_pointer = true;
         type.must_check_args = false;
     }
+    type.stars = read_stars();
     return type;
 }
 

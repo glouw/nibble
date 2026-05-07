@@ -1,0 +1,113 @@
+type slice_t
+{
+    sdl_t* sdl;
+    sdl_stream_t* stream;
+    sdl_vec4() shader;
+    i64 x0;
+    i64 x1;
+};
+
+void
+slice_draw(slice_t* slice)
+{
+    i64 y;
+    while(y < slice.sdl.yres)
+    {
+        i64 x = slice.x0;
+        while(x < slice.x1)
+        {
+            sdl_vec2 resolution;
+            resolution.x = <double>(slice.sdl.xres);
+            resolution.y = <double>(slice.sdl.yres);
+            sdl_vec2 coord;
+            coord.x = <double>(x);
+            coord.y = <double>(y);
+            double seconds = sdl_get_seconds();
+            sdl_vec4 pixel = slice.shader(resolution, coord, seconds);
+            sdl_stream_put(slice.stream, slice.sdl, x, y, pixel);
+            x++;
+        }
+        y++;
+    }
+    ret;
+}
+
+ptr
+slice_run(ptr with)
+{
+    slice_t* slice = <slice_t*>(with);
+    slice_draw(slice);
+    ret <ptr>(0);
+}
+
+slice_t[]
+slice_setup_cores(sdl_t* sdl, sdl_stream_t* stream, sdl_vec4() shader, i64 cores)
+{
+    i64 width = sdl.xres / cores;
+    i64 x = 0;
+    slice_t[] slices = new slice_t[cores];
+    i64 core;
+    while(core < cores)
+    {
+        slice_t slice;
+        slice.sdl = sdl;
+        slice.stream = stream;
+        slice.shader = shader;
+        slice.x0 = x;
+        slice.x1 = slice.x0 + width;
+        slices[core] = slice;
+        x = slice.x1;
+        core++;
+    }
+    ret slices;
+}
+
+void
+slice_run_cores(slice_t[] slices, i64 cores)
+{
+    u64[] threads = new u64[cores];
+    defer del threads;
+    i64 i;
+    while(i < cores)
+    {
+        u64 thread;
+        pthread_create(&threads[i], <ptr>(0), slice_run, <ptr>(&slices[i]));
+        i++;
+    }
+    i64 j;
+    while(j < cores)
+    {
+        u64 thread;
+        pthread_join(threads[j], <ptr*>(0));
+        j++;
+    }
+    ret;
+}
+
+void
+run(sdl_vec4() shader, i64 xres, i64 yres, i8* name)
+{
+    sdl_scancode_t scancode;
+    sdl_t sdl = sdl_init(xres, yres, name);
+    sdl_stream_t stream = sdl_stream_init(&sdl);
+    defer sdl_del(&sdl);
+    defer sdl_stream_del(&stream);
+    i64 cycle;
+    while(<i1>(1))
+    {
+        if(sdl_is_key_down(scancode.end))
+        {
+            ret;
+        }
+        sdl_clear_screen(&sdl);
+        sdl_lock_stream(&stream);
+        i64 cores = sdl_get_cpu_count();
+        slice_t[] slices = slice_setup_cores(&sdl, &stream, shader, cores);
+        defer del slices;
+        slice_run_cores(slices, cores);
+        sdl_send_stream(&stream, &sdl);
+        sdl_present(&sdl);
+        cycle++;
+    }
+    ret;
+}
