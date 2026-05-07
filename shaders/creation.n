@@ -46,6 +46,6 @@ creation(sdl_vec2 resolution, sdl_vec2 coord, double seconds)
 i32
 main()
 {
-    run(creation, 640, 480, "creation");
+    run(creation, 800, 600, "creation");
     ret <i32>(0);
 }
