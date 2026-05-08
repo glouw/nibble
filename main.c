@@ -366,6 +366,8 @@ char* const g_opcode_signed_to_boolean         = "%%%d = trunc %s %%%d to %s";
 char* const g_opcode_unsigned_to_boolean       = "%%%d = trunc %s %%%d to %s";
 char* const g_opcode_boolean_to_signed         = "%%%d = zext %s %%%d to %s";
 char* const g_opcode_boolean_to_unsigned       = "%%%d = zext %s %%%d to %s";
+char* const g_opcode_stack_save                = "%%%d = call ptr @llvm.stacksave()";
+char* const g_opcode_stack_restore             = "call void @llvm.stackrestore(ptr %%%d)";
 
 char* g_operator_chars[] = {
     g_dot,
@@ -1492,8 +1494,6 @@ bool read_block(value_t ret_value, scope_t scope, bool single_line)
     auto values = g_file.values.size;
     bool terminated = false;
     g_file.tabs += 1;
-    auto slot = get_slot();
-    emit("%%%d = call ptr @llvm.stacksave()", slot);
     match(g_left_curl);
     while(true)
     {
@@ -1511,7 +1511,6 @@ bool read_block(value_t ret_value, scope_t scope, bool single_line)
     if(!terminated)
     {
         execute_defers(g_file.defers.size - defers);
-        emit("call void @llvm.stackrestore(ptr %%%d)", slot);
     }
     g_file.tabs -= 1;
     g_file.defers.size = defers;

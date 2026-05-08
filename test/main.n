@@ -1700,6 +1700,20 @@ i64 test_qsort()
     ret 1;
 }
 
+i8* ret_string()
+{
+    ret "test";
+}
+
+i64 test_string_return()
+{
+    if(strcmp(ret_string(), "test") == <i32>(0))
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     i64 result =
@@ -1775,6 +1789,7 @@ i32 main()
       | test_conversion()
       | test_qsort()
       | test_pointer_in_type()
+      | test_string_return()
     ;
     if(result == 0)
     {

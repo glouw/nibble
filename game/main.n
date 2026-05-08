@@ -408,72 +408,8 @@ populate_sprites(sdl_t* sdl, glob_t* glob, sheets_t* sheets)
     ret self;
 }
 
-type sdl_average_t
-{
-    double* array;
-    i64 size;
-    i64 cap;
-};
-
-sdl_average_t
-sdl_average_init(i64 cap)
-{
-    sdl_average_t self;
-    self.cap = cap;
-    self.array = new double[self.cap];
-    ret self;
-}
-
-double
-sdl_average_get(sdl_average_t* self)
-{
-    if(self.size == 0)
-    {
-        ret 0.0;
-    }
-    double total;
-    i64 i;
-    while(i < self.size)
-    {
-        total = total + self.array[i];
-        i++;
-    }
-    ret total / <double>(self.size);
-}
-
-void
-sdl_average_push(sdl_average_t* self, double value)
-{
-    if(self.size == self.cap)
-    {
-        i64 i;
-        while(i < self.size - 1)
-        {
-            self.array[i] = self.array[i + 1];
-            i++;
-        }
-    }
-    else
-    {
-        self.array[self.size] = value;
-        self.size++;
-    }
-    ret;
-}
-
-void
-sdl_average_del(sdl_average_t* self)
-{
-    del self.array;
-    ret;
-}
-
-u32 getticks()
-{
-    ret <u32>(1);
-}
-
-i32 main()
+i32
+main()
 {
     glob_t glob = glob_init();
     sdl_t sdl = sdl_init(1024, 768, "chickens?");
@@ -481,13 +417,6 @@ i32 main()
     sprites_t sprites = populate_sprites(&sdl, &glob, &sheets);
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     sdl_average_t fps = sdl_average_init(16);
-    i8* buffer = new i8[32];
-    defer sdl_del(&sdl);
-    defer sheets_del(&sheets);
-    defer sprites_del(&sprites);
-    defer sdl_font_del(&font);
-    defer sdl_average_del(&fps);
-    defer del buffer;
     double dt;
     i64 cycle;
     while(<i1>(1))
@@ -501,8 +430,11 @@ i32 main()
         sprites_sort(&sprites);
         sdl_clear_screen(&sdl);
         sprites_render(&sprites, &sdl, &glob, cycle);
-        sprintf(buffer, "FPS: %4.1f", sdl_average_get(&fps));
-        sdl_write_font(&sdl, &font, buffer, 8, 8);
+        sdl_scroll_t scroll = sdl_scroll_init(&sdl);
+        sdl_scroll_write(&scroll, &sdl, &font, "bawk?");
+        sdl_scroll_write(&scroll, &sdl, &font, "bawk!?\nanother bawk!");
+        sdl_scroll_write(&scroll, &sdl, &font, "bbbbbbawk!");
+        sdl_write_fps(&sdl, &font, &fps);
         sdl_present(&sdl);
         double t1 = sdl_get_seconds();
         dt = t1 - t0;
@@ -512,6 +444,10 @@ i32 main()
         }
         cycle++;
     }
-
+    sdl_del(&sdl);
+    sheets_del(&sheets);
+    sprites_del(&sprites);
+    sdl_font_del(&font);
+    sdl_average_del(&fps);
     ret <i32>(0);
 }

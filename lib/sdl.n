@@ -53,6 +53,7 @@ type sdl_t
     i64 xmid;
     i64 ymid;
     i8* name;
+    i64 margin = 8;
     ptr window;
     ptr renderer;
 };
@@ -460,6 +461,66 @@ sdl_get_cpu_count()
     ret <i64>(SDL_GetCPUCount());
 }
 
+type sdl_average_t
+{
+    double* array;
+    i64 size;
+    i64 cap;
+};
+
+sdl_average_t
+sdl_average_init(i64 cap)
+{
+    sdl_average_t self;
+    self.cap = cap;
+    self.array = new double[self.cap];
+    ret self;
+}
+
+double
+sdl_average_get(sdl_average_t* self)
+{
+    if(self.size == 0)
+    {
+        ret 0.0;
+    }
+    double total;
+    i64 i;
+    while(i < self.size)
+    {
+        total = total + self.array[i];
+        i++;
+    }
+    ret total / <double>(self.size);
+}
+
+void
+sdl_average_push(sdl_average_t* self, double value)
+{
+    if(self.size == self.cap)
+    {
+        i64 i;
+        while(i < self.size - 1)
+        {
+            self.array[i] = self.array[i + 1];
+            i++;
+        }
+    }
+    else
+    {
+        self.array[self.size] = value;
+        self.size++;
+    }
+    ret;
+}
+
+void
+sdl_average_del(sdl_average_t* self)
+{
+    del self.array;
+    ret;
+}
+
 type sdl_font_t
 {
     ptr surface;
@@ -518,19 +579,24 @@ sdl_font_get_dest_rect(sdl_font_t* self, i64 x, i64 y)
     ret rect;
 }
 
-void
+i64
 sdl_write_font(sdl_t* sdl, sdl_font_t* self, i8* message, i64 x, i64 y)
 {
     i8 ch;
     i64 i;
     i64 begin = x;
-    sdl_rect_t source;
     sdl_rect_t dest;
-    while((ch = message[i]) != '\0')
+    sdl_rect_t source;
+    while(<i1>(1))
     {
-        defer i++;
-        source = sdl_font_get_source_rect(self, ch);
         dest = sdl_font_get_dest_rect(self, x, y);
+        ch = message[i];
+        if(ch == '\0')
+        {
+            y = y + <i64>(dest.h);
+            break;
+        }
+        source = sdl_font_get_source_rect(self, ch);
         if(ch == '\n')
         {
             y = y + <i64>(dest.h);
@@ -541,6 +607,43 @@ sdl_write_font(sdl_t* sdl, sdl_font_t* self, i8* message, i64 x, i64 y)
             sdl_render_copy_ex(sdl, self.texture, &source, &dest, <i32>(0));
             x = x + <i64>(dest.w);
         }
+        i++;
     }
+    ret y;
+}
+
+void
+sdl_write_fps(sdl_t* self, sdl_font_t* font, sdl_average_t* average)
+{
+    i8* buffer = new i8[128];
+    defer del buffer;
+    double fps = sdl_average_get(average);
+    i64 chars = <i64>(sprintf(buffer, "%f", fps));
+    sdl_rect_t size = sdl_font_get_dest_rect(font, 0, 0);
+    i64 x = self.xres - chars * <i64>(size.w) - self.margin;
+    i64 y = self.margin;
+    sdl_write_font(self, font, buffer, x, y);
+    ret;
+}
+
+type sdl_scroll_t
+{
+    i64 x;
+    i64 y;
+};
+
+sdl_scroll_t
+sdl_scroll_init(sdl_t* sdl)
+{
+    sdl_scroll_t self;
+    self.x = sdl.margin;
+    self.y = sdl.margin;
+    ret self;
+}
+
+void
+sdl_scroll_write(sdl_scroll_t* self, sdl_t* sdl, sdl_font_t* font, i8* message)
+{
+    self.y = sdl_write_font(sdl, font, message, self.x, self.y);
     ret;
 }

@@ -91,12 +91,12 @@ run(sdl_vec4() shader, i8* name)
     sdl_t sdl = sdl_init(1024, 768, name);
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     sdl_stream_t stream = sdl_stream_init(&sdl);
-    defer sdl_del(&sdl);
-    defer sdl_stream_del(&stream);
-    defer sdl_font_del(&font);
+    sdl_average_t average = sdl_average_init(32);
     i64 cycle;
+    double dt;
     while(<i1>(1))
     {
+        double t0 = sdl_get_seconds();
         if(sdl_is_done())
         {
             ret;
@@ -108,9 +108,20 @@ run(sdl_vec4() shader, i8* name)
         defer del slices;
         slice_run_cores(slices, cores);
         sdl_send_stream(&stream, &sdl);
-        sdl_write_font(&sdl, &font, name, 0, 0);
+        sdl_write_font(&sdl, &font, name, sdl.margin, sdl.margin);
+        sdl_write_fps(&sdl, &font, &average);
         sdl_present(&sdl);
+        double t1 = sdl_get_seconds();
+        dt = t1 - t0;
+        if(dt > 0.0)
+        {
+            sdl_average_push(&average, 1.0 / dt);
+        }
         cycle++;
     }
+    sdl_del(&sdl);
+    sdl_stream_del(&stream);
+    sdl_font_del(&font);
+    sdl_average_del(&average);
     ret;
 }
