@@ -6,37 +6,38 @@ include "run.n";
 
 sdl_vec3 palette(double t)
 {
-    sdl_vec3 a = sdl_vec3_init(0.5, 0.5, 0.5);
-    sdl_vec3 b = sdl_vec3_init(0.5, 0.5, 0.5);
-    sdl_vec3 c = sdl_vec3_init(1.0, 1.0, 1.0);
-    sdl_vec3 d = sdl_vec3_init(0.263, 0.416, 0.557);
-    sdl_vec3 t_ident = sdl_vec3_init(t, t, t);
-    double two_pi = 2.0 * 3.14159265359;
-    sdl_vec3 two_pi_ident = sdl_vec3_init(two_pi, two_pi, two_pi);
-    sdl_vec3 freq = c * t_ident + d;
-    sdl_vec3 amplitude = sdl_cos3(two_pi_ident * freq);
-    ret a + b * amplitude;
+    sdl_vec3() v3 = sdl_vec3_init;
+    sdl_vec3() c3 = sdl_cos3;
+    double pi2 = 2.0 * 3.14159265359;
+    sdl_vec3 a = v3(0.500, 0.500, 0.500);
+    sdl_vec3 b = v3(0.500, 0.500, 0.500);
+    sdl_vec3 c = v3(1.000, 1.000, 1.000);
+    sdl_vec3 d = v3(0.263, 0.416, 0.557);
+    ret a + b * c3(v3(pi2, pi2, pi2) * (c * v3(t, t, t) + d));
 }
 
 sdl_vec4
-art(sdl_vec2 resolution, sdl_vec2 coord, double seconds)
+art(sdl_vec2 res, sdl_vec2 coord, double secs)
 {
-    sdl_vec2 uv = sdl_mul2s(coord, 2.0);
-    uv = uv - resolution;
-    uv = sdl_div2s(uv, resolution.y);
+    sdl_vec3() m3s = sdl_mul3s;
+    sdl_vec2() m2s = sdl_mul2s;
+    sdl_vec2() d2s = sdl_div2s;
+    sdl_vec2() s2s = sdl_sub2s;
+    sdl_vec2() f2 = sdl_fract2;
+    double() l2 = sdl_len2;
+    sdl_vec2 uv = d2s(m2s(coord, 2.0) - res, res.y);
     sdl_vec2 uv0 = uv;
     sdl_vec3 color;
     double i;
     while(i < 4.0)
     {
-        uv = sdl_sub2s(sdl_fract2(sdl_mul2s(uv, 1.5)), 0.5);
-        double d = sdl_len2(uv) * exp(-sdl_len2(uv0));
-        sdl_vec3 col = palette(sdl_len2(uv0) + 0.4 * (i + seconds));
-        d = sin(8.0 * d + seconds) / 8.0;
+        uv = s2s(f2(m2s(uv, 1.5)), 0.5);
+        double d = l2(uv) * exp(-l2(uv0));
+        sdl_vec3 col = palette(l2(uv0) + 0.4 * (i + secs));
+        d = sin(8.0 * d + secs) / 8.0;
         d = fabs(d);
         d = pow(0.01 / d, 1.2);
-        sdl_vec3 step = sdl_mul3s(col, d);
-        color = color + step;
+        color = color + m3s(col, d);
         i++;
     }
     sdl_vec4 out;

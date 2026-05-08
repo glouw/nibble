@@ -316,6 +316,7 @@ char* const g_opcode_flat_gep                    = "%%%d = getelementptr ptr, pt
 char* const g_opcode_gep                         = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
 char* const g_opcode_sizeof                      = "%%%d = getelementptr %s, ptr null, i64 1";
 char* const g_opcode_type_field                  = "%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d";
+char* const g_opcode_type_field_extract          = "%%%d = extractvalue %s %%%d, %d";
 char* const g_opcode_ptr_to_int                  = "%%%d = ptrtoint ptr %%%d to %s";
 char* const g_opcode_int_to_ptr                  = "%%%d = inttoptr %s %%%d to ptr";
 char* const g_opcode_load_double                 = "%%%d = fadd %s %s, 0.0";
@@ -1429,6 +1430,7 @@ void default_init_aggregate(value_t value)
 
 value_t alloca_value(value_t value)
 {
+    value.is_lvalue = true;
     auto llvm_type = to_llvm_type(value.type).begin;
     emit(g_opcode_alloca, value.slot, llvm_type);
     emit(g_opcode_zero_init, llvm_type, value.slot);
@@ -1715,7 +1717,7 @@ value_t load_indirect(value_t found)
     }
     else
     {
-        emit(g_opcode_flat_gep, value.slot, found.slot, g_i64, 0);
+        emit(g_opcode_flat_gep, value.slot, found.slot, g_i32, 0);
         return value;
     }
 }
@@ -1907,21 +1909,18 @@ value_t get_address_of(value_t value)
 
 value_t dereference(value_t value)
 {
-    if(is_pointer(value.type))
+    auto operator = str_init(g_multiply);
+    assert_type(value.type, operator, is_pointer);
+    if(value.is_lvalue)
     {
-        if(value.is_lvalue)
-        {
-            auto llvm_type = to_llvm_type(value.type).begin;
-            auto slot = get_slot();
-            emit(g_opcode_load, slot, llvm_type, value.slot);
-            value.slot = slot;
-        }
-        value.type.stars -= 1;
-        value.is_lvalue = true;
-        return value;
+        auto llvm_type = to_llvm_type(value.type).begin;
+        auto slot = get_slot();
+        emit(g_opcode_load, slot, llvm_type, value.slot);
+        value.slot = slot;
     }
-    quit("expected pointer type for '%s' while derefencing", value.type.name.begin);
-    return (value_t) {};
+    value.type.stars -= 1;
+    value.is_lvalue = true;
+    return value;
 }
 
 value_t to_positive(value_t value)
@@ -2601,20 +2600,30 @@ value_t field_index(value_t found, str_t name)
     {
         found = dereference(found);
     }
+    auto operator = str_init(g_dot);
+    assert_type(found.type, operator, is_aggregate);
     auto type = value_in_list(found.type.name, &g_file.types);
     auto exists = str_in_list(name, &type->names);
-    if(type == nullptr || exists == nullptr)
+    if(exists == nullptr)
     {
-        quit("could not access field '%s' in type '%s'", name.begin, found.type.name.begin);
+        auto print_type = to_print_type(found.type).begin;
+        quit("could not access field '%s' in type '%s'", name.begin, print_type);
     }
     auto index = exists - type->names.begin;
+    auto llvm_type = to_llvm_type(found.type).begin;
     auto offset = (value_t) {
         .slot = get_slot(),
         .type = type->types.begin[index],
-        .is_lvalue = true,
     };
-    auto llvm_type = to_llvm_type(found.type).begin;
-    emit(g_opcode_type_field, offset.slot, llvm_type, found.slot, index);
+    if(found.is_lvalue)
+    {
+        offset.is_lvalue = true,
+        emit(g_opcode_type_field, offset.slot, llvm_type, found.slot, index);
+    }
+    else
+    {
+        emit(g_opcode_type_field_extract, offset.slot, llvm_type, found.slot, index);
+    }
     return offset;
 }
 
@@ -2950,34 +2959,27 @@ value_t operate(value_t left, value_t rite, str_t operator)
     }
     else
     {
+        left = to_rvalue(left);
+        rite = to_rvalue(rite);
         if(is_aggregate(left.type))
         {
-            assert_lvalue(left, operator);
-            assert_lvalue(rite, operator);
-            left = load_indirect(left);
-            rite = load_indirect(rite);
             return aggregate_operate(left, rite, operator);
         }
-        else
+        if(is_floating(left.type))
         {
-            left = to_rvalue(left);
-            rite = to_rvalue(rite);
-            if(is_floating(left.type))
-            {
-                return floating_operate(left, rite, operator);
-            }
-            if(is_unsigned(left.type))
-            {
-                return unsigned_operate(left, rite, operator);
-            }
-            if(is_signed(left.type) || is_boolean(left.type))
-            {
-                return signed_operate(left, rite, operator);
-            }
-            if(is_pointer(left.type))
-            {
-                return pointer_operate(left, rite, operator);
-            }
+            return floating_operate(left, rite, operator);
+        }
+        if(is_unsigned(left.type))
+        {
+            return unsigned_operate(left, rite, operator);
+        }
+        if(is_signed(left.type) || is_boolean(left.type))
+        {
+            return signed_operate(left, rite, operator);
+        }
+        if(is_pointer(left.type))
+        {
+            return pointer_operate(left, rite, operator);
         }
     }
     quit("unknown type name %s\n", left.type.name.begin);

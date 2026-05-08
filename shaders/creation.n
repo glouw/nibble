@@ -5,23 +5,23 @@ include "slice.n";
 include "run.n";
 
 sdl_vec4
-creation(sdl_vec2 resolution, sdl_vec2 coord, double seconds)
+creation(sdl_vec2 res, sdl_vec2 coord, double secs)
 {
     sdl_vec2 distance;
     sdl_vec3 color;
-    double time = seconds;
+    double time = secs;
     double step = 0.07;
     double frequency = 9.0;
     i64 slots = 3;
     i64 slot;
     while(slot < slots)
     {
-        sdl_vec2 ratio = coord / resolution;
+        sdl_vec2 ratio = coord / res;
         sdl_vec2 uv = ratio;
         sdl_vec2 shift;
         shift.x = shift.y = 0.5;
         ratio = ratio - shift;
-        ratio.x = ratio.x * resolution.x / resolution.y;
+        ratio.x = ratio.x * res.x / res.y;
         distance.x = distance.y = sdl_len2(ratio);
         sdl_vec2 envelope;
         envelope.x = envelope.y = sin(time) + 1.0;
@@ -39,7 +39,7 @@ creation(sdl_vec2 resolution, sdl_vec2 coord, double seconds)
     out.r = color.x / distance.x;
     out.g = color.y / distance.x;
     out.b = color.z / distance.x;
-    out.a = seconds;
+    out.a = secs;
     ret out;
 }
 
