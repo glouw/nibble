@@ -1,8 +1,8 @@
 include "../lib/std.n";
 include "../lib/sdl.n";
 include "../lib/pthread.n";
-
 include "slice.n";
+include "run.n";
 
 sdl_vec3 palette(double t)
 {
@@ -50,6 +50,6 @@ art(sdl_vec2 resolution, sdl_vec2 coord, double seconds)
 i32
 main()
 {
-    run(art, "shader art coding introduction\nby kishimisu");
+    run(art, "shader art\nby kishimisu");
     ret <i32>(0);
 }

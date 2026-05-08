@@ -1,8 +1,8 @@
 include "../lib/std.n";
 include "../lib/sdl.n";
 include "../lib/pthread.n";
-
 include "slice.n";
+include "run.n";
 
 sdl_vec4
 creation(sdl_vec2 resolution, sdl_vec2 coord, double seconds)

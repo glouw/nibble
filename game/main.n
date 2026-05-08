@@ -416,7 +416,7 @@ main()
     sheets_t sheets = populate_sheets(&sdl);
     sprites_t sprites = populate_sprites(&sdl, &glob, &sheets);
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
-    sdl_average_t fps = sdl_average_init(16);
+    sdl_average_t fps = sdl_average_init(8);
     double dt;
     i64 cycle;
     while(<i1>(1))

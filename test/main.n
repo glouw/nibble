@@ -1714,6 +1714,19 @@ i64 test_string_return()
     ret 1;
 }
 
+i64 test_variadic_function_pointer()
+{
+    i32...() s = sprintf;
+    i8* buffer = new i8[32];
+    defer del buffer;
+    s(buffer, "test%d", 42);
+    if(strcmp(buffer, "test42") == <i32>(0))
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     i64 result =
@@ -1790,6 +1803,7 @@ i32 main()
       | test_qsort()
       | test_pointer_in_type()
       | test_string_return()
+      | test_variadic_function_pointer()
     ;
     if(result == 0)
     {

@@ -1,5 +1,5 @@
 CC = ../nibble
-ASM = clang -O3
+ASM = clang -O3 -march=native -ffast-math
 LDFLAGS = -lSDL2 -lm -lpthread
 TIME = time
 

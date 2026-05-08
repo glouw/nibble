@@ -73,6 +73,7 @@ typedef struct
     int stars;
     bool is_function_pointer;
     bool must_check_args;
+    bool is_variadic;
 }
 type_t;
 
@@ -160,214 +161,219 @@ typedef struct
 }
 branch_t;
 
-char* const g_escape_alert                     = "\a";
-char* const g_escape_backspace                 = "\b";
-char* const g_escape_form_feed                 = "\f";
-char* const g_escape_newline                   = "\n";
-char* const g_escape_carriage_return           = "\r";
-char* const g_escape_tab                       = "\t";
-char* const g_escape_vertical_tab              = "\v";
-char* const g_escape_backslash                 = "\\";
-char* const g_escape_apostrophe                = "\'";
-char* const g_escape_quotation                 = "\"";
-char* const g_escape_question_mark             = "\?";
-char* const g_escape_null                      = "\0";
-char* const g_llvm_escape_alert                = "\\07";
-char* const g_llvm_escape_backspace            = "\\08";
-char* const g_llvm_escape_tab                  = "\\09";
-char* const g_llvm_escape_newline              = "\\0A";
-char* const g_llvm_escape_vertical_tab         = "\\0B";
-char* const g_llvm_escape_form_feed            = "\\0C";
-char* const g_llvm_escape_carriage_return      = "\\0D";
-char* const g_llvm_escape_quotation            = "\\22";
-char* const g_llvm_escape_null                 = "\\00";
-char* const g_llvm_escape_backslash            = "\\5C";
-char* const g_llvm_escape_question_mark        = "\\3F";
-char* const g_apostrophe                       = "'";
-char* const g_str                              = "%s";
-char* const g_red                              = "\033[1;31m";
-char* const g_green                            = "\033[1;32m";
-char* const g_white                            = "\033[1;37m";
-char* const g_normal                           = "\033[0m";
-char* const g_null                             = "null";
-char* const g_underscore                       = "_";
-char* const g_left_square                      = "[";
-char* const g_rite_square                      = "]";
-char* const g_left_curl                        = "{";
-char* const g_rite_curl                        = "}";
-char* const g_left_paren                       = "(";
-char* const g_rite_paren                       = ")";
-char* const g_semicolon                        = ";";
-char* const g_space                            = " ";
-char* const g_lower_begin                      = "a";
-char* const g_lower_end                        = "z";
-char* const g_upper_begin                      = "A";
-char* const g_upper_end                        = "Z";
-char* const g_digit_begin                      = "0";
-char* const g_digit_end                        = "9";
-char* const g_not                              = "!";
-char* const g_type_cast                        = "<>";
-char* const g_function                         = "()";
-char* const g_index                            = "[]";
-char* const g_dot                              = ".";
-char* const g_add                              = "+";
-char* const g_subtract                         = "-";
-char* const g_divide                           = "/";
-char* const g_mod                              = "%";
-char* const g_multiply                         = "*";
-char* const g_equals                           = "=";
-char* const g_equal_to                         = "==";
-char* const g_not_equal_to                     = "!=";
-char* const g_less_equal_to                    = "<=";
-char* const g_less                             = "<";
-char* const g_greater_equal_to                 = ">=";
-char* const g_greater                          = ">";
-char* const g_shift_rite                       = ">>";
-char* const g_shift_left                       = "<<";
-char* const g_increment                        = "++";
-char* const g_decrement                        = "--";
-char* const g_bitwise_or                       = "|";
-char* const g_bitwise_xor                      = "^";
-char* const g_bitwise_and                      = "&";
-char* const g_bitwise_not                      = "~";
-char* const g_comma                            = ",";
-char* const g_ampersand                        = "&";
-char* const g_percent                          = "%";
-char* const g_hash                             = "#";
-char* const g_empty                            = "";
-char* const g_colon                            = ":";
-char* const g_question_mark                    = "?";
-char* const g_dollar                           = "$";
-char* const g_at                               = "@";
-char* const g_void                             = "void";
-char* const g_i1                               = "i1";
-char* const g_i8                               = "i8";
-char* const g_i16                              = "i16";
-char* const g_i32                              = "i32";
-char* const g_i64                              = "i64";
-char* const g_u1                               = "u1";
-char* const g_u8                               = "u8";
-char* const g_u16                              = "u16";
-char* const g_u32                              = "u32";
-char* const g_u64                              = "u64";
-char* const g_double                           = "double";
-char* const g_float                            = "float";
-char* const g_ret                              = "ret";
-char* const g_ptr                              = "ptr";
-char* const g_if                               = "if";
-char* const g_else                             = "else";
-char* const g_while                            = "while";
-char* const g_break                            = "break";
-char* const g_continue                         = "continue";
-char* const g_type                             = "type";
-char* const g_defer                            = "defer";
-char* const g_new                              = "new";
-char* const g_del                              = "del";
-char* const g_sizeof                           = "sizeof";
-char* const g_comment                          = "//";
-char* const g_include                          = "include";
-char* const g_opcode_type_def                  = "%%%s = type";
-char* const g_opcode_label                     = "L%d:";
-char* const g_opcode_branch_if_else            = "br i1 %%%d, label %%L%d, label %%L%d";
-char* const g_opcode_branch                    = "br label %%L%d";
-char* const g_opcode_target                    = "target triple = \"x86_64-pc-linux-gnu\"";
-char* const g_opcode_signed_not                = "%%%d = xor %s %%%d, true";
-char* const g_opcode_signed_negative           = "%%%d = mul %s %%%d, -1";
-char* const g_opcode_signed_mul                = "%%%d = mul %s %%%d, %%%d";
-char* const g_opcode_signed_divide             = "%%%d = sdiv %s %%%d, %%%d";
-char* const g_opcode_signed_remainder          = "%%%d = srem %s %%%d, %%%d";
-char* const g_opcode_signed_add                = "%%%d = add %s %%%d, %%%d";
-char* const g_opcode_signed_sub                = "%%%d = sub %s %%%d, %%%d";
-char* const g_opcode_signed_equal_to           = "%%%d = icmp eq %s %%%d, %%%d";
-char* const g_opcode_signed_not_equal_to       = "%%%d = icmp ne %s %%%d, %%%d";
-char* const g_opcode_signed_less               = "%%%d = icmp slt %s %%%d, %%%d";
-char* const g_opcode_signed_less_equal_to      = "%%%d = icmp sle %s %%%d, %%%d";
-char* const g_opcode_signed_greater            = "%%%d = icmp sgt %s %%%d, %%%d";
-char* const g_opcode_signed_greater_equal_to   = "%%%d = icmp sge %s %%%d, %%%d";
-char* const g_opcode_signed_bitwise_or         = "%%%d = or %s %%%d, %%%d";
-char* const g_opcode_signed_bitwise_not        = "%%%d = xor %s %%%d, -1";
-char* const g_opcode_signed_bitwise_xor        = "%%%d = xor %s %%%d, %%%d";
-char* const g_opcode_signed_bitwise_and        = "%%%d = and %s %%%d, %%%d";
-char* const g_opcode_signed_shift_left         = "%%%d = shl %s %%%d, %%%d";
-char* const g_opcode_signed_shift_rite         = "%%%d = ashr %s %%%d, %%%d";
-char* const g_opcode_unsigned_not              = "%%%d = xor %s %%%d, true";
-char* const g_opcode_unsigned_negative         = "%%%d = mul %s %%%d, -1";
-char* const g_opcode_unsigned_mul              = "%%%d = mul %s %%%d, %%%d";
-char* const g_opcode_unsigned_divide           = "%%%d = udiv %s %%%d, %%%d";
-char* const g_opcode_unsigned_remainder        = "%%%d = urem %s %%%d, %%%d";
-char* const g_opcode_unsigned_add              = "%%%d = add %s %%%d, %%%d";
-char* const g_opcode_unsigned_sub              = "%%%d = sub %s %%%d, %%%d";
-char* const g_opcode_unsigned_equal_to         = "%%%d = icmp eq %s %%%d, %%%d";
-char* const g_opcode_unsigned_not_equal_to     = "%%%d = icmp ne %s %%%d, %%%d";
-char* const g_opcode_unsigned_less             = "%%%d = icmp ult %s %%%d, %%%d";
-char* const g_opcode_unsigned_less_equal_to    = "%%%d = icmp ule %s %%%d, %%%d";
-char* const g_opcode_unsigned_greater          = "%%%d = icmp ugt %s %%%d, %%%d";
-char* const g_opcode_unsigned_greater_equal_to = "%%%d = icmp uge %s %%%d, %%%d";
-char* const g_opcode_unsigned_bitwise_or       = "%%%d = or %s %%%d, %%%d";
-char* const g_opcode_unsigned_bitwise_not      = "%%%d = xor %s %%%d, -1";
-char* const g_opcode_unsigned_bitwise_xor      = "%%%d = xor %s %%%d, %%%d";
-char* const g_opcode_unsigned_bitwise_and      = "%%%d = and %s %%%d, %%%d";
-char* const g_opcode_unsigned_shift_left       = "%%%d = shl %s %%%d, %%%d";
-char* const g_opcode_unsigned_shift_rite       = "%%%d = lshr %s %%%d, %%%d";
-char* const g_opcode_alloca                    = "%%%d = alloca %s";
-char* const g_opcode_flat_gep                  = "%%%d = getelementptr ptr, ptr %%%d, %s %d";
-char* const g_opcode_gep                       = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
-char* const g_opcode_sizeof                    = "%%%d = getelementptr %s, ptr null, i64 1";
-char* const g_opcode_type_field                = "%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d";
-char* const g_opcode_ptr_to_int                = "%%%d = ptrtoint ptr %%%d to %s";
-char* const g_opcode_int_to_ptr                = "%%%d = inttoptr %s %%%d to ptr";
-char* const g_opcode_load_double               = "%%%d = fadd %s %s, 0.0";
-char* const g_opcode_load_signed               = "%%%d = add %s %s, 0";
-char* const g_opcode_load_character            = "%%%d = add %s %d, 0";
-char* const g_opcode_ret                       = "ret %s %%%d";
-char* const g_opcode_ret_void                  = "ret %s";
-char* const g_opcode_define                    = "define %s @%s";
-char* const g_opcode_declare                   = "declare %s @%s";
-char* const g_opcode_load                      = "%%%d = load %s, ptr %%%d";
-char* const g_opcode_store_direct              = "store %s %s, ptr %%%d";
-char* const g_opcode_store_function            = "store %s @%s, ptr %%%d";
-char* const g_opcode_store                     = "store %s %%%d, ptr %%%d";
-char* const g_opcode_zero_init                 = "store %s zeroinitializer, ptr %%%d";
-char* const g_opcode_type_slot                 = "%s %%%d";
-char* const g_opcode_call                      = "%%%d = call %s @%s";
-char* const g_opcode_void_call                 = "call %s @%s";
-char* const g_opcode_indirect_call             = "%%%d = call %s %%%d";
-char* const g_opcode_indirect_void_call        = "call %s %%%d";
-char* const g_opcode_entry                     = "entry:";
-char* const g_opcode_zero_extend               = "%%%d = zext %s %%%d to %s";
-char* const g_opcode_signed_extend             = "%%%d = sext %s %%%d to %s";
-char* const g_opcode_trunc                     = "%%%d = trunc %s %%%d to %s";
-char* const g_opcode_malloc                    = "%%%d = call ptr @malloc(i64 %%%d)";
-char* const g_opcode_free                      = "call void @free(ptr %%%d)";
-char* const g_opcode_gep_string                = "%%%d = getelementptr [%d x i8], ptr @%d, i64 0";
-char* const g_opcode_string_constant           = "@%d = private constant [%d x i8] c\"%s\"";
-char* const g_opcode_increment                 = "%%%d = add %s %%%d, 1";
-char* const g_opcode_decrement                 = "%%%d = sub %s %%%d, 1";
-char* const g_opcode_floating_negative         = "%%%d = fmul %s %%%d, -1.0";
-char* const g_opcode_floating_increment        = "%%%d = fadd %s %%%d, 1.0";
-char* const g_opcode_floating_decrement        = "%%%d = fsub %s %%%d, 1.0";
-char* const g_opcode_floating_mul              = "%%%d = fmul %s %%%d, %%%d";
-char* const g_opcode_floating_div              = "%%%d = fdiv %s %%%d, %%%d";
-char* const g_opcode_floating_add              = "%%%d = fadd %s %%%d, %%%d";
-char* const g_opcode_floating_sub              = "%%%d = fsub %s %%%d, %%%d";
-char* const g_opcode_floating_equal_to         = "%%%d = fcmp oeq %s %%%d, %%%d";
-char* const g_opcode_floating_not_equal_to     = "%%%d = fcmp one %s %%%d, %%%d";
-char* const g_opcode_floating_less             = "%%%d = fcmp olt %s %%%d, %%%d";
-char* const g_opcode_floating_less_equal_to    = "%%%d = fcmp ole %s %%%d, %%%d";
-char* const g_opcode_floating_greater          = "%%%d = fcmp ogt %s %%%d, %%%d";
-char* const g_opcode_floating_greater_equal_to = "%%%d = fcmp oge %s %%%d, %%%d";
-char* const g_opcode_float_to_signed           = "%%%d = fptosi %s %%%d to %s";
-char* const g_opcode_float_to_unsigned         = "%%%d = fptoui %s %%%d to %s";
-char* const g_opcode_signed_to_floating        = "%%%d = sitofp %s %%%d to %s";
-char* const g_opcode_unsigned_to_floating      = "%%%d = uitofp %s %%%d to %s";
-char* const g_opcode_floating_trunc            = "%%%d = fptrunc %s %%%d to %s";
-char* const g_opcode_floating_extend           = "%%%d = fpext %s %%%d to %s";
-char* const g_opcode_signed_to_boolean         = "%%%d = trunc %s %%%d to %s";
-char* const g_opcode_unsigned_to_boolean       = "%%%d = trunc %s %%%d to %s";
-char* const g_opcode_boolean_to_signed         = "%%%d = zext %s %%%d to %s";
-char* const g_opcode_boolean_to_unsigned       = "%%%d = zext %s %%%d to %s";
-char* const g_opcode_stack_save                = "%%%d = call ptr @llvm.stacksave()";
-char* const g_opcode_stack_restore             = "call void @llvm.stackrestore(ptr %%%d)";
+char* const g_escape_alert                       = "\a";
+char* const g_escape_backspace                   = "\b";
+char* const g_escape_form_feed                   = "\f";
+char* const g_escape_newline                     = "\n";
+char* const g_escape_carriage_return             = "\r";
+char* const g_escape_tab                         = "\t";
+char* const g_escape_vertical_tab                = "\v";
+char* const g_escape_backslash                   = "\\";
+char* const g_escape_apostrophe                  = "\'";
+char* const g_escape_quotation                   = "\"";
+char* const g_escape_question_mark               = "\?";
+char* const g_escape_null                        = "\0";
+char* const g_llvm_escape_alert                  = "\\07";
+char* const g_llvm_escape_backspace              = "\\08";
+char* const g_llvm_escape_tab                    = "\\09";
+char* const g_llvm_escape_newline                = "\\0A";
+char* const g_llvm_escape_vertical_tab           = "\\0B";
+char* const g_llvm_escape_form_feed              = "\\0C";
+char* const g_llvm_escape_carriage_return        = "\\0D";
+char* const g_llvm_escape_quotation              = "\\22";
+char* const g_llvm_escape_null                   = "\\00";
+char* const g_llvm_escape_backslash              = "\\5C";
+char* const g_llvm_escape_question_mark          = "\\3F";
+char* const g_apostrophe                         = "'";
+char* const g_str                                = "%s";
+char* const g_red                                = "\033[1;31m";
+char* const g_green                              = "\033[1;32m";
+char* const g_white                              = "\033[1;37m";
+char* const g_normal                             = "\033[0m";
+char* const g_null                               = "null";
+char* const g_underscore                         = "_";
+char* const g_left_square                        = "[";
+char* const g_rite_square                        = "]";
+char* const g_left_curl                          = "{";
+char* const g_rite_curl                          = "}";
+char* const g_left_paren                         = "(";
+char* const g_rite_paren                         = ")";
+char* const g_semicolon                          = ";";
+char* const g_space                              = " ";
+char* const g_lower_begin                        = "a";
+char* const g_lower_end                          = "z";
+char* const g_upper_begin                        = "A";
+char* const g_upper_end                          = "Z";
+char* const g_digit_begin                        = "0";
+char* const g_digit_end                          = "9";
+char* const g_ellipses                           = "...";
+char* const g_not                                = "!";
+char* const g_type_cast                          = "<>";
+char* const g_function                           = "()";
+char* const g_index                              = "[]";
+char* const g_dot                                = ".";
+char* const g_add                                = "+";
+char* const g_subtract                           = "-";
+char* const g_divide                             = "/";
+char* const g_mod                                = "%";
+char* const g_multiply                           = "*";
+char* const g_equals                             = "=";
+char* const g_equal_to                           = "==";
+char* const g_not_equal_to                       = "!=";
+char* const g_less_equal_to                      = "<=";
+char* const g_less                               = "<";
+char* const g_greater_equal_to                   = ">=";
+char* const g_greater                            = ">";
+char* const g_shift_rite                         = ">>";
+char* const g_shift_left                         = "<<";
+char* const g_increment                          = "++";
+char* const g_decrement                          = "--";
+char* const g_bitwise_or                         = "|";
+char* const g_bitwise_xor                        = "^";
+char* const g_bitwise_and                        = "&";
+char* const g_bitwise_not                        = "~";
+char* const g_comma                              = ",";
+char* const g_ampersand                          = "&";
+char* const g_percent                            = "%";
+char* const g_hash                               = "#";
+char* const g_empty                              = "";
+char* const g_colon                              = ":";
+char* const g_question_mark                      = "?";
+char* const g_dollar                             = "$";
+char* const g_at                                 = "@";
+char* const g_void                               = "void";
+char* const g_i1                                 = "i1";
+char* const g_i8                                 = "i8";
+char* const g_i16                                = "i16";
+char* const g_i32                                = "i32";
+char* const g_i64                                = "i64";
+char* const g_u1                                 = "u1";
+char* const g_u8                                 = "u8";
+char* const g_u16                                = "u16";
+char* const g_u32                                = "u32";
+char* const g_u64                                = "u64";
+char* const g_double                             = "double";
+char* const g_float                              = "float";
+char* const g_ret                                = "ret";
+char* const g_ptr                                = "ptr";
+char* const g_if                                 = "if";
+char* const g_else                               = "else";
+char* const g_while                              = "while";
+char* const g_break                              = "break";
+char* const g_continue                           = "continue";
+char* const g_type                               = "type";
+char* const g_defer                              = "defer";
+char* const g_new                                = "new";
+char* const g_del                                = "del";
+char* const g_sizeof                             = "sizeof";
+char* const g_comment                            = "//";
+char* const g_include                            = "include";
+char* const g_opcode_type_def                    = "%%%s = type";
+char* const g_opcode_label                       = "L%d:";
+char* const g_opcode_branch_if_else              = "br i1 %%%d, label %%L%d, label %%L%d";
+char* const g_opcode_branch                      = "br label %%L%d";
+char* const g_opcode_target                      = "target triple = \"x86_64-pc-linux-gnu\"";
+char* const g_opcode_signed_not                  = "%%%d = xor %s %%%d, true";
+char* const g_opcode_signed_negative             = "%%%d = mul %s %%%d, -1";
+char* const g_opcode_signed_mul                  = "%%%d = mul %s %%%d, %%%d";
+char* const g_opcode_signed_divide               = "%%%d = sdiv %s %%%d, %%%d";
+char* const g_opcode_signed_remainder            = "%%%d = srem %s %%%d, %%%d";
+char* const g_opcode_signed_add                  = "%%%d = add %s %%%d, %%%d";
+char* const g_opcode_signed_sub                  = "%%%d = sub %s %%%d, %%%d";
+char* const g_opcode_signed_equal_to             = "%%%d = icmp eq %s %%%d, %%%d";
+char* const g_opcode_signed_not_equal_to         = "%%%d = icmp ne %s %%%d, %%%d";
+char* const g_opcode_signed_less                 = "%%%d = icmp slt %s %%%d, %%%d";
+char* const g_opcode_signed_less_equal_to        = "%%%d = icmp sle %s %%%d, %%%d";
+char* const g_opcode_signed_greater              = "%%%d = icmp sgt %s %%%d, %%%d";
+char* const g_opcode_signed_greater_equal_to     = "%%%d = icmp sge %s %%%d, %%%d";
+char* const g_opcode_signed_bitwise_or           = "%%%d = or %s %%%d, %%%d";
+char* const g_opcode_signed_bitwise_not          = "%%%d = xor %s %%%d, -1";
+char* const g_opcode_signed_bitwise_xor          = "%%%d = xor %s %%%d, %%%d";
+char* const g_opcode_signed_bitwise_and          = "%%%d = and %s %%%d, %%%d";
+char* const g_opcode_signed_shift_left           = "%%%d = shl %s %%%d, %%%d";
+char* const g_opcode_signed_shift_rite           = "%%%d = ashr %s %%%d, %%%d";
+char* const g_opcode_unsigned_not                = "%%%d = xor %s %%%d, true";
+char* const g_opcode_unsigned_negative           = "%%%d = mul %s %%%d, -1";
+char* const g_opcode_unsigned_mul                = "%%%d = mul %s %%%d, %%%d";
+char* const g_opcode_unsigned_divide             = "%%%d = udiv %s %%%d, %%%d";
+char* const g_opcode_unsigned_remainder          = "%%%d = urem %s %%%d, %%%d";
+char* const g_opcode_unsigned_add                = "%%%d = add %s %%%d, %%%d";
+char* const g_opcode_unsigned_sub                = "%%%d = sub %s %%%d, %%%d";
+char* const g_opcode_unsigned_equal_to           = "%%%d = icmp eq %s %%%d, %%%d";
+char* const g_opcode_unsigned_not_equal_to       = "%%%d = icmp ne %s %%%d, %%%d";
+char* const g_opcode_unsigned_less               = "%%%d = icmp ult %s %%%d, %%%d";
+char* const g_opcode_unsigned_less_equal_to      = "%%%d = icmp ule %s %%%d, %%%d";
+char* const g_opcode_unsigned_greater            = "%%%d = icmp ugt %s %%%d, %%%d";
+char* const g_opcode_unsigned_greater_equal_to   = "%%%d = icmp uge %s %%%d, %%%d";
+char* const g_opcode_unsigned_bitwise_or         = "%%%d = or %s %%%d, %%%d";
+char* const g_opcode_unsigned_bitwise_not        = "%%%d = xor %s %%%d, -1";
+char* const g_opcode_unsigned_bitwise_xor        = "%%%d = xor %s %%%d, %%%d";
+char* const g_opcode_unsigned_bitwise_and        = "%%%d = and %s %%%d, %%%d";
+char* const g_opcode_unsigned_shift_left         = "%%%d = shl %s %%%d, %%%d";
+char* const g_opcode_unsigned_shift_rite         = "%%%d = lshr %s %%%d, %%%d";
+char* const g_opcode_alloca                      = "%%%d = alloca %s";
+char* const g_opcode_flat_gep                    = "%%%d = getelementptr ptr, ptr %%%d, %s %d";
+char* const g_opcode_gep                         = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
+char* const g_opcode_sizeof                      = "%%%d = getelementptr %s, ptr null, i64 1";
+char* const g_opcode_type_field                  = "%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d";
+char* const g_opcode_ptr_to_int                  = "%%%d = ptrtoint ptr %%%d to %s";
+char* const g_opcode_int_to_ptr                  = "%%%d = inttoptr %s %%%d to ptr";
+char* const g_opcode_load_double                 = "%%%d = fadd %s %s, 0.0";
+char* const g_opcode_load_signed                 = "%%%d = add %s %s, 0";
+char* const g_opcode_load_character              = "%%%d = add %s %d, 0";
+char* const g_opcode_ret                         = "ret %s %%%d";
+char* const g_opcode_ret_void                    = "ret %s";
+char* const g_opcode_define                      = "define %s @%s";
+char* const g_opcode_declare                     = "declare %s @%s";
+char* const g_opcode_load                        = "%%%d = load %s, ptr %%%d";
+char* const g_opcode_store_direct                = "store %s %s, ptr %%%d";
+char* const g_opcode_store_function              = "store %s @%s, ptr %%%d";
+char* const g_opcode_store                       = "store %s %%%d, ptr %%%d";
+char* const g_opcode_zero_init                   = "store %s zeroinitializer, ptr %%%d";
+char* const g_opcode_type_slot                   = "%s %%%d";
+char* const g_opcode_call                        = "%%%d = call %s @%s";
+char* const g_opcode_void_call                   = "call %s @%s";
+char* const g_opcode_variadic_call               = "%%%d = call %s (...) @%s";
+char* const g_opcode_variadic_void_call          = "call %s (...) @%s";
+char* const g_opcode_indirect_call               = "%%%d = call %s %%%d";
+char* const g_opcode_indirect_void_call          = "call %s %%%d";
+char* const g_opcode_variadic_indirect_call      = "%%%d = call %s (...) %%%d";
+char* const g_opcode_variadic_indirect_void_call = "call %s (...) %%%d";
+char* const g_opcode_entry                       = "entry:";
+char* const g_opcode_zero_extend                 = "%%%d = zext %s %%%d to %s";
+char* const g_opcode_signed_extend               = "%%%d = sext %s %%%d to %s";
+char* const g_opcode_trunc                       = "%%%d = trunc %s %%%d to %s";
+char* const g_opcode_malloc                      = "%%%d = call ptr @malloc(i64 %%%d)";
+char* const g_opcode_free                        = "call void @free(ptr %%%d)";
+char* const g_opcode_gep_string                  = "%%%d = getelementptr [%d x i8], ptr @%d, i64 0";
+char* const g_opcode_string_constant             = "@%d = private constant [%d x i8] c\"%s\"";
+char* const g_opcode_increment                   = "%%%d = add %s %%%d, 1";
+char* const g_opcode_decrement                   = "%%%d = sub %s %%%d, 1";
+char* const g_opcode_floating_negative           = "%%%d = fmul %s %%%d, -1.0";
+char* const g_opcode_floating_increment          = "%%%d = fadd %s %%%d, 1.0";
+char* const g_opcode_floating_decrement          = "%%%d = fsub %s %%%d, 1.0";
+char* const g_opcode_floating_mul                = "%%%d = fmul %s %%%d, %%%d";
+char* const g_opcode_floating_div                = "%%%d = fdiv %s %%%d, %%%d";
+char* const g_opcode_floating_add                = "%%%d = fadd %s %%%d, %%%d";
+char* const g_opcode_floating_sub                = "%%%d = fsub %s %%%d, %%%d";
+char* const g_opcode_floating_equal_to           = "%%%d = fcmp oeq %s %%%d, %%%d";
+char* const g_opcode_floating_not_equal_to       = "%%%d = fcmp one %s %%%d, %%%d";
+char* const g_opcode_floating_less               = "%%%d = fcmp olt %s %%%d, %%%d";
+char* const g_opcode_floating_less_equal_to      = "%%%d = fcmp ole %s %%%d, %%%d";
+char* const g_opcode_floating_greater            = "%%%d = fcmp ogt %s %%%d, %%%d";
+char* const g_opcode_floating_greater_equal_to   = "%%%d = fcmp oge %s %%%d, %%%d";
+char* const g_opcode_float_to_signed             = "%%%d = fptosi %s %%%d to %s";
+char* const g_opcode_float_to_unsigned           = "%%%d = fptoui %s %%%d to %s";
+char* const g_opcode_signed_to_floating          = "%%%d = sitofp %s %%%d to %s";
+char* const g_opcode_unsigned_to_floating        = "%%%d = uitofp %s %%%d to %s";
+char* const g_opcode_floating_trunc              = "%%%d = fptrunc %s %%%d to %s";
+char* const g_opcode_floating_extend             = "%%%d = fpext %s %%%d to %s";
+char* const g_opcode_signed_to_boolean           = "%%%d = trunc %s %%%d to %s";
+char* const g_opcode_unsigned_to_boolean         = "%%%d = trunc %s %%%d to %s";
+char* const g_opcode_boolean_to_signed           = "%%%d = zext %s %%%d to %s";
+char* const g_opcode_boolean_to_unsigned         = "%%%d = zext %s %%%d to %s";
+char* const g_opcode_stack_save                  = "%%%d = call ptr @llvm.stacksave()";
+char* const g_opcode_stack_restore               = "call void @llvm.stackrestore(ptr %%%d)";
 
 char* g_operator_chars[] = {
     g_dot,
@@ -735,6 +741,11 @@ bool is_function_pointer(type_t type)
     return type.is_function_pointer;
 }
 
+bool is_variadic(type_t type)
+{
+    return type.is_variadic;
+}
+
 bool is_pointer(type_t type)
 {
     return is_regular_pointer(type) || is_generic_pointer(type) || is_function_pointer(type);
@@ -884,6 +895,10 @@ str_t to_print_type(type_t type)
 {
     auto print = (str_t) {};
     str_append(&print, type.name.begin);
+    if(is_variadic(type))
+    {
+        str_append(&print, g_ellipses);
+    }
     if(is_function_pointer(type))
     {
         str_append(&print, g_function);
@@ -899,9 +914,18 @@ void assert_types_match(type_t left, type_t rite, str_t operator)
     auto stars_match = left.stars == rite.stars;
     auto type_names_match = str_equal(left.name.begin, rite.name.begin);
     auto function_pointer_matches = is_function_pointer(left) == is_function_pointer(rite);
-    if(!stars_match || !type_names_match || !function_pointer_matches)
+    auto variadic_matches = is_variadic(left) == is_variadic(rite);
+    if(!stars_match || !type_names_match)
     {
         quit("types '%s' and '%s' mismatch with operator '%s'", print_type_a, print_type_b, operator.begin);
+    }
+    if(!function_pointer_matches)
+    {
+        quit("types '%s' and '%s' mismatch with function pointer semantics '%s'", print_type_a, print_type_b, operator.begin);
+    }
+    if(!variadic_matches)
+    {
+        quit("types '%s' and '%s' mismatch with variadic semantics '%s'", print_type_a, print_type_b, operator.begin);
     }
 }
 
@@ -1114,6 +1138,16 @@ type_t read_type()
         .name = read_alnum(),
         .stars = read_stars(),
     };
+    auto operator = peek_operator();
+    if(str_equal(operator.begin, g_ellipses))
+    {
+        match(g_ellipses);
+        type.is_variadic = true;
+        if(next_char() != *g_left_paren)
+        {
+            quit("expected '%s'", g_left_paren);
+        }
+    }
     if(next_char() == *g_left_paren)
     {
         match(g_left_paren);
@@ -1542,10 +1576,12 @@ void read_function()
     auto ret_value = read_value_decl();
     ret_value.is_function = true;
     auto llvm_type = to_llvm_type(ret_value.type).begin;
-    if(next_char() == *g_not)
+    auto operator = peek_operator();
+    if(str_equal(operator.begin, g_ellipses))
     {
-        match(g_not);
+        match(g_ellipses);
         ret_value.type.must_check_args = false;
+        ret_value.type.is_variadic = true;
     }
     else
     {
@@ -2611,26 +2647,54 @@ void check_function_args(value_t* found, type_list_t* types)
 void emit_indirect_call(value_t value, value_t found)
 {
     auto llvm_type = to_llvm_type(value.type).begin;
-    if(str_equal(value.type.name.begin, g_void))
+    if(is_variadic(value.type))
     {
-        emit(g_opcode_indirect_void_call, llvm_type, found.slot);
+        if(str_equal(value.type.name.begin, g_void))
+        {
+            emit(g_opcode_variadic_indirect_void_call, llvm_type, found.slot);
+        }
+        else
+        {
+            emit(g_opcode_variadic_indirect_call, value.slot, llvm_type, found.slot);
+        }
     }
     else
     {
-        emit(g_opcode_indirect_call, value.slot, llvm_type, found.slot);
+        if(str_equal(value.type.name.begin, g_void))
+        {
+            emit(g_opcode_indirect_void_call, llvm_type, found.slot);
+        }
+        else
+        {
+            emit(g_opcode_indirect_call, value.slot, llvm_type, found.slot);
+        }
     }
 }
 
 void emit_direct_call(value_t value, value_t found)
 {
     auto llvm_type = to_llvm_type(value.type).begin;
-    if(str_equal(value.type.name.begin, g_void))
+    if(is_variadic(value.type))
     {
-        emit(g_opcode_void_call, llvm_type, found.name.begin);
+        if(str_equal(value.type.name.begin, g_void))
+        {
+            emit(g_opcode_variadic_void_call, llvm_type, found.name.begin);
+        }
+        else
+        {
+            emit(g_opcode_variadic_call, value.slot, llvm_type, found.name.begin);
+        }
     }
     else
     {
-        emit(g_opcode_call, value.slot, llvm_type, found.name.begin);
+        if(str_equal(value.type.name.begin, g_void))
+        {
+            emit(g_opcode_void_call, llvm_type, found.name.begin);
+        }
+        else
+        {
+            emit(g_opcode_call, value.slot, llvm_type, found.name.begin);
+        }
     }
 }
 
