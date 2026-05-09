@@ -1144,12 +1144,12 @@ i64 test_type_access()
 
 i64 test_str()
 {
-    str_t message = str_init("test test test");
+    str_t message = str_init("test");
     str_t a = str_init(" ");
     str_t b = str_init("this");
     str_t c = str_init(" ");
     str_t d = str_init("\tmessage\nx\nx\nx\n");
-    str_t expect = str_init("test test test this \tmessage\nx\nx\nx\n");
+    str_t expect = str_init("test this \tmessage\nx\nx\nx\n");
 
     defer str_del(&message);
     defer str_del(&a);

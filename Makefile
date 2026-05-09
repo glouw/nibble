@@ -1,4 +1,4 @@
-CC = gcc -std=c23
+CC = clang -std=c23
 CFLAGS = -fsanitize=address,undefined -g -Wall -Wextra -Wpedantic
 BIN = nibble
 SRC = main.c

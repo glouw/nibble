@@ -1,7 +1,7 @@
 CC = ../nibble
 SRC = main.n
 TEMP = out.ll
-ASM = clang -O2
+ASM = clang -O1
 BIN = game
 LDFLAGS = -lSDL2 -lm
 
