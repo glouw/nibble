@@ -3,7 +3,14 @@
 #include <string.h>
 #include <stdarg.h>
 
-#define len(x) (sizeof(x) / sizeof(*x))
+#define len(array) (sizeof(array) / sizeof(array[0]))
+#define list(name, T, N) typedef struct { T begin[N]; int size; } name
+#define list_size(list) ((list)->size)
+#define list_empty(list) (list_size(list) == 0)
+#define list_last(list) (list_size(list) - 1)
+#define list_cap(list) (len((list)->begin) - 1) /* for string support */
+#define list_full(list) (list_size(list) == list_cap(list))
+#define list_push(list, value) if(list_full(list)) quit("out of memory"); (list)->begin[list_size(list)++] = value
 
 constexpr auto g_str_size = 60;
 constexpr auto g_value_args = 16;
@@ -61,15 +68,7 @@ typedef struct
 }
 defer_t;
 
-#define list(T, N, name) typedef struct { T begin[N]; int size; } name
-#define list_size(list) ((list)->size)
-#define list_empty(list) (list_size(list) == 0)
-#define list_last(list) (list_size(list) - 1)
-#define list_cap(list) (len((list)->begin) - 1) /* last value is always empty so strings are supported */
-#define list_full(list) (list_size(list) == list_cap(list))
-#define list_push(list, value) if(list_full(list)) quit("out of memory"); (list)->begin[list_size(list)++] = value
-
-list(char, g_str_size, str_t);
+list(str_t, char, g_str_size);
 
 typedef struct
 {
@@ -89,11 +88,11 @@ typedef struct
 }
 str_const_t;
 
-list(int, g_slot_list_size, slot_list_t);
-list(defer_t, g_defer_list_size, defer_list_t);
-list(type_t, g_type_list_size, type_list_t);
-list(str_t, g_str_list_size, str_list_t);
-list(str_const_t, g_str_const_big_list_size, str_const_big_list_t);
+list(slot_list_t, int, g_slot_list_size);
+list(defer_list_t, defer_t, g_defer_list_size);
+list(type_list_t, type_t, g_type_list_size);
+list(str_list_t, str_t, g_str_list_size);
+list(str_const_big_list_t, str_const_t, g_str_const_big_list_size);
 
 typedef struct
 {
@@ -107,9 +106,9 @@ typedef struct
 }
 value_t;
 
-list(value_t, g_value_list_size, value_list_t);
-list(value_t, g_value_big_list_size, value_big_list_t);
-list(char, g_code_size, char_list_t);
+list(value_list_t, value_t, g_value_list_size);
+list(value_big_list_t, value_t, g_value_big_list_size);
+list(char_list_t, char, g_code_size);
 
 typedef struct
 {
@@ -357,8 +356,6 @@ char* const g_opcode_signed_to_boolean           = "%%%d = trunc %s %%%d to %s";
 char* const g_opcode_unsigned_to_boolean         = "%%%d = trunc %s %%%d to %s";
 char* const g_opcode_boolean_to_signed           = "%%%d = zext %s %%%d to %s";
 char* const g_opcode_boolean_to_unsigned         = "%%%d = zext %s %%%d to %s";
-char* const g_opcode_stack_save                  = "%%%d = call ptr @llvm.stacksave()";
-char* const g_opcode_stack_restore               = "call void @llvm.stackrestore(ptr %%%d)";
 
 char* g_operator_chars[] = {
     g_dot,
@@ -475,7 +472,8 @@ void code_rewind(int by)
 }
 
 
-#if 0 /* enable to type check the quit variadic */
+/* enable to type check the quit variadic */
+#if 0
 #define quit(...) printf(__VA_ARGS__)
 #else
 [[noreturn]] void quit(char* format, ...)
@@ -997,6 +995,143 @@ bool is_decrement(str_t keyword)
     return str_equal(keyword.begin, g_decrement);
 }
 
+bool is_character_load(char c)
+{
+    return c == *g_apostrophe;
+}
+
+bool is_string_load(char c)
+{
+    return c == *g_escape_quotation;
+}
+
+bool is_grouped_expression(char c)
+{
+    return c == *g_left_paren;
+}
+
+bool is_direct_load(char c)
+{
+    return is_digit_char(c);
+}
+
+bool is_identifier_load(char c)
+{
+    str_t peek_alnum();
+    auto keyword = peek_alnum();
+    return is_alpha_char(c) && !is_construct_keyword(keyword);
+}
+
+bool is_newline(char c)
+{
+    return c == *g_escape_newline;
+}
+
+bool is_commenting(char c)
+{
+    return c == *g_divide;
+}
+
+bool is_escaping(char c)
+{
+    return c == *g_escape_backslash;
+}
+
+bool is_end_of_statement(char c)
+{
+    return c == *g_semicolon;
+}
+
+bool is_function_postfix(char c)
+{
+    return c == *g_left_paren;
+}
+
+bool is_field_access_postfix(char c)
+{
+    return c == *g_dot;
+}
+
+bool is_array_access_postfix(char c)
+{
+    return c == *g_left_square;
+}
+
+bool is_type_cast(char c)
+{
+    return c == *g_less;
+}
+
+bool is_not(char c)
+{
+    return c == *g_not;
+}
+
+bool is_bitwise_not(char c)
+{
+    return c == *g_bitwise_not;
+}
+
+bool is_positive(char c)
+{
+    return c == *g_add;
+}
+
+bool is_negative(char c)
+{
+    return c == *g_subtract;
+}
+
+bool is_address_of(char c)
+{
+    return c == *g_ampersand;
+}
+
+bool is_dereference(char c)
+{
+    return c == *g_multiply;
+}
+
+bool is_star(int c)
+{
+    return c == *g_multiply;
+}
+
+bool is_function_pointer_decl(char c)
+{
+    return c == *g_left_paren;
+}
+
+bool is_block_opening(char c)
+{
+    return c == *g_left_curl;
+}
+
+bool is_new_opening(char c)
+{
+    return c == *g_left_square;
+}
+
+bool is_end_of_arg_list(char c)
+{
+    return c == *g_rite_paren;
+}
+
+bool is_arg_separator(char c)
+{
+    return c == *g_comma;
+}
+
+bool is_block_closing(char c)
+{
+    return c == *g_rite_curl;
+}
+
+bool is_aggregate_member_init(char c)
+{
+    return c == *g_equals;
+}
+
 str_t to_llvm_type(type_t type)
 {
     if(is_pointer(type))
@@ -1063,7 +1198,8 @@ str_t to_print_type(type_t type)
     return print;
 }
 
-[[noreturn]] void function_comma_dangled(value_t value)
+[[noreturn]]
+void function_comma_dangled(value_t value)
 {
     auto print = to_print_type(value.type);
     char* name = list_empty(&value.name)
@@ -1072,56 +1208,66 @@ str_t to_print_type(type_t type)
     quit("expected '%s' after '%s %s' but got '%s%s'", g_rite_paren, print.begin, name, g_comma, g_rite_paren);
 }
 
-[[noreturn]] void unknown_operator(type_t left, type_t rite, str_t operator)
+[[noreturn]]
+void unknown_operator(type_t left, type_t rite, str_t operator)
 {
     auto left_print = to_print_type(left);
     auto rite_print = to_print_type(rite);
     quit("unknown operator '%s' on types '%s' and '%s'", operator.begin, left_print.begin, rite_print.begin);
 }
 
-[[noreturn]] void unknown_unary()
+[[noreturn]]
+void unknown_unary()
 {
     quit("unknown unary operator encountered");
 }
 
-[[noreturn]] void unknown_type_cast(type_t left, type_t rite)
+[[noreturn]]
+void unknown_type_cast(type_t left, type_t rite)
 {
     auto left_print = to_print_type(left);
     auto rite_print = to_print_type(rite);
     quit("type cast from '%s' to '%s' not supported", left_print.begin, rite_print.begin);
 }
 
-[[noreturn]] void unknown_type_power(char* name)
+[[noreturn]]
+void unknown_type_power(char* name)
 {
     quit("unknown type power '%s'", name);
 }
 
-[[noreturn]] void missing_if_binding()
+[[noreturn]]
+void missing_if_binding()
 {
     quit("missing binding '%s'", g_if);
 }
 
-[[noreturn]] void block_was_terminated()
+[[noreturn]]
+void block_was_terminated()
 {
     quit("block was already terminated - check for previous '%s', '%s', or '%s' statements", g_ret, g_break, g_continue);
 }
 
-[[noreturn]] void block_missing_ret()
+[[noreturn]]
+void block_missing_ret()
 {
     quit("block missing '%s' statement", g_ret);
 }
 
-[[noreturn]] void not_in_loop(char* keyword)
+[[noreturn]]
+void not_in_loop(char* keyword)
 {
     quit("%s statement not within a loop", keyword);
 }
 
-[[noreturn]] void expected_string(char* string)
+[[noreturn]]
+void expected_string(char* string)
 {
     quit("expected '%s'", string);
 }
 
-[[noreturn]] void invalid_escape_char(char c)
+[[noreturn]]
+void invalid_escape_char(char c)
 {
     quit("'%c' is an invalid escape character", c);
 }
@@ -1351,7 +1497,7 @@ int skip_space_and_comment()
         auto c = peek_char();
         if(is_space_char(c))
         {
-            if(c == *g_escape_newline)
+            if(is_newline(c))
             {
                 auto code = get_code();
                 code->line += 1;
@@ -1360,10 +1506,10 @@ int skip_space_and_comment()
             count += 1;
         }
         else
-        if(c == *g_divide)
+        if(is_commenting(c))
         {
             step();
-            if(peek_char() == *g_divide)
+            if(is_commenting(peek_char()))
             {
                 read_comment();
             }
@@ -1429,7 +1575,7 @@ str_t read_chars(bool matches(char))
     for(;;)
     {
         auto c = peek_char();
-        if(c == *g_escape_backslash)
+        if(is_escaping(c))
         {
             step();
             c = convert_escape_char(peek_char());
@@ -1499,7 +1645,7 @@ int read_stars()
     for(;;)
     {
         auto c = next_char();
-        if(c == *g_multiply)
+        if(is_star(c))
         {
             stars += 1;
             step();
@@ -1520,6 +1666,16 @@ type_t type_init(str_t name, int stars)
     return type;
 }
 
+type_t scalar_init(str_t name)
+{
+    return type_init(name, 0);
+}
+
+type_t pointer_init(str_t name, int stars)
+{
+    return type_init(name, stars);
+}
+
 type_t read_type()
 {
     auto type = type_init(read_alnum(), read_stars());
@@ -1533,7 +1689,7 @@ type_t read_type()
             expected_string(g_left_paren);
         }
     }
-    if(next_char() == *g_left_paren)
+    if(is_function_pointer_decl(next_char()))
     {
         match(g_left_paren);
         match(g_rite_paren);
@@ -1585,16 +1741,16 @@ value_list_t read_function_decl_arg_list()
     match(g_left_paren);
     for(;;)
     {
-        if(next_char() == *g_rite_paren)
+        if(is_end_of_arg_list(next_char()))
         {
             break;
         }
         auto arg = read_value_decl();
         list_push(&values, arg);
-        if(next_char() == *g_comma)
+        if(is_arg_separator(next_char()))
         {
             match(g_comma);
-            if(next_char() == *g_rite_paren)
+            if(is_end_of_arg_list(next_char()))
             {
                 function_comma_dangled(arg);
             }
@@ -1632,7 +1788,7 @@ value_t read_ret_statement(value_t ret_value)
     {
         match(g_semicolon);
         auto value = (value_t) {
-            .type = type_init(str_init(g_void), 0)
+            .type = scalar_init(str_init(g_void))
         };
         execute_defers(g_file.defers.size);
         emit(g_opcode_ret_void, g_void);
@@ -1892,7 +2048,7 @@ bool read_statement(value_t ret_value, scope_t scope, int block)
     {
         auto value = declare_local_value();
         auto read = skip_space_and_comment();
-        if(next_char() == *g_semicolon)
+        if(is_end_of_statement(next_char()))
         {
             match(g_semicolon);
         }
@@ -1906,7 +2062,7 @@ bool read_statement(value_t ret_value, scope_t scope, int block)
     }
     else
     {
-        if(next_char() == *g_left_curl)
+        if(is_block_opening(next_char()))
         {
             return read_block(ret_value, scope);
         }
@@ -1929,7 +2085,7 @@ bool read_block(value_t ret_value, scope_t scope)
     match(g_left_curl);
     for(;;)
     {
-        if(next_char() == *g_rite_curl)
+        if(is_block_closing(next_char()))
         {
             break;
         }
@@ -2026,7 +2182,7 @@ void read_function()
         value.type.must_check_args = true;
     }
     auto args = read_function_decl_arg_list();
-    value = next_char() == *g_semicolon
+    value = is_end_of_statement(next_char())
         ? as_function_declaration(value, &args)
         : as_function_definition(value, &args);
     emit(g_str, g_empty);
@@ -2038,14 +2194,14 @@ value_t read_type_def_members(value_t aggregate)
     match(g_left_curl);
     for(;;)
     {
-        if(next_char() == *g_rite_curl)
+        if(is_block_closing(next_char()))
         {
             break;
         }
         auto member_type = read_type();
         auto member_name = read_alnum();
         assert_valid_member_type(aggregate, member_type, member_name);
-        if(next_char() == *g_equals)
+        if(is_aggregate_member_init(next_char()))
         {
             auto operator = str_init(g_equals);
             assert_type(member_type, operator, is_member_init);
@@ -2121,13 +2277,13 @@ value_t load_direct()
     auto name = read_numeric();
     if(strchr(name.begin, *g_dot))
     {
-        auto value = rvalue(type_init(str_init(g_double), 0));
+        auto value = rvalue(scalar_init(str_init(g_double)));
         emit(g_opcode_load_double, g_file.slot, value.type.name.begin, name.begin);
         return value;
     }
     else
     {
-        auto value = rvalue(type_init(str_init(g_i64), 0));
+        auto value = rvalue(scalar_init(str_init(g_i64)));
         emit(g_opcode_load_signed, g_file.slot, value.type.name.begin, name.begin);
         return value;
     }
@@ -2139,64 +2295,64 @@ str_t to_llvm_escaped(str_t string, int* size)
     auto size_with_null = string.size + 1;
     for(auto i = 0; i < size_with_null; i++)
     {
-        auto ch = string.begin[i];
-        if(ch == *g_escape_alert)
+        auto c = string.begin[i];
+        if(c == *g_escape_alert)
         {
             str_append(&out, g_llvm_escape_alert);
         }
         else
-        if(ch == *g_escape_backspace)
+        if(c == *g_escape_backspace)
         {
             str_append(&out, g_llvm_escape_backspace);
         }
         else
-        if(ch == *g_escape_tab)
+        if(c == *g_escape_tab)
         {
             str_append(&out, g_llvm_escape_tab);
         }
         else
-        if(ch == *g_escape_newline)
+        if(c == *g_escape_newline)
         {
             str_append(&out, g_llvm_escape_newline);
         }
         else
-        if(ch == *g_escape_vertical_tab)
+        if(c == *g_escape_vertical_tab)
         {
             str_append(&out, g_llvm_escape_vertical_tab);
         }
         else
-        if(ch == *g_escape_form_feed)
+        if(c == *g_escape_form_feed)
         {
             str_append(&out, g_llvm_escape_form_feed);
         }
         else
-        if(ch == *g_escape_carriage_return)
+        if(c == *g_escape_carriage_return)
         {
             str_append(&out, g_llvm_escape_carriage_return);
         }
         else
-        if(ch == *g_escape_quotation)
+        if(c == *g_escape_quotation)
         {
             str_append(&out, g_llvm_escape_quotation);
         }
         else
-        if(ch == *g_escape_null)
+        if(c == *g_escape_null)
         {
             str_append(&out, g_llvm_escape_null);
         }
         else
-        if(ch == *g_escape_backslash)
+        if(c == *g_escape_backslash)
         {
             str_append(&out, g_llvm_escape_backslash);
         }
         else
-        if(ch == *g_escape_question_mark)
+        if(c == *g_escape_question_mark)
         {
             str_append(&out, g_llvm_escape_question_mark);
         }
         else
         {
-            list_push(&out, ch);
+            list_push(&out, c);
         }
         *size += 1;
     }
@@ -2209,7 +2365,7 @@ slot_list_t read_function_call_arg_list(type_list_t* types)
     match(g_left_paren);
     for(;;)
     {
-        if(next_char() == *g_rite_paren)
+        if(is_end_of_arg_list(next_char()))
         {
             break;
         }
@@ -2217,10 +2373,10 @@ slot_list_t read_function_call_arg_list(type_list_t* types)
         auto slot = g_file.slot;
         list_push(&list, slot);
         list_push(types, value.type);
-        if(next_char() == *g_comma)
+        if(is_arg_separator(next_char()))
         {
             match(g_comma);
-            if(next_char() == *g_rite_paren)
+            if(is_end_of_arg_list(next_char()))
             {
                 function_comma_dangled(value);
             }
@@ -2357,7 +2513,7 @@ value_t to_sizeof(value_t value)
 {
     value = to_rvalue(value);
     auto slot = get_slot();
-    auto out = rvalue(type_init(str_init(g_u64), 0));
+    auto out = rvalue(scalar_init(str_init(g_u64)));
     auto llvm_type = to_llvm_type(value.type);
     emit(g_opcode_sizeof, slot, llvm_type.begin);
     emit(g_opcode_ptr_to_int, out.slot, slot, g_i64);
@@ -2367,7 +2523,7 @@ value_t to_sizeof(value_t value)
 value_t to_type_sizeof(type_t value)
 {
     auto slot = get_slot();
-    auto out = rvalue(type_init(str_init(g_u64), 0));
+    auto out = rvalue(scalar_init(str_init(g_u64)));
     auto llvm_type = to_llvm_type(value);
     emit(g_opcode_sizeof, slot, llvm_type.begin);
     emit(g_opcode_ptr_to_int, out.slot, slot, g_i64);
@@ -2384,7 +2540,7 @@ value_t pointer_up(type_t type)
 value_t to_new(type_t type)
 {
     auto size = to_type_sizeof(type);
-    if(next_char() == *g_left_square)
+    if(is_new_opening(next_char()))
     {
         match(g_left_square);
         value_t elems = read_expression();
@@ -2411,7 +2567,7 @@ value_t do_del(value_t value)
     assert_type(value.type, operator, is_pointer);
     value = to_rvalue(value);
     emit(g_opcode_free, value.slot);
-    return rvalue(type_init(str_init(g_void), 0));
+    return rvalue(scalar_init(str_init(g_void)));
 }
 
 type_power_t type_power(type_t type)
@@ -2485,19 +2641,19 @@ value_t unsigned_to_pointer(value_t value, type_t type)
 
 value_t integral_to_integral(value_t value, type_t type, bool from_signed)
 {
-    auto llvm_type_a = to_llvm_type(value.type);
-    auto llvm_type_b = to_llvm_type(type);
+    auto llvm_left = to_llvm_type(value.type);
+    auto llvm_rite = to_llvm_type(type);
     if(type_power(type) > type_power(value.type))
     {
         auto extend = from_signed ? g_opcode_signed_extend : g_opcode_zero_extend;
         auto out = rvalue(type);
-        emit(extend, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+        emit(extend, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
         return out;
     }
     if(type_power(type) < type_power(value.type))
     {
         auto out = rvalue(type);
-        emit(g_opcode_trunc, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+        emit(g_opcode_trunc, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
         return out;
     }
     value.type = type;
@@ -2506,90 +2662,90 @@ value_t integral_to_integral(value_t value, type_t type, bool from_signed)
 
 value_t floating_to_signed(value_t value, type_t type)
 {
-    auto llvm_type_a = to_llvm_type(value.type);
-    auto llvm_type_b = to_llvm_type(type);
+    auto llvm_left = to_llvm_type(value.type);
+    auto llvm_rite = to_llvm_type(type);
     auto out = rvalue(type);
-    emit(g_opcode_float_to_signed, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+    emit(g_opcode_float_to_signed, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
     return out;
 }
 
 value_t floating_to_unsigned(value_t value, type_t type)
 {
-    auto llvm_type_a = to_llvm_type(value.type);
-    auto llvm_type_b = to_llvm_type(type);
+    auto llvm_left = to_llvm_type(value.type);
+    auto llvm_rite = to_llvm_type(type);
     auto out = rvalue(type);
-    emit(g_opcode_float_to_unsigned, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+    emit(g_opcode_float_to_unsigned, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
     return out;
 }
 
 value_t signed_to_floating(value_t value, type_t type)
 {
-    auto llvm_type_a = to_llvm_type(value.type);
-    auto llvm_type_b = to_llvm_type(type);
+    auto llvm_left = to_llvm_type(value.type);
+    auto llvm_rite = to_llvm_type(type);
     auto out = rvalue(type);
-    emit(g_opcode_signed_to_floating, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+    emit(g_opcode_signed_to_floating, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
     return out;
 }
 
 value_t signed_to_boolean(value_t value, type_t type)
 {
-    auto llvm_type_a = to_llvm_type(value.type);
-    auto llvm_type_b = to_llvm_type(type);
+    auto llvm_left = to_llvm_type(value.type);
+    auto llvm_rite = to_llvm_type(type);
     auto out = rvalue(type);
-    emit(g_opcode_signed_to_boolean, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+    emit(g_opcode_signed_to_boolean, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
     return out;
 }
 
 value_t unsigned_to_boolean(value_t value, type_t type)
 {
-    auto llvm_type_a = to_llvm_type(value.type);
-    auto llvm_type_b = to_llvm_type(type);
+    auto llvm_left = to_llvm_type(value.type);
+    auto llvm_rite = to_llvm_type(type);
     auto out = rvalue(type);
-    emit(g_opcode_unsigned_to_boolean, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+    emit(g_opcode_unsigned_to_boolean, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
     return out;
 }
 
 value_t boolean_to_signed(value_t value, type_t type)
 {
-    auto llvm_type_a = to_llvm_type(value.type);
-    auto llvm_type_b = to_llvm_type(type);
+    auto llvm_left = to_llvm_type(value.type);
+    auto llvm_rite = to_llvm_type(type);
     auto out = rvalue(type);
-    emit(g_opcode_boolean_to_signed, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+    emit(g_opcode_boolean_to_signed, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
     return out;
 }
 
 value_t boolean_to_unsigned(value_t value, type_t type)
 {
-    auto llvm_type_a = to_llvm_type(value.type);
-    auto llvm_type_b = to_llvm_type(type);
+    auto llvm_left = to_llvm_type(value.type);
+    auto llvm_rite = to_llvm_type(type);
     auto out = rvalue(type);
-    emit(g_opcode_boolean_to_unsigned, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+    emit(g_opcode_boolean_to_unsigned, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
     return out;
 }
 
 value_t unsigned_to_floating(value_t value, type_t type)
 {
-    auto llvm_type_a = to_llvm_type(value.type);
-    auto llvm_type_b = to_llvm_type(type);
+    auto llvm_left = to_llvm_type(value.type);
+    auto llvm_rite = to_llvm_type(type);
     auto out = rvalue(type);
-    emit(g_opcode_unsigned_to_floating, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+    emit(g_opcode_unsigned_to_floating, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
     return out;
 }
 
 value_t floating_to_floating(value_t value, type_t type)
 {
-    auto llvm_type_a = to_llvm_type(value.type);
-    auto llvm_type_b = to_llvm_type(type);
+    auto llvm_left = to_llvm_type(value.type);
+    auto llvm_rite = to_llvm_type(type);
     if(type_power(type) < type_power(value.type))
     {
         auto out = rvalue(type);
-        emit(g_opcode_floating_trunc, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+        emit(g_opcode_floating_trunc, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
         return out;
     }
     if(type_power(type) > type_power(value.type))
     {
         auto out = rvalue(type);
-        emit(g_opcode_floating_extend, out.slot, llvm_type_a.begin, value.slot, llvm_type_b.begin);
+        emit(g_opcode_floating_extend, out.slot, llvm_left.begin, value.slot, llvm_rite.begin);
         return out;
     }
     return value;
@@ -2750,7 +2906,7 @@ value_t read_prefix()
         auto value = read_p0();
         return prefix_decrement(value);
     }
-    if(peek == *g_less)
+    if(is_type_cast(peek))
     {
         match(g_less);
         auto type = read_type();
@@ -2760,37 +2916,37 @@ value_t read_prefix()
         match(g_rite_paren);
         return type_cast(value, type);
     }
-    if(peek == *g_not)
+    if(is_not(peek))
     {
         match(g_not);
         auto value = read_p0();
         return to_not(value);
     }
-    if(peek == *g_bitwise_not)
+    if(is_bitwise_not(peek))
     {
         match(g_bitwise_not);
         auto value = read_p0();
         return to_bitwise_not(value);
     }
-    if(peek == *g_add)
+    if(is_positive(peek))
     {
         match(g_add);
         auto value = read_p0();
         return to_positive(value);
     }
-    if(peek == *g_subtract)
+    if(is_negative(peek))
     {
         match(g_subtract);
         auto value = read_p0();
         return to_negative(value);
     }
-    if(peek == *g_ampersand)
+    if(is_address_of(peek))
     {
         match(g_ampersand);
         auto value = read_p0();
         return get_address_of(value);
     }
-    if(peek == *g_multiply)
+    if(is_dereference(peek))
     {
         match(g_multiply);
         auto value = read_p0();
@@ -2800,14 +2956,14 @@ value_t read_prefix()
 }
 
 value_t field_access(value_t);
-value_t index_access(value_t);
+value_t array_access(value_t);
 value_t call_direct_function(value_t);
 value_t call_indirect_function(value_t);
 
 value_t read_postfix(value_t offset)
 {
     auto peek = next_char();
-    if(peek == *g_left_paren)
+    if(is_function_postfix(peek))
     {
         if(is_function_pointer(offset.type))
         {
@@ -2820,13 +2976,13 @@ value_t read_postfix(value_t offset)
         }
     }
     offset = load_indirect(offset);
-    if(peek == *g_dot)
+    if(is_field_access_postfix(peek))
     {
         return field_access(offset);
     }
-    if(peek == *g_left_square)
+    if(is_array_access_postfix(peek))
     {
-        return index_access(offset);
+        return array_access(offset);
     }
     auto operator = peek_operator();
     if(is_increment_decrement(operator))
@@ -2845,7 +3001,7 @@ value_t read_postfix(value_t offset)
     return offset;
 }
 
-value_t index_access(value_t pointer)
+value_t array_access(value_t pointer)
 {
     auto operator = str_init(g_index);
     assert_type(pointer.type, operator, is_pointer);
@@ -2879,7 +3035,7 @@ value_t load_string_literal()
     };
     auto tag = list_size(&g_file.const_strings);
     list_push(&g_file.const_strings, str_const);
-    auto string = rvalue(type_init(str_init(g_i8), 1));
+    auto string = rvalue(pointer_init(str_init(g_i8), 1));
     emit(g_opcode_gep_string, string.slot, size, tag);
     return string;
 }
@@ -3018,16 +3174,16 @@ value_t read_identifier_then_postfix()
 value_t load_character()
 {
     match(g_escape_apostrophe);
-    auto c = peek_char();
+    auto peek = peek_char();
     step();
-    if(c == *g_escape_backslash)
+    if(is_escaping(peek))
     {
-        c = convert_escape_char(peek_char());
+        peek = convert_escape_char(peek_char());
         step();
     }
     match(g_escape_apostrophe);
-    auto value = rvalue(type_init(str_init(g_i8), 0));
-    emit(g_opcode_load_character, g_file.slot, value.type.name.begin, c);
+    auto value = rvalue(scalar_init(str_init(g_i8)));
+    emit(g_opcode_load_character, g_file.slot, value.type.name.begin, peek);
     return value;
 }
 
@@ -3249,26 +3405,23 @@ value_t read_grouped_expression()
 value_t read_p0()
 {
     auto peek = next_char();
-    if(peek == *g_apostrophe)
+    if(is_character_load(peek))
     {
         return load_character();
     }
-    if(peek == *g_escape_quotation)
+    if(is_string_load(peek))
     {
         return load_string();
     }
-    if(is_digit_char(peek))
+    if(is_direct_load(peek))
     {
         return load_direct();
     }
-    if(is_alpha_char(peek))
+    if(is_identifier_load(peek))
     {
-        if(!is_construct_keyword(peek_alnum()))
-        {
-            return read_identifier_then_postfix();
-        }
+        return read_identifier_then_postfix();
     }
-    if(peek == *g_left_paren)
+    if(is_grouped_expression(peek))
     {
         return read_grouped_expression();
     }
