@@ -474,6 +474,10 @@ void code_rewind(int by)
     code->at -= by;
 }
 
+
+#if 0 /* enable to type check the quit variadic */
+#define quit(...) printf(__VA_ARGS__)
+#else
 [[noreturn]] void quit(char* format, ...)
 {
     auto out = stderr;
@@ -486,6 +490,7 @@ void code_rewind(int by)
     va_end(args);
     exit(1);
 }
+#endif
 
 void emit(char* format, ...)
 {
@@ -1061,7 +1066,10 @@ str_t to_print_type(type_t type)
 [[noreturn]] void function_comma_dangled(value_t value)
 {
     auto print = to_print_type(value.type);
-    quit("expected '%s' after '%s %s' but got '%s%s'", g_rite_paren, print.begin, value.name.begin, g_comma, g_rite_paren);
+    char* name = list_empty(&value.name)
+        ? g_escape_backspace
+        : value.name.begin;
+    quit("expected '%s' after '%s %s' but got '%s%s'", g_rite_paren, print.begin, name, g_comma, g_rite_paren);
 }
 
 [[noreturn]] void unknown_operator(type_t left, type_t rite, str_t operator)
@@ -1118,6 +1126,14 @@ str_t to_print_type(type_t type)
     quit("'%c' is an invalid escape character", c);
 }
 
+void assert_program_use(int argc)
+{
+    if(argc != 2)
+    {
+        quit("./nibble file.n");
+    }
+}
+
 void assert_types_match(type_t left, type_t rite, str_t operator)
 {
     auto left_print = to_print_type(left);
@@ -1145,8 +1161,8 @@ void assert_type(type_t type, str_t operator, bool with(type_t))
 {
     if(!with(type))
     {
-        auto print_type = to_print_type(type);
-        quit("'%s' does not support operator '%s'", print_type.begin, operator.begin);
+        auto print = to_print_type(type);
+        quit("'%s' does not support operator '%s'", print.begin, operator.begin);
     }
 }
 
@@ -1154,8 +1170,8 @@ void assert_lvalue(value_t value, str_t operator)
 {
     if(is_rvalue(value))
     {
-        auto print_type = to_print_type(value.type);
-        quit("expected lvalue with '%s' and operator '%s'", print_type.begin, operator.begin);
+        auto print = to_print_type(value.type);
+        quit("expected lvalue with '%s' and operator '%s'", print.begin, operator.begin);
     }
 }
 
@@ -1163,8 +1179,8 @@ void assert_rvalue(value_t value, str_t operator)
 {
     if(is_lvalue(value))
     {
-        auto print_type = to_print_type(value.type);
-        quit("expected rvalue with '%s' and operator '%s'", print_type.begin, operator.begin);
+        auto print = to_print_type(value.type);
+        quit("expected rvalue with '%s' and operator '%s'", print.begin, operator.begin);
     }
 }
 
@@ -1174,8 +1190,8 @@ void assert_member_exists(type_t aggregate_type, str_t member_name, str_t operat
     auto member = str_in_list(member_name, &members->names);
     if(member == nullptr)
     {
-        auto print_type = to_print_type(aggregate_type);
-        quit("could not access field '%s' in type '%s' with operator '%s'", member_name.begin, print_type.begin, operator.begin);
+        auto print = to_print_type(aggregate_type);
+        quit("could not access field '%s' in type '%s' with operator '%s'", member_name.begin, print.begin, operator.begin);
     }
 }
 
@@ -1234,6 +1250,56 @@ void assert_not_end_of_file()
     if(code->at == list_cap(&code->list))
     {
         quit("unexpected end of file");
+    }
+}
+
+void assert_include_path(str_t path)
+{
+    if(path.size == 0)
+    {
+        quit("path was empty with '%s' statement", g_include);
+    }
+}
+
+void assert_file_opened(FILE* fp, str_t path)
+{
+    if(fp == nullptr)
+    {
+        quit("could not open '%s' for reading - does the file exist?", path.begin);
+    }
+}
+
+void assert_buffer_fit(code_t* code)
+{
+    auto list = &code->list;
+    if(list_full(list))
+    {
+        quit("code capacity '%lu' exceeded", list_cap(list));
+    }
+}
+
+void assert_declared(value_t* value, str_t name)
+{
+    if(value == nullptr)
+    {
+        quit("value '%s' not declared", name.begin);
+    }
+}
+
+void assert_parameter_size(value_t function, type_list_t* expected)
+{
+    if(function.types.size != expected->size)
+    {
+        quit("function '%s' expected '%d' arguments but got '%d'", function.name.begin, function.types.size, expected->size);
+    }
+}
+
+void assert_parameter_type(value_t function, type_list_t* expected)
+{
+    auto operator = str_init(g_function);
+    for(auto i = 0; i < expected->size; i++)
+    {
+        assert_types_match(function.types.begin[i], expected->begin[i], operator);
     }
 }
 
@@ -2156,8 +2222,7 @@ slot_list_t read_function_call_arg_list(type_list_t* types)
             match(g_comma);
             if(next_char() == *g_rite_paren)
             {
-                auto print_type = to_print_type(value.type);
-                quit("expected '%s' after type '%s' but got '%s%s'", g_rite_paren, print_type.begin, g_comma, g_rite_paren);
+                function_comma_dangled(value);
             }
         }
         else
@@ -2860,23 +2925,6 @@ value_t field_index(value_t aggregate, str_t field_name)
     }
 }
 
-void assert_parameter_size(value_t function, type_list_t* expected)
-{
-    if(function.types.size != expected->size)
-    {
-        quit("function '%s' expected '%d' arguments but got '%d'", function.name.begin, function.types.size, expected->size);
-    }
-}
-
-void assert_parameter_type(value_t function, type_list_t* expected)
-{
-    auto operator = str_init(g_function);
-    for(auto i = 0; i < expected->size; i++)
-    {
-        assert_types_match(function.types.begin[i], expected->begin[i], operator);
-    }
-}
-
 void check_function_args(value_t function, type_list_t* types)
 {
     if(must_check_args(function))
@@ -2957,14 +3005,6 @@ value_t call_indirect_function(value_t function_pointer)
     emit_indirect_call(value, function_pointer);
     emit_parameter_slots(&types, &slots);
     return value;
-}
-
-void assert_declared(value_t* value, str_t name)
-{
-    if(value == nullptr)
-    {
-        quit("value '%s' not declared", name.begin);
-    }
 }
 
 value_t read_identifier_then_postfix()
@@ -3285,23 +3325,6 @@ value_t read_expression()
     return read_p9();
 }
 
-void assert_file_opened(FILE* fp, str_t path)
-{
-    if(fp == nullptr)
-    {
-        quit("could not open '%s' for reading - does the file exist?", path.begin);
-    }
-}
-
-void assert_buffer_fit(code_t* code)
-{
-    auto list = &code->list;
-    if(list_full(list))
-    {
-        quit("code capacity '%lu' exceeded", list_cap(list));
-    }
-}
-
 void read_code(str_t path)
 {
     auto fp = fopen(path.begin, "r");
@@ -3330,14 +3353,6 @@ bool pop_code()
         return true;
     }
     return false;
-}
-
-void assert_include_path(str_t path)
-{
-    if(path.size == 0)
-    {
-        quit("path was empty with '%s' statement", g_include);
-    }
 }
 
 void read_include()
@@ -3404,14 +3419,6 @@ void read_program()
         read_top_level();
     }
     dump_string_consts();
-}
-
-void assert_program_use(int argc)
-{
-    if(argc != 2)
-    {
-        quit("./nibble file.n");
-    }
 }
 
 int main(int argc, char** argv)
