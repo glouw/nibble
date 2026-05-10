@@ -224,5 +224,9 @@ arr_del(arr_t* self)
 {
     arr_del_elems(self);
     del self.data;
+    self.data = <i8*>(0);
+    self.delete = <void()>(0);
+    self.size = 0;
+    self.elem_size = 0;
     ret;
 }

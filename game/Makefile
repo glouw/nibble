@@ -4,9 +4,10 @@ TEMP = out.ll
 ASM = clang -O1
 BIN = chickens
 LDFLAGS = -lSDL2 -lm
+TIME = time
 
 all:
-	$(CC) $(SRC) > $(TEMP) && $(ASM) $(TEMP) $(LDFLAGS) -o $(BIN) && ./$(BIN)
+	$(TIME) $(CC) $(SRC) > $(TEMP) && $(TIME) $(ASM) $(TEMP) $(LDFLAGS) -o $(BIN) && ./$(BIN)
 
 clean:
 	rm -f $(TEMP)
