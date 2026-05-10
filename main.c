@@ -76,7 +76,7 @@ typedef struct
     int stars;
     bool is_function_pointer;
     bool is_function;
-    bool must_check_args;
+    bool must_skip_arg_check;
     bool is_variadic;
 }
 type_t;
@@ -718,11 +718,6 @@ static bool is_pointer(type_t type)
         || is_function_pointer(type);
 }
 
-static bool is_not_pointer(type_t type)
-{
-    return !is_pointer(type);
-}
-
 static bool is_function(type_t type)
 {
     return type.is_function;
@@ -730,7 +725,12 @@ static bool is_function(type_t type)
 
 static bool is_callable(type_t type)
 {
-    return is_function_pointer(type) || is_function(type);
+    return is_function_pointer(type);
+}
+
+static bool is_not_pointer(type_t type)
+{
+    return !is_pointer(type);
 }
 
 static bool is_variadic(type_t type)
@@ -821,9 +821,9 @@ static bool is_rvalue(value_t value)
     return !is_lvalue(value);
 }
 
-static bool must_check_args(value_t function)
+static bool must_skip_arg_check(type_t type)
 {
-    return function.type.must_check_args;
+    return type.must_skip_arg_check;
 }
 
 static bool is_type_def_keyword(str_t keyword)
@@ -1685,7 +1685,7 @@ static type_t read_type()
     {
         match(g_ellipses);
         type.is_variadic = true;
-        if(next_char() != *g_left_paren)
+        if(!is_function_pointer_decl(next_char()))
         {
             expected_string(g_left_paren);
         }
@@ -1695,7 +1695,7 @@ static type_t read_type()
         match(g_left_paren);
         match(g_rite_paren);
         type.is_function_pointer = true;
-        type.must_check_args = false;
+        type.must_skip_arg_check = true;
     }
     return type;
 }
@@ -2188,12 +2188,8 @@ static void read_function()
     if(is_variadic_decl(operator))
     {
         match(g_ellipses);
-        value.type.must_check_args = false;
         value.type.is_variadic = true;
-    }
-    else
-    {
-        value.type.must_check_args = true;
+        value.type.must_skip_arg_check = true;
     }
     auto args = read_function_decl_arg_list();
     value = is_end_of_statement(next_char())
@@ -2280,7 +2276,7 @@ static value_t inherit(value_t value, value_t other)
 static value_t load_indirect(value_t found)
 {
     auto value = lvalue(found.type);
-    if(found.type.is_function)
+    if(is_function(found.type))
     {
         value = inherit(value, found);
         value.type.is_function_pointer = true;
@@ -3095,7 +3091,12 @@ static value_t field_index(value_t aggregate, str_t field_name)
 
 static void check_function_args(value_t function, type_list_t* types)
 {
-    if(must_check_args(function))
+    if(must_skip_arg_check(function.type))
+    {
+        /* declared variadic functions and declared function
+         * pointers and type casts thereof need not apply */
+    }
+    else
     {
         assert_parameter_size(function, types);
         assert_parameter_type(function, types);
@@ -3141,10 +3142,7 @@ static value_t call_indirect_function(value_t function_pointer)
     auto types = (type_list_t) {};
     auto slots = read_function_call_arg_list(&types);
     auto value = rvalue(function_pointer.type);
-    if(function_pointer.type.must_check_args)
-    {
-        check_function_args(function_pointer, &types);
-    }
+    check_function_args(function_pointer, &types);
     value.type.is_function_pointer = false;
     emit_indirect_call(value, function_pointer);
     emit_parameter_slots(&types, &slots);
