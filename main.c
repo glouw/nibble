@@ -3,27 +3,22 @@
 #include <string.h>
 #include <stdarg.h>
 
-#define len(array) (sizeof(array) / sizeof(array[0]))
+#define len(x) (sizeof(x) / sizeof(*x))
 #define list(name, T, N) typedef struct { T begin[N]; int size; } name
-#define list_size(list) ((list)->size)
-#define list_empty(list) (list_size(list) == 0)
-#define list_last(list) (list_size(list) - 1)
-#define list_cap(list) (len((list)->begin) - 1) /* for string support */
-#define list_full(list) (list_size(list) == list_cap(list))
-#define list_push(list, value) if(list_full(list)) quit("out of memory"); (list)->begin[list_size(list)++] = value
+#define list_size(x) ((x)->size)
+#define list_empty(x) (list_size(x) == 0)
+#define list_last(x) (list_size(x) - 1)
+#define list_begin(x) ((x)->begin)
+#define list_cap(x) (len(list_begin(x)) - 1)
+#define list_full(x) (list_size(x) == list_cap(x))
+#define list_push(x, v) if(list_full(x)) quit("%s: out of memory", __func__); list_begin(x)[list_size(x)++] = v
 
-static constexpr auto g_str_size = 60;
-static constexpr auto g_value_args = 16;
-static constexpr auto g_defer_list_size = 8;
-static constexpr auto g_slot_list_size = g_value_args;
-static constexpr auto g_type_list_size = g_value_args;
-static constexpr auto g_str_list_size = g_value_args;
-static constexpr auto g_value_list_size = g_value_args;
-static constexpr auto g_value_big_list_size = 256;
-static constexpr auto g_str_const_big_list_size = 256;
+static constexpr char g_program[] = "nibble";
+static constexpr auto g_str_size = 128;
+static constexpr auto g_list_size = 32;
+static constexpr auto g_big_list_size = 1024;
 static constexpr auto g_code_size = 65536;
-static constexpr auto g_operator_precedences = 8;
-static constexpr auto g_module_stack_size = 8;
+static constexpr auto g_modules = 8;
 
 typedef enum : int
 {
@@ -88,26 +83,31 @@ typedef struct
 }
 str_const_t;
 
-list(slot_list_t, int, g_slot_list_size);
-list(defer_list_t, defer_t, g_defer_list_size);
-list(type_list_t, type_t, g_type_list_size);
-list(str_list_t, str_t, g_str_list_size);
-list(str_const_big_list_t, str_const_t, g_str_const_big_list_size);
+list(slot_list_t, int, g_list_size);
+list(defer_list_t, defer_t, g_list_size);
+list(type_list_t, type_t, g_list_size);
+list(str_list_t, str_t, g_list_size);
 
 typedef struct
 {
     type_t type;
     str_t name;
-    type_list_t types;
-    str_list_t names;
-    str_list_t init;
     int slot;
     bool is_lvalue;
 }
 value_t;
 
-list(value_list_t, value_t, g_value_list_size);
-list(value_big_list_t, value_t, g_value_big_list_size);
+typedef struct
+{
+    str_t name;
+    type_list_t types;
+    str_list_t names;
+    str_list_t init;
+    slot_list_t slots;
+    bool is_function;
+}
+aggregate_t;
+
 list(char_list_t, char, g_code_size);
 
 typedef struct
@@ -119,15 +119,20 @@ typedef struct
 }
 code_t;
 
+list(value_big_list_t, value_t, g_big_list_size);
+list(aggregate_big_list_t, aggregate_t, g_big_list_size);
+list(str_const_big_list_t, str_const_t, g_big_list_size);
+list(code_list_t, code_t, g_modules);
+
 struct
 {
-    code_t code[g_module_stack_size];
+    code_list_t codes;
     defer_list_t defers;
     slot_list_t loop_again;
     slot_list_t loop_end;
     value_big_list_t values;
-    value_big_list_t aggregates;
-    str_const_big_list_t const_strings;
+    aggregate_big_list_t aggregates;
+    str_const_big_list_t str_consts;
     int block;
     int slot;
     int tabs;
@@ -440,7 +445,7 @@ static char* g_construct_keywords[] = {
     nullptr
 };
 
-static char* g_operators_by_precedence[g_precedence_count][g_operator_precedences] = {
+static char* g_operators_by_precedence[g_precedence_count][8] = {
     [ g_precedence_arithmetic_0 ]  = { g_multiply, g_divide, g_mod                            },
     [ g_precedence_arithmetic_1 ]  = { g_add, g_subtract                                      },
     [ g_precedence_shift        ]  = { g_shift_left, g_shift_rite                             },
@@ -454,7 +459,7 @@ static char* g_operators_by_precedence[g_precedence_count][g_operator_precedence
 
 static code_t* get_code()
 {
-    return &g_file.code[g_file.module];
+    return &g_file.codes.begin[g_file.module];
 }
 
 static void code_rewind(int by)
@@ -462,7 +467,6 @@ static void code_rewind(int by)
     auto code = get_code();
     code->at -= by;
 }
-
 
 #if 0
 #define quit(...) printf(__VA_ARGS__)
@@ -475,12 +479,15 @@ static void code_rewind(int by)
     va_start(args, format);
     fprintf(out, "%s%s: line %d:%s %serror: %s", g_white, code->path.begin, code->line, g_normal, g_red, g_normal);
     vfprintf(out, format, args);
-    fprintf(out, "%s", g_escape_newline);
+    fprintf(out, g_str, g_escape_newline);
     va_end(args);
     exit(1);
 }
 #endif
 
+#if 0
+#define emit(...) printf(__VA_ARGS__)
+#else
 static void emit(char* format, ...)
 {
     auto out = stdout;
@@ -488,12 +495,28 @@ static void emit(char* format, ...)
     va_start(args, format);
     for(auto tab = 0; tab < g_file.tabs; tab++)
     {
-        fprintf(out, "%s", g_escape_tab);
+        fprintf(out, g_str, g_escape_tab);
     }
     vfprintf(out, format, args);
     va_end(args);
-    fprintf(out, "%s", g_escape_newline);
+    fprintf(out, g_str, g_escape_newline);
 }
+#endif
+
+#if 0
+#define okay(...) printf(__VA_ARGS__)
+#else
+static void okay(char* format, ...)
+{
+    auto out = stderr;
+    auto args = (va_list) {};
+    va_start(args, format);
+    fprintf(out, "%sokay: %s", g_green, g_normal);
+    vfprintf(out, format, args);
+    fprintf(out, g_str, g_escape_newline);
+    va_end(args);
+}
+#endif
 
 static void str_append(str_t* str, char* chars)
 {
@@ -684,12 +707,22 @@ static bool is_builtin_type_name(str_t type_name)
     return str_in(type_name, g_builtin_type_keywords);
 }
 
+static bool is_aggregate_function(aggregate_t* aggregate)
+{
+    return aggregate->is_function;
+}
+
 static bool is_aggregate_type_name(str_t type_name)
 {
     for(auto i = 0; i < g_file.aggregates.size; i++)
     {
-        if(str_equal(type_name.begin, g_file.aggregates.begin[i].name.begin))
+        auto at = &g_file.aggregates.begin[i];
+        if(str_equal(type_name.begin, at->name.begin))
         {
+            if(is_aggregate_function(at))
+            {
+                return false;
+            }
             return true;
         }
     }
@@ -743,7 +776,7 @@ static bool is_variadic_decl(str_t operator)
     return str_equal(operator.begin, g_ellipses);
 }
 
-static bool is_aggregate(type_t type)
+static bool is_aggregate_type(type_t type)
 {
     return is_not_pointer(type) && is_aggregate_type_name(type.name);
 }
@@ -1000,8 +1033,7 @@ static str_t peek_alnum();
 
 static bool is_identifier_load(char c)
 {
-    auto keyword = peek_alnum();
-    return is_alpha_char(c) && !is_construct_keyword(keyword);
+    return is_alpha_char(c) && !is_construct_keyword(peek_alnum());
 }
 
 static bool is_newline(char c)
@@ -1107,12 +1139,22 @@ static bool is_new_opening(char c)
     return c == *g_left_square;
 }
 
-static bool is_end_of_arg_list(char c)
+static bool is_end_of_args(char c)
+{
+    return c == *g_rite_paren;
+}
+
+static bool is_end_of_params(char c)
 {
     return c == *g_rite_paren;
 }
 
 static bool is_arg_separator(char c)
+{
+    return c == *g_comma;
+}
+
+static bool is_param_separator(char c)
 {
     return c == *g_comma;
 }
@@ -1144,27 +1186,40 @@ static str_t to_llvm_type(type_t type)
     return out;
 }
 
-static value_t* value_in_list(str_t str, value_big_list_t* list)
+static value_t* value_in_list(str_t name, value_big_list_t* list)
 {
     for(auto i = 0; i < list->size; i++)
     {
-        auto check = &list->begin[i];
-        if(str_equal(str.begin, check->name.begin))
+        auto found = &list->begin[i];
+        if(str_equal(name.begin, found->name.begin))
         {
-            return check;
+            return found;
         }
     }
     return nullptr;
 }
 
-static value_t* get_aggregate(str_t name)
+static aggregate_t* aggregate_in_list(str_t name, aggregate_big_list_t* list)
 {
-    return value_in_list(name, &g_file.aggregates);
+    for(auto i = 0; i < list->size; i++)
+    {
+        auto found = &list->begin[i];
+        if(str_equal(name.begin, found->name.begin))
+        {
+            return found;
+        }
+    }
+    return nullptr;
 }
 
 static value_t* get_value(str_t name)
 {
     return value_in_list(name, &g_file.values);
+}
+
+static aggregate_t* get_aggregate(str_t name)
+{
+    return aggregate_in_list(name, &g_file.aggregates);
 }
 
 static str_t to_stars(type_t value)
@@ -1193,92 +1248,18 @@ static str_t to_print_type(type_t type)
     return print;
 }
 
-[[noreturn]]
-static void function_comma_dangled(value_t value)
+[[noreturn]] static void function_comma_dangled(value_t value)
 {
     auto print = to_print_type(value.type);
-    char* name = list_empty(&value.name)
-        ? g_escape_backspace
-        : value.name.begin;
+    char* name = list_empty(&value.name) ? g_escape_backspace : value.name.begin;
     quit("expected '%s' after '%s %s' but got '%s%s'", g_rite_paren, print.begin, name, g_comma, g_rite_paren);
 }
 
-[[noreturn]]
-static void unknown_operator(type_t left, type_t rite, str_t operator)
+[[noreturn]] static void unknown_operator(type_t left, type_t rite, str_t operator)
 {
     auto left_print = to_print_type(left);
     auto rite_print = to_print_type(rite);
     quit("unknown operator '%s' on types '%s' and '%s'", operator.begin, left_print.begin, rite_print.begin);
-}
-
-[[noreturn]]
-static void unknown_unary(str_t operator)
-{
-    quit("unknown unary operator '%s' encountered", operator.begin);
-}
-
-[[noreturn]]
-static void unknown_type_cast(type_t left, type_t rite)
-{
-    auto left_print = to_print_type(left);
-    auto rite_print = to_print_type(rite);
-    quit("type cast with operator '%s' from '%s' to '%s' not supported", g_type_cast, left_print.begin, rite_print.begin);
-}
-
-[[noreturn]]
-static void unknown_type_power(char* name)
-{
-    quit("unknown type power '%s'", name);
-}
-
-[[noreturn]]
-static void missing_if_binding()
-{
-    quit("missing binding '%s'", g_if);
-}
-
-[[noreturn]]
-static void block_was_terminated()
-{
-    quit("block was already terminated - check for previous '%s', '%s', or '%s' statements", g_ret, g_break, g_continue);
-}
-
-[[noreturn]]
-static void block_missing_ret()
-{
-    quit("block missing '%s' statement", g_ret);
-}
-
-[[noreturn]]
-static void not_in_loop(char* keyword)
-{
-    quit("%s statement not within a loop", keyword);
-}
-
-[[noreturn]]
-static void expected_string(char* string)
-{
-    quit("expected '%s'", string);
-}
-
-[[noreturn]]
-static void invalid_escape_char(char c)
-{
-    quit("'%c' is an invalid escape character", c);
-}
-
-[[noreturn]]
-static void missing_expression(char* with)
-{
-    quit("'%s' expected an expression", with);
-}
-
-static void assert_program_use(int argc)
-{
-    if(argc != 2)
-    {
-        quit("./nibble file.n");
-    }
 }
 
 static void assert_types_match(type_t left, type_t rite, str_t operator)
@@ -1331,125 +1312,6 @@ static void assert_rvalue(value_t value, str_t operator)
     }
 }
 
-static void assert_member_exists(type_t aggregate_type, str_t member_name, str_t operator)
-{
-    auto members = get_aggregate(aggregate_type.name);
-    auto member = str_in_list(member_name, &members->names);
-    if(member == nullptr)
-    {
-        auto print = to_print_type(aggregate_type);
-        quit("could not access field '%s' in type '%s' with operator '%s'", member_name.begin, print.begin, operator.begin);
-    }
-}
-
-static void assert_not_declared(str_t name)
-{
-    if(get_value(name))
-    {
-        quit("'%s' already declared", name.begin);
-    }
-}
-
-static void assert_not_reserved(str_t name)
-{
-    if(is_reserved_keyword(name))
-    {
-        quit("'%s' is a reserved keyword", name.begin);
-    }
-}
-
-static void assert_valid_type(type_t type)
-{
-    if(!is_type_name(type.name))
-    {
-        quit("'%s' not a valid type", type.name.begin);
-    }
-}
-
-static void assert_valid_member_type(value_t aggregate, type_t member_type, str_t member_name)
-{
-    assert_valid_type(member_type);
-    if(str_in_list(member_name, &aggregate.names))
-    {
-        quit("duplicate member '%s' in '%s'", member_name.begin, aggregate.name.begin);
-    }
-}
-
-static void assert_expectation(char* a, char* b)
-{
-    if(!str_equal(a, b))
-    {
-        quit("expected '%s' but got '%s'", a, b);
-    }
-}
-
-static void assert_not_end_of_file()
-{
-    auto code = get_code();
-    if(code->at == list_cap(&code->list))
-    {
-        quit("unexpected end of file");
-    }
-}
-
-static void assert_include_path(str_t path)
-{
-    if(path.size == 0)
-    {
-        quit("path was empty with '%s' statement", g_include);
-    }
-}
-
-static void assert_file_opened(FILE* fp, str_t path)
-{
-    if(fp == nullptr)
-    {
-        quit("could not open '%s' for reading - does the file exist?", path.begin);
-    }
-}
-
-static void assert_buffer_fit(code_t* code)
-{
-    auto list = &code->list;
-    if(list_full(list))
-    {
-        quit("code capacity '%lu' exceeded", list_cap(list));
-    }
-}
-
-static void assert_declared(value_t* value, str_t name)
-{
-    if(value == nullptr)
-    {
-        quit("value '%s' not declared", name.begin);
-    }
-}
-
-static void assert_parameter_size(value_t function, type_list_t* expected)
-{
-    if(function.types.size != expected->size)
-    {
-        quit("function '%s' expected '%d' arguments but got '%d'", function.name.begin, function.types.size, expected->size);
-    }
-}
-
-static void assert_parameter_type(value_t function, type_list_t* expected)
-{
-    auto operator = str_init(g_function);
-    for(auto i = 0; i < expected->size; i++)
-    {
-        assert_types_match(function.types.begin[i], expected->begin[i], operator);
-    }
-}
-
-static void assert_operator_format(type_t left, type_t rite, str_t operator, char* format)
-{
-    if(format == nullptr)
-    {
-        unknown_operator(left, rite, operator);
-    }
-}
-
 static int get_block()
 {
     g_file.block += 1;
@@ -1478,7 +1340,10 @@ static void step()
 {
     auto code = get_code();
     code->at += 1;
-    assert_not_end_of_file();
+    if(code->at == list_cap(&code->list))
+    {
+        quit("unexpected end of file");
+    }
 }
 
 static void read_comment()
@@ -1550,24 +1415,30 @@ static void match(char* expected)
         list_push(&got, next_char());
         step();
     }
-    assert_expectation(got.begin, expected);
+    if(!str_equal(got.begin, expected))
+    {
+        quit("expected '%s' but got '%s'", expected, got.begin);
+    }
 }
 
 static char convert_escape_char(char c)
 {
-    if(c ==  'a') return *g_escape_alert;
-    if(c ==  'b') return *g_escape_backspace;
-    if(c ==  'f') return *g_escape_form_feed;
-    if(c ==  'n') return *g_escape_newline;
-    if(c ==  'r') return *g_escape_carriage_return;
-    if(c ==  't') return *g_escape_tab;
-    if(c ==  'v') return *g_escape_vertical_tab;
-    if(c == '\\') return *g_escape_backslash;
-    if(c == '\'') return *g_escape_apostrophe;
-    if(c == '\"') return *g_escape_quotation;
-    if(c ==  '?') return *g_escape_question_mark;
-    if(c ==  '0') return *g_escape_null;
-    invalid_escape_char(c);
+    switch(c)
+    {
+    case 'a' : return *g_escape_alert;
+    case 'b' : return *g_escape_backspace;
+    case 'f' : return *g_escape_form_feed;
+    case 'n' : return *g_escape_newline;
+    case 'r' : return *g_escape_carriage_return;
+    case 't' : return *g_escape_tab;
+    case 'v' : return *g_escape_vertical_tab;
+    case '\\': return *g_escape_backslash;
+    case '\'': return *g_escape_apostrophe;
+    case '\"': return *g_escape_quotation;
+    case '?' : return *g_escape_question_mark;
+    case '0' : return *g_escape_null;
+    }
+    quit("'%c' was an an invalid escape character", c);
 }
 
 static str_t read_chars(bool matches(char))
@@ -1687,7 +1558,7 @@ static type_t read_type()
         type.is_variadic = true;
         if(!is_function_pointer_decl(next_char()))
         {
-            expected_string(g_left_paren);
+            quit("expected function pointer declaration");
         }
     }
     if(is_function_pointer_decl(next_char()))
@@ -1717,8 +1588,6 @@ static value_t lvalue(type_t type)
     return lvalue;
 }
 
-static value_list_t read_function_decl_arg_list();
-
 static value_t read_value()
 {
     auto type = read_type();
@@ -1731,39 +1600,20 @@ static value_t read_value()
 static value_t read_value_decl()
 {
     auto value = read_value();
-    assert_not_declared(value.name);
-    assert_not_reserved(value.name);
-    assert_valid_type(value.type);
-    return value;
-}
-
-static value_list_t read_function_decl_arg_list()
-{
-    auto values = (value_list_t) {};
-    match(g_left_paren);
-    for(;;)
+    if(get_value(value.name))
     {
-        if(is_end_of_arg_list(next_char()))
-        {
-            break;
-        }
-        auto arg = read_value_decl();
-        list_push(&values, arg);
-        if(is_arg_separator(next_char()))
-        {
-            match(g_comma);
-            if(is_end_of_arg_list(next_char()))
-            {
-                function_comma_dangled(arg);
-            }
-        }
-        else
-        {
-            break;
-        }
+        quit("'%s' is already declared value name", value.name.begin);
     }
-    match(g_rite_paren);
-    return values;
+    if(is_reserved_keyword(value.name))
+    {
+        quit("'%s' is a reserved keyword", value.name.begin);
+    }
+    if(!is_type_name(value.type.name))
+    {
+        auto print = to_print_type(value.type);
+        quit("'%s' not a valid type", print.begin);
+    }
+    return value;
 }
 
 static value_t read_expression();
@@ -1800,7 +1650,7 @@ static value_t read_ret_statement(value_t ret_value)
     {
         if(is_end_of_statement(next_char()))
         {
-            missing_expression(g_ret);
+            quit("'%s' expected an expression", g_ret);
         }
         auto value = read_expression();
         match(g_semicolon);
@@ -1817,9 +1667,9 @@ static void read_if_statement(value_t ret_value, branch_t branch)
 {
     read_alnum();
     match(g_left_paren);
-    if(is_end_of_arg_list(next_char()))
+    if(is_end_of_args(next_char()))
     {
-        missing_expression(g_if);
+        quit("'%s' expected an expression", g_if);
     }
     auto value = read_expression();
     auto operator = str_init(g_if);
@@ -1915,7 +1765,7 @@ static void read_break_statement()
     match(g_semicolon);
     if(list_empty(&g_file.loop_end))
     {
-        not_in_loop(g_break);
+        quit("'%s' statement not within a loop", g_break);
     }
     execute_break_defers();
     auto last = list_last(&g_file.loop_end);
@@ -1929,7 +1779,7 @@ static void read_continue_statement()
     match(g_semicolon);
     if(list_empty(&g_file.loop_again))
     {
-        not_in_loop(g_continue);
+        quit("'%s' statement not within a loop", g_continue);
     }
     execute_break_defers();
     auto last = list_last(&g_file.loop_again);
@@ -1948,9 +1798,9 @@ static void read_while_statement(value_t ret_value, int block)
     emit(g_opcode_label, again_label);
     read_alnum();
     match(g_left_paren);
-    if(is_end_of_arg_list(next_char()))
+    if(is_end_of_args(next_char()))
     {
-        missing_expression(g_while);
+        quit("'%s' expected an expression", g_while);
     }
     auto value = read_expression();
     match(g_rite_paren);
@@ -1972,7 +1822,7 @@ static value_t field_index(value_t, str_t);
 
 static void default_init_aggregate(value_t value)
 {
-    if(is_aggregate(value.type))
+    if(is_aggregate_type(value.type))
     {
         auto members = get_aggregate(value.type.name);
         for(auto i = 0; i < members->init.size; i++)
@@ -2050,7 +1900,7 @@ static bool read_statement(value_t ret_value, scope_t scope, int block)
         }
         if(is_else(keyword))
         {
-            missing_if_binding();
+            quit("missing binding '%s'", g_if);
         }
         if(is_while(keyword))
         {
@@ -2105,7 +1955,7 @@ static bool read_block(value_t ret_value, scope_t scope)
         }
         if(terminated)
         {
-            block_was_terminated();
+            quit("block was already terminated");
         }
         terminated = read_statement(ret_value, scope, block);
     }
@@ -2120,62 +1970,120 @@ static bool read_block(value_t ret_value, scope_t scope)
     return terminated;
 }
 
-static value_t collect_types(value_t value, value_list_t* args)
+static void emit_function_params(aggregate_t* params)
 {
     emit(g_str, g_left_paren);
-    for(auto i = 0; i < args->size; i++)
+    auto last = list_last(&params->names);
+    for(auto i = 0; i < params->names.size; i++)
     {
-        auto type = args->begin[i].type;
-        auto slot = args->begin[i].slot;
-        list_push(&value.types, type);
+        auto type = params->types.begin[i];
+        auto slot = params->slots.begin[i];
         auto llvm_type = to_llvm_type(type);
         emit(g_opcode_type_slot, llvm_type.begin, slot);
-        auto last = list_last(args);
         if(i < last)
         {
             emit(g_str, g_comma);
         }
     }
     emit(g_str, g_rite_paren);
-    return value;
 }
 
-static value_t as_function_declaration(value_t value, value_list_t* args)
+static aggregate_t read_function_params(str_t name)
 {
-    auto llvm_type = to_llvm_type(value.type);
-    emit(g_opcode_declare, llvm_type.begin, value.name.begin);
-    value = collect_types(value, args);
-    list_push(&g_file.values, value);
-    match(g_semicolon);
-    return value;
+    auto aggregate = (aggregate_t) {
+        .name = name,
+        .is_function = true,
+    };
+    match(g_left_paren);
+    for(;;)
+    {
+        if(is_end_of_params(next_char()))
+        {
+            break;
+        }
+        auto param = read_value_decl();
+        list_push(&aggregate.names, param.name);
+        list_push(&aggregate.types, param.type);
+        list_push(&aggregate.slots, param.slot);
+        if(is_param_separator(next_char()))
+        {
+            match(g_comma);
+            if(is_end_of_params(next_char()))
+            {
+                function_comma_dangled(param);
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+    match(g_rite_paren);
+    return aggregate;
 }
 
-static value_t as_function_definition(value_t value, value_list_t* args)
+static value_t aggregate_value_at(aggregate_t* aggregate, int index)
+{
+    return (value_t) {
+        .type = aggregate->types.begin[index],
+        .name = aggregate->names.begin[index],
+        .slot = aggregate->slots.begin[index],
+    };
+}
+
+static void emit_function_name(value_t value, bool is_define)
 {
     auto llvm_type = to_llvm_type(value.type);
-    emit(g_opcode_define, llvm_type.begin, value.name.begin);
-    value = collect_types(value, args);
-    list_push(&g_file.values, value);
+    emit(is_define ? g_opcode_define : g_opcode_declare, llvm_type.begin, value.name.begin);
+}
+
+static void load_function_params(aggregate_t* params)
+{
+    for(auto i = 0; i < params->names.size; i++)
+    {
+        auto param = aggregate_value_at(params, i);
+        auto llvm_type = to_llvm_type(param.type);
+        auto slot = get_slot();
+        emit(g_opcode_alloca, slot, llvm_type.begin);
+        emit(g_opcode_store, llvm_type.begin, param.slot, slot);
+        param.slot = slot;
+        list_push(&g_file.values, param);
+    }
+}
+
+static void read_function_block(value_t value, aggregate_t* params)
+{
     emit(g_str, g_left_curl);
     emit(g_str, g_opcode_entry);
-    for(auto i = 0; i < args->size; i++)
-    {
-        auto arg = args->begin[i];
-        auto slot = get_slot();
-        auto llvm_type = to_llvm_type(arg.type);
-        emit(g_opcode_alloca, slot, llvm_type.begin);
-        emit(g_opcode_store, llvm_type.begin, arg.slot, slot);
-        arg.slot = slot;
-        list_push(&g_file.values, arg);
-    }
+    load_function_params(params);
+    list_push(&g_file.aggregates, *params);
     auto terminated = read_block(value, g_scope_function);
     if(!terminated)
     {
-        block_missing_ret();
+        quit("block missing '%s' statement", g_ret);
     }
     emit(g_str, g_rite_curl);
-    g_file.values.size -= args->size;
-    return value;
+    g_file.values.size -= params->names.size;
+}
+
+static void emit_function_signature(value_t value, aggregate_t* params, bool is_define)
+{
+    emit_function_name(value, is_define);
+    emit_function_params(params);
+    list_push(&g_file.values, value);
+}
+
+static void read_function_declaration(value_t value, aggregate_t* params)
+{
+    emit_function_signature(value, params, false);
+    list_push(&g_file.aggregates, *params);
+    match(g_semicolon);
+}
+
+static void read_function_definition(value_t value, aggregate_t* params)
+{
+    emit_function_signature(value, params, true);
+    read_function_block(value, params);
 }
 
 static void read_function()
@@ -2191,15 +2099,19 @@ static void read_function()
         value.type.is_variadic = true;
         value.type.must_skip_arg_check = true;
     }
-    auto args = read_function_decl_arg_list();
-    value = is_end_of_statement(next_char())
-        ? as_function_declaration(value, &args)
-        : as_function_definition(value, &args);
+    auto params = read_function_params(value.name);
+    is_end_of_statement(next_char())
+        ? read_function_declaration(value, &params)
+        : read_function_definition(value, &params);
     emit(g_str, g_empty);
 }
 
-static value_t read_type_def_members(value_t aggregate)
+static aggregate_t read_type_members(str_t name)
 {
+    auto aggregate = (aggregate_t) {
+        .name = name
+    };
+    emit(g_opcode_type_def, name.begin);
     emit(g_str, g_left_curl);
     match(g_left_curl);
     for(;;)
@@ -2210,7 +2122,15 @@ static value_t read_type_def_members(value_t aggregate)
         }
         auto member_type = read_type();
         auto member_name = read_alnum();
-        assert_valid_member_type(aggregate, member_type, member_name);
+        if(!is_type_name(member_type.name))
+        {
+            auto print = to_print_type(member_type);
+            quit("'%s' not a valid type", print.begin);
+        }
+        if(str_in_list(member_name, &aggregate.names))
+        {
+            quit("duplicate member '%s' in '%s'", member_name.begin, aggregate.name.begin);
+        }
         if(is_aggregate_member_init(next_char()))
         {
             auto operator = str_init(g_equals);
@@ -2241,12 +2161,12 @@ static value_t read_type_def_members(value_t aggregate)
 static void read_type_def()
 {
     read_alnum();
-    auto aggregate_name = read_alnum();
-    assert_not_declared(aggregate_name);
-    auto aggregate = (value_t) {};
-    aggregate.name = aggregate.type.name = aggregate_name;
-    emit(g_opcode_type_def, aggregate_name.begin);
-    aggregate = read_type_def_members(aggregate);
+    auto name = read_alnum();
+    if(get_value(name))
+    {
+        quit("'%s' is already a declared type name", name.begin);
+    }
+    auto aggregate = read_type_members(name);
     match(g_semicolon);
     list_push(&g_file.aggregates, aggregate);
 }
@@ -2264,21 +2184,12 @@ static value_t to_rvalue(value_t value)
     return value;
 }
 
-static value_t inherit(value_t value, value_t other)
-{
-    value.name = other.name;
-    value.type = other.type;
-    value.types = other.types;
-    value.names = other.names;
-    return value;
-}
-
 static value_t load_indirect(value_t found)
 {
     auto value = lvalue(found.type);
     if(is_function(found.type))
     {
-        value = inherit(value, found);
+        value.name = found.name;
         value.type.is_function_pointer = true;
         value = alloca_value(value);
         auto llvm_type = to_llvm_type(value.type);
@@ -2295,18 +2206,13 @@ static value_t load_indirect(value_t found)
 static value_t load_direct()
 {
     auto name = read_numeric();
-    if(strchr(name.begin, *g_dot))
-    {
-        auto value = rvalue(scalar_init(str_init(g_double)));
-        emit(g_opcode_load_double, g_file.slot, value.type.name.begin, name.begin);
-        return value;
-    }
-    else
-    {
-        auto value = rvalue(scalar_init(str_init(g_i64)));
-        emit(g_opcode_load_signed, g_file.slot, value.type.name.begin, name.begin);
-        return value;
-    }
+    bool is_decimal = strchr(name.begin, *g_dot);
+    auto type_name = is_decimal ? g_double : g_i64;
+    auto opcode = is_decimal ? g_opcode_load_double : g_opcode_load_signed;
+    auto type = scalar_init(str_init(type_name));
+    auto value = rvalue(type);
+    emit(opcode, g_file.slot, value.type.name.begin, name.begin);
+    return value;
 }
 
 static str_t to_llvm_escaped(str_t string, int* size)
@@ -2379,13 +2285,13 @@ static str_t to_llvm_escaped(str_t string, int* size)
     return out;
 }
 
-static slot_list_t read_function_call_arg_list(type_list_t* types)
+static slot_list_t read_function_args(type_list_t* types)
 {
     auto list = (slot_list_t) {};
     match(g_left_paren);
     for(;;)
     {
-        if(is_end_of_arg_list(next_char()))
+        if(is_end_of_args(next_char()))
         {
             break;
         }
@@ -2396,7 +2302,7 @@ static slot_list_t read_function_call_arg_list(type_list_t* types)
         if(is_arg_separator(next_char()))
         {
             match(g_comma);
-            if(is_end_of_arg_list(next_char()))
+            if(is_end_of_args(next_char()))
             {
                 function_comma_dangled(value);
             }
@@ -2419,9 +2325,8 @@ static value_t increment(value_t value, bool prefix)
     assert_type(value.type, operator, is_numeric);
     auto out = rvalue(value.type);
     auto llvm_type = to_llvm_type(out.type);
-    is_floating(value.type)
-        ? emit(g_opcode_floating_increment, out.slot, llvm_type.begin, value.slot)
-        : emit(g_opcode_increment, out.slot, llvm_type.begin, value.slot);
+    auto opcode = is_floating(value.type) ? g_opcode_floating_increment : g_opcode_increment;
+    emit(opcode, out.slot, llvm_type.begin, value.slot);
     emit(g_opcode_store, llvm_type.begin, out.slot, slot);
     return prefix ? out : value;
 }
@@ -2445,9 +2350,8 @@ static value_t decrement(value_t value, bool prefix)
     assert_type(value.type, operator, is_numeric);
     auto out = rvalue(value.type);
     auto llvm_type = to_llvm_type(out.type);
-    is_floating(value.type)
-        ? emit(g_opcode_floating_decrement, out.slot, llvm_type.begin, value.slot)
-        : emit(g_opcode_decrement, out.slot, llvm_type.begin, value.slot);
+    auto opcode = is_floating(value.type) ? g_opcode_floating_decrement : g_opcode_decrement;
+    emit(opcode, out.slot, llvm_type.begin, value.slot);
     emit(g_opcode_store, llvm_type.begin, out.slot, slot);
     return prefix ? out : value;
 }
@@ -2503,9 +2407,8 @@ static value_t to_negative(value_t value)
     assert_type(value.type, operator, is_numeric);
     auto out = rvalue(value.type);
     auto llvm_type = to_llvm_type(value.type);
-    is_floating(out.type)
-        ? emit(g_opcode_floating_negative, out.slot, llvm_type.begin, value.slot)
-        : emit(g_opcode_signed_negative, out.slot, llvm_type.begin, value.slot);
+    auto opcode = is_floating(out.type) ? g_opcode_floating_negative : g_opcode_signed_negative;
+    emit(opcode, out.slot, llvm_type.begin, value.slot);
     return out;
 }
 
@@ -2628,7 +2531,7 @@ static type_power_t type_power(type_t type)
     {
         return g_power_double;
     }
-    unknown_type_power(at);
+    quit("unknown type power '%d' with name '%s'", type, at);
 }
 
 static value_t pointer_to_pointer(value_t value, type_t type)
@@ -2879,7 +2782,7 @@ static value_t type_cast(value_t value, type_t type)
             return boolean_to_boolean(value, type);
         }
     }
-    unknown_type_cast(value.type, type);
+    unknown_operator(value.type, type, str_init(g_type_cast));
 }
 
 static value_t read_postfix(value_t);
@@ -2934,9 +2837,9 @@ static value_t read_prefix()
         auto type = read_type();
         match(g_greater);
         match(g_left_paren);
-        if(is_end_of_arg_list(next_char()))
+        if(is_end_of_args(next_char()))
         {
-            missing_expression(g_type_cast);
+            quit("'%s' expected an expression", g_type_cast);
         }
         auto value = read_expression();
         match(g_rite_paren);
@@ -2978,7 +2881,7 @@ static value_t read_prefix()
         auto value = read_p0();
         return dereference(value);
     }
-    unknown_unary(operator);
+    quit("unknown unary operator '%s' encountered", operator.begin);
 }
 
 static value_t field_access(value_t);
@@ -3041,8 +2944,8 @@ static value_t load_string_literal()
         .name = escaped,
         .size = size,
     };
-    auto tag = list_size(&g_file.const_strings);
-    list_push(&g_file.const_strings, str_const);
+    auto tag = list_size(&g_file.str_consts);
+    list_push(&g_file.str_consts, str_const);
     auto string = rvalue(pointer_init(str_init(g_i8), 1));
     emit(g_opcode_gep_string, string.slot, size, tag);
     return string;
@@ -3067,10 +2970,14 @@ static value_t field_index(value_t aggregate, str_t field_name)
         aggregate = dereference(aggregate);
     }
     auto operator = str_init(g_dot);
-    assert_type(aggregate.type, operator, is_aggregate);
-    assert_member_exists(aggregate.type, field_name, operator);
+    assert_type(aggregate.type, operator, is_aggregate_type);
     auto members = get_aggregate(aggregate.type.name);
     auto member = str_in_list(field_name, &members->names);
+    if(member == nullptr)
+    {
+        auto print = to_print_type(aggregate.type);
+        quit("could not access field '%s' in type '%s' with operator '%s'", field_name.begin, print.begin, operator.begin);
+    }
     auto index = member - members->names.begin;
     auto field_type = members->types.begin[index];
     if(is_lvalue(aggregate))
@@ -3098,8 +3005,17 @@ static void check_function_args(value_t function, type_list_t* types)
     }
     else
     {
-        assert_parameter_size(function, types);
-        assert_parameter_type(function, types);
+        auto size = get_aggregate(function.name)->names.size;
+        if(size != types->size)
+        {
+            quit("function '%s' expected '%d' arguments but got '%d'", function.name.begin, size, types->size);
+        }
+        auto operator = str_init(g_function);
+        auto members = get_aggregate(function.name);
+        for(auto i = 0; i < types->size; i++)
+        {
+            assert_types_match(members->types.begin[i], types->begin[i], operator);
+        }
     }
 }
 
@@ -3140,7 +3056,7 @@ static value_t call_indirect_function(value_t function_pointer)
     assert_type(function_pointer.type, operator, is_callable);
     function_pointer = to_rvalue(function_pointer);
     auto types = (type_list_t) {};
-    auto slots = read_function_call_arg_list(&types);
+    auto slots = read_function_args(&types);
     auto value = rvalue(function_pointer.type);
     check_function_args(function_pointer, &types);
     value.type.is_function_pointer = false;
@@ -3153,7 +3069,10 @@ static value_t read_identifier()
 {
     auto name = read_alnum();
     auto found = get_value(name);
-    assert_declared(found, name);
+    if(found == nullptr)
+    {
+        quit("value '%s' not declared", name.begin);
+    }
     auto value = load_indirect(*found);
     return read_postfix(value);
 }
@@ -3176,7 +3095,10 @@ static value_t load_character()
 
 static void emit_operation(value_t pure, value_t left, value_t rite, str_t operator, char* format)
 {
-    assert_operator_format(left.type, rite.type, operator, format);
+    if(format == nullptr)
+    {
+        unknown_operator(left.type, rite.type, operator);
+    }
     auto llvm_type = to_llvm_type(left.type);
     emit(format, pure.slot, llvm_type.begin, left.slot, rite.slot);
 }
@@ -3325,7 +3247,7 @@ static value_t operate(value_t left, value_t rite, str_t operator)
     }
     else
     {
-        if(is_aggregate(left.type))
+        if(is_aggregate_type(left.type))
         {
             return aggregate_operate(left, rite, operator);
         }
@@ -3464,14 +3386,20 @@ void static read_code(str_t path)
 {
     auto mode = "r";
     auto fp = fopen(path.begin, mode);
-    assert_file_opened(fp, path);
+    if(fp == nullptr)
+    {
+        quit("could not open '%s' for reading - does it exist?", path.begin);
+    }
     auto code = get_code();
     code->path = path;
     code->line = 1;
     auto cap = list_cap(&code->list);
     code->list.size = fread(code->list.begin, sizeof(char), cap, fp);
     fclose(fp);
-    assert_buffer_fit(code);
+    if(list_full(&code->list))
+    {
+        quit("code capacity '%lu' exceeded", list_cap(&code->list));
+    }
 }
 
 static void push_code(str_t path)
@@ -3495,7 +3423,10 @@ static void read_include()
 {
     read_alnum();
     auto path = read_string();
-    assert_include_path(path);
+    if(path.size == 0)
+    {
+        quit("path was empty with '%s' statement", g_include);
+    }
     match(g_semicolon);
     push_code(path);
 }
@@ -3503,14 +3434,14 @@ static void read_include()
 static void print_compile_stats()
 {
     auto code = get_code();
-    fprintf(stderr, "%scompiled%s %s: %d bytes\n", g_green, g_normal, code->path.begin, code->list.size);
+    okay("compiled %s: %d bytes", code->path.begin, code->list.size);
 }
 
-static void dump_string_consts()
+static void dump_string_constants()
 {
-    for(auto i = 0; i < g_file.const_strings.size; i++)
+    for(auto i = 0; i < g_file.str_consts.size; i++)
     {
-        auto str_const = g_file.const_strings.begin[i];
+        auto str_const = g_file.str_consts.begin[i];
         emit(g_opcode_string_const, i, str_const.size, str_const.name.begin);
     }
 }
@@ -3535,7 +3466,7 @@ static void read_top_level()
 
 static void write_header()
 {
-    emit(g_opcode_target);
+    emit(g_str, g_opcode_target);
     emit(g_str, g_empty);
 }
 
@@ -3554,12 +3485,15 @@ static void read_program()
         }
         read_top_level();
     }
-    dump_string_consts();
+    dump_string_constants();
 }
 
 int main(int argc, char** argv)
 {
-    assert_program_use(argc);
+    if(argc != 2)
+    {
+        quit("./%s file.n", g_program);
+    }
     read_code(str_init(argv[1]));
     read_program();
 }

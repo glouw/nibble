@@ -1788,6 +1788,31 @@ i64 test_str_push()
     ret 1;
 }
 
+type person_t
+{
+    double height;
+};
+
+person_t* ret_person_pointer(person_t* self)
+{
+    ret self;
+}
+
+i64 test_person_modify()
+{
+    person_t person;
+    person.height = 42.0;
+    ++ <person_t*()>(ret_person_pointer)(&person).height    ;
+       <person_t*()>(ret_person_pointer)(&person).height ++ ;
+    -- <person_t*()>(ret_person_pointer)(&person).height    ;
+       <person_t*()>(ret_person_pointer)(&person).height -- ;
+    if(person.height == 42.0)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     i64 result =
@@ -1868,6 +1893,7 @@ i32 main()
       | test_arr_t()
       | test_defer_prints()
       | test_str_push()
+      | test_person_modify()
     ;
     if(result == 0)
     {

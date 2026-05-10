@@ -2,7 +2,7 @@ CC = ../nibble
 SRC = main.n
 TEMP = out.ll
 ASM = clang -O1
-BIN = game
+BIN = chickens
 LDFLAGS = -lSDL2 -lm
 
 all:

@@ -1,5 +1,6 @@
 CC = clang -std=c23
-CFLAGS = -fsanitize=address,undefined -g -Wall -Wextra -Wpedantic
+#CFLAGS = -fsanitize=address,undefined -g
+WFLAGS = -Wall -Wextra -Wpedantic
 BIN = nibble
 SRC = main.c
 
@@ -9,7 +10,7 @@ all: nibble
 	make -C shaders
 
 nibble: force
-	$(TIME) $(CC) $(CFLAGS) $(SRC) -o $(BIN)
+	$(TIME) $(CC) $(CFLAGS) $(WFLAGS) $(SRC) -o $(BIN)
 
 clean:
 	rm -f $(BIN)
