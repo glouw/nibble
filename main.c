@@ -12,18 +12,18 @@
 #define list_full(list) (list_size(list) == list_cap(list))
 #define list_push(list, value) if(list_full(list)) quit("out of memory"); (list)->begin[list_size(list)++] = value
 
-constexpr auto g_str_size = 60;
-constexpr auto g_value_args = 16;
-constexpr auto g_defer_list_size = 8;
-constexpr auto g_slot_list_size = g_value_args;
-constexpr auto g_type_list_size = g_value_args;
-constexpr auto g_str_list_size = g_value_args;
-constexpr auto g_value_list_size = g_value_args;
-constexpr auto g_value_big_list_size = 256;
-constexpr auto g_str_const_big_list_size = 256;
-constexpr auto g_code_size = 65536;
-constexpr auto g_operator_precedences = 8;
-constexpr auto g_module_stack_size = 8;
+static constexpr auto g_str_size = 60;
+static constexpr auto g_value_args = 16;
+static constexpr auto g_defer_list_size = 8;
+static constexpr auto g_slot_list_size = g_value_args;
+static constexpr auto g_type_list_size = g_value_args;
+static constexpr auto g_str_list_size = g_value_args;
+static constexpr auto g_value_list_size = g_value_args;
+static constexpr auto g_value_big_list_size = 256;
+static constexpr auto g_str_const_big_list_size = 256;
+static constexpr auto g_code_size = 65536;
+static constexpr auto g_operator_precedences = 8;
+static constexpr auto g_module_stack_size = 8;
 
 typedef enum : int
 {
@@ -145,219 +145,215 @@ typedef struct
 }
 branch_t;
 
-char* const g_escape_alert                       = "\a";
-char* const g_escape_backspace                   = "\b";
-char* const g_escape_form_feed                   = "\f";
-char* const g_escape_newline                     = "\n";
-char* const g_escape_carriage_return             = "\r";
-char* const g_escape_tab                         = "\t";
-char* const g_escape_vertical_tab                = "\v";
-char* const g_escape_backslash                   = "\\";
-char* const g_escape_apostrophe                  = "\'";
-char* const g_escape_quotation                   = "\"";
-char* const g_escape_question_mark               = "\?";
-char* const g_escape_null                        = "\0";
-char* const g_llvm_escape_alert                  = "\\07";
-char* const g_llvm_escape_backspace              = "\\08";
-char* const g_llvm_escape_tab                    = "\\09";
-char* const g_llvm_escape_newline                = "\\0A";
-char* const g_llvm_escape_vertical_tab           = "\\0B";
-char* const g_llvm_escape_form_feed              = "\\0C";
-char* const g_llvm_escape_carriage_return        = "\\0D";
-char* const g_llvm_escape_quotation              = "\\22";
-char* const g_llvm_escape_null                   = "\\00";
-char* const g_llvm_escape_backslash              = "\\5C";
-char* const g_llvm_escape_question_mark          = "\\3F";
-char* const g_apostrophe                         = "'";
-char* const g_str                                = "%s";
-char* const g_red                                = "\033[1;31m";
-char* const g_green                              = "\033[1;32m";
-char* const g_white                              = "\033[1;37m";
-char* const g_normal                             = "\033[0m";
-char* const g_underscore                         = "_";
-char* const g_left_square                        = "[";
-char* const g_rite_square                        = "]";
-char* const g_left_curl                          = "{";
-char* const g_rite_curl                          = "}";
-char* const g_left_paren                         = "(";
-char* const g_rite_paren                         = ")";
-char* const g_semicolon                          = ";";
-char* const g_space                              = " ";
-char* const g_lower_begin                        = "a";
-char* const g_lower_end                          = "z";
-char* const g_upper_begin                        = "A";
-char* const g_upper_end                          = "Z";
-char* const g_digit_begin                        = "0";
-char* const g_digit_end                          = "9";
-char* const g_ellipses                           = "...";
-char* const g_not                                = "!";
-char* const g_type_cast                          = "<>";
-char* const g_function                           = "()";
-char* const g_index                              = "[]";
-char* const g_dot                                = ".";
-char* const g_add                                = "+";
-char* const g_subtract                           = "-";
-char* const g_divide                             = "/";
-char* const g_mod                                = "%";
-char* const g_multiply                           = "*";
-char* const g_equals                             = "=";
-char* const g_equal_to                           = "==";
-char* const g_not_equal_to                       = "!=";
-char* const g_less_equal_to                      = "<=";
-char* const g_less                               = "<";
-char* const g_greater_equal_to                   = ">=";
-char* const g_greater                            = ">";
-char* const g_shift_rite                         = ">>";
-char* const g_shift_left                         = "<<";
-char* const g_increment                          = "++";
-char* const g_decrement                          = "--";
-char* const g_bitwise_or                         = "|";
-char* const g_bitwise_xor                        = "^";
-char* const g_bitwise_and                        = "&";
-char* const g_bitwise_not                        = "~";
-char* const g_comma                              = ",";
-char* const g_ampersand                          = "&";
-char* const g_percent                            = "%";
-char* const g_hash                               = "#";
-char* const g_empty                              = "";
-char* const g_colon                              = ":";
-char* const g_question_mark                      = "?";
-char* const g_dollar                             = "$";
-char* const g_at                                 = "@";
-char* const g_void                               = "void";
-char* const g_i1                                 = "i1";
-char* const g_i8                                 = "i8";
-char* const g_i16                                = "i16";
-char* const g_i32                                = "i32";
-char* const g_i64                                = "i64";
-char* const g_u1                                 = "u1";
-char* const g_u8                                 = "u8";
-char* const g_u16                                = "u16";
-char* const g_u32                                = "u32";
-char* const g_u64                                = "u64";
-char* const g_double                             = "double";
-char* const g_float                              = "float";
-char* const g_ret                                = "ret";
-char* const g_ptr                                = "ptr";
-char* const g_if                                 = "if";
-char* const g_else                               = "else";
-char* const g_while                              = "while";
-char* const g_break                              = "break";
-char* const g_continue                           = "continue";
-char* const g_type                               = "type";
-char* const g_defer                              = "defer";
-char* const g_new                                = "new";
-char* const g_del                                = "del";
-char* const g_sizeof                             = "sizeof";
-char* const g_comment                            = "//";
-char* const g_include                            = "include";
-char* const g_opcode_type_def                    = "%%%s = type";
-char* const g_opcode_label                       = "L%d:";
-char* const g_opcode_branch_if_else              = "br i1 %%%d, label %%L%d, label %%L%d";
-char* const g_opcode_branch                      = "br label %%L%d";
-char* const g_opcode_target                      = "target triple = \"x86_64-pc-linux-gnu\"";
-char* const g_opcode_signed_not                  = "%%%d = xor %s %%%d, true";
-char* const g_opcode_signed_negative             = "%%%d = mul %s %%%d, -1";
-char* const g_opcode_signed_mul                  = "%%%d = mul %s %%%d, %%%d";
-char* const g_opcode_signed_divide               = "%%%d = sdiv %s %%%d, %%%d";
-char* const g_opcode_signed_remainder            = "%%%d = srem %s %%%d, %%%d";
-char* const g_opcode_signed_add                  = "%%%d = add %s %%%d, %%%d";
-char* const g_opcode_signed_sub                  = "%%%d = sub %s %%%d, %%%d";
-char* const g_opcode_signed_equal_to             = "%%%d = icmp eq %s %%%d, %%%d";
-char* const g_opcode_signed_not_equal_to         = "%%%d = icmp ne %s %%%d, %%%d";
-char* const g_opcode_signed_less                 = "%%%d = icmp slt %s %%%d, %%%d";
-char* const g_opcode_signed_less_equal_to        = "%%%d = icmp sle %s %%%d, %%%d";
-char* const g_opcode_signed_greater              = "%%%d = icmp sgt %s %%%d, %%%d";
-char* const g_opcode_signed_greater_equal_to     = "%%%d = icmp sge %s %%%d, %%%d";
-char* const g_opcode_signed_bitwise_or           = "%%%d = or %s %%%d, %%%d";
-char* const g_opcode_signed_bitwise_not          = "%%%d = xor %s %%%d, -1";
-char* const g_opcode_signed_bitwise_xor          = "%%%d = xor %s %%%d, %%%d";
-char* const g_opcode_signed_bitwise_and          = "%%%d = and %s %%%d, %%%d";
-char* const g_opcode_signed_shift_left           = "%%%d = shl %s %%%d, %%%d";
-char* const g_opcode_signed_shift_rite           = "%%%d = ashr %s %%%d, %%%d";
-char* const g_opcode_unsigned_not                = "%%%d = xor %s %%%d, true";
-char* const g_opcode_unsigned_negative           = "%%%d = mul %s %%%d, -1";
-char* const g_opcode_unsigned_mul                = "%%%d = mul %s %%%d, %%%d";
-char* const g_opcode_unsigned_divide             = "%%%d = udiv %s %%%d, %%%d";
-char* const g_opcode_unsigned_remainder          = "%%%d = urem %s %%%d, %%%d";
-char* const g_opcode_unsigned_add                = "%%%d = add %s %%%d, %%%d";
-char* const g_opcode_unsigned_sub                = "%%%d = sub %s %%%d, %%%d";
-char* const g_opcode_unsigned_equal_to           = "%%%d = icmp eq %s %%%d, %%%d";
-char* const g_opcode_unsigned_not_equal_to       = "%%%d = icmp ne %s %%%d, %%%d";
-char* const g_opcode_unsigned_less               = "%%%d = icmp ult %s %%%d, %%%d";
-char* const g_opcode_unsigned_less_equal_to      = "%%%d = icmp ule %s %%%d, %%%d";
-char* const g_opcode_unsigned_greater            = "%%%d = icmp ugt %s %%%d, %%%d";
-char* const g_opcode_unsigned_greater_equal_to   = "%%%d = icmp uge %s %%%d, %%%d";
-char* const g_opcode_unsigned_bitwise_or         = "%%%d = or %s %%%d, %%%d";
-char* const g_opcode_unsigned_bitwise_not        = "%%%d = xor %s %%%d, -1";
-char* const g_opcode_unsigned_bitwise_xor        = "%%%d = xor %s %%%d, %%%d";
-char* const g_opcode_unsigned_bitwise_and        = "%%%d = and %s %%%d, %%%d";
-char* const g_opcode_unsigned_shift_left         = "%%%d = shl %s %%%d, %%%d";
-char* const g_opcode_unsigned_shift_rite         = "%%%d = lshr %s %%%d, %%%d";
-char* const g_opcode_alloca                      = "%%%d = alloca %s";
-char* const g_opcode_flat_gep                    = "%%%d = getelementptr ptr, ptr %%%d, %s %d";
-char* const g_opcode_gep                         = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
-char* const g_opcode_sizeof                      = "%%%d = getelementptr %s, ptr null, i64 1";
-char* const g_opcode_type_field                  = "%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d";
-char* const g_opcode_type_field_extract          = "%%%d = extractvalue %s %%%d, %d";
-char* const g_opcode_ptr_to_int                  = "%%%d = ptrtoint ptr %%%d to %s";
-char* const g_opcode_int_to_ptr                  = "%%%d = inttoptr %s %%%d to ptr";
-char* const g_opcode_load_double                 = "%%%d = fadd %s %s, 0.0";
-char* const g_opcode_load_signed                 = "%%%d = add %s %s, 0";
-char* const g_opcode_load_character              = "%%%d = add %s %d, 0";
-char* const g_opcode_ret                         = "ret %s %%%d";
-char* const g_opcode_ret_void                    = "ret %s";
-char* const g_opcode_define                      = "define %s @%s";
-char* const g_opcode_declare                     = "declare %s @%s";
-char* const g_opcode_load                        = "%%%d = load %s, ptr %%%d";
-char* const g_opcode_store_direct                = "store %s %s, ptr %%%d";
-char* const g_opcode_store_function              = "store %s @%s, ptr %%%d";
-char* const g_opcode_store                       = "store %s %%%d, ptr %%%d";
-char* const g_opcode_zero_init                   = "store %s zeroinitializer, ptr %%%d";
-char* const g_opcode_type_slot                   = "%s %%%d";
-char* const g_opcode_call                        = "%%%d = call %s @%s";
-char* const g_opcode_void_call                   = "call %s @%s";
-char* const g_opcode_variadic_call               = "%%%d = call %s (...) @%s";
-char* const g_opcode_variadic_void_call          = "call %s (...) @%s";
-char* const g_opcode_indirect_call               = "%%%d = call %s %%%d";
-char* const g_opcode_indirect_void_call          = "call %s %%%d";
-char* const g_opcode_variadic_indirect_call      = "%%%d = call %s (...) %%%d";
-char* const g_opcode_variadic_indirect_void_call = "call %s (...) %%%d";
-char* const g_opcode_entry                       = "entry:";
-char* const g_opcode_zero_extend                 = "%%%d = zext %s %%%d to %s";
-char* const g_opcode_signed_extend               = "%%%d = sext %s %%%d to %s";
-char* const g_opcode_trunc                       = "%%%d = trunc %s %%%d to %s";
-char* const g_opcode_malloc                      = "%%%d = call ptr @malloc(i64 %%%d)";
-char* const g_opcode_free                        = "call void @free(ptr %%%d)";
-char* const g_opcode_gep_string                  = "%%%d = getelementptr [%d x i8], ptr @%d, i64 0";
-char* const g_opcode_string_const                = "@%d = private constant [%d x i8] c\"%s\"";
-char* const g_opcode_increment                   = "%%%d = add %s %%%d, 1";
-char* const g_opcode_decrement                   = "%%%d = sub %s %%%d, 1";
-char* const g_opcode_floating_negative           = "%%%d = fmul %s %%%d, -1.0";
-char* const g_opcode_floating_increment          = "%%%d = fadd %s %%%d, 1.0";
-char* const g_opcode_floating_decrement          = "%%%d = fsub %s %%%d, 1.0";
-char* const g_opcode_floating_mul                = "%%%d = fmul %s %%%d, %%%d";
-char* const g_opcode_floating_div                = "%%%d = fdiv %s %%%d, %%%d";
-char* const g_opcode_floating_add                = "%%%d = fadd %s %%%d, %%%d";
-char* const g_opcode_floating_sub                = "%%%d = fsub %s %%%d, %%%d";
-char* const g_opcode_floating_equal_to           = "%%%d = fcmp oeq %s %%%d, %%%d";
-char* const g_opcode_floating_not_equal_to       = "%%%d = fcmp one %s %%%d, %%%d";
-char* const g_opcode_floating_less               = "%%%d = fcmp olt %s %%%d, %%%d";
-char* const g_opcode_floating_less_equal_to      = "%%%d = fcmp ole %s %%%d, %%%d";
-char* const g_opcode_floating_greater            = "%%%d = fcmp ogt %s %%%d, %%%d";
-char* const g_opcode_floating_greater_equal_to   = "%%%d = fcmp oge %s %%%d, %%%d";
-char* const g_opcode_float_to_signed             = "%%%d = fptosi %s %%%d to %s";
-char* const g_opcode_float_to_unsigned           = "%%%d = fptoui %s %%%d to %s";
-char* const g_opcode_signed_to_floating          = "%%%d = sitofp %s %%%d to %s";
-char* const g_opcode_unsigned_to_floating        = "%%%d = uitofp %s %%%d to %s";
-char* const g_opcode_floating_trunc              = "%%%d = fptrunc %s %%%d to %s";
-char* const g_opcode_floating_extend             = "%%%d = fpext %s %%%d to %s";
-char* const g_opcode_signed_to_boolean           = "%%%d = trunc %s %%%d to %s";
-char* const g_opcode_unsigned_to_boolean         = "%%%d = trunc %s %%%d to %s";
-char* const g_opcode_boolean_to_signed           = "%%%d = zext %s %%%d to %s";
-char* const g_opcode_boolean_to_unsigned         = "%%%d = zext %s %%%d to %s";
+static char* const g_escape_alert                       = "\a";
+static char* const g_escape_backspace                   = "\b";
+static char* const g_escape_form_feed                   = "\f";
+static char* const g_escape_newline                     = "\n";
+static char* const g_escape_carriage_return             = "\r";
+static char* const g_escape_tab                         = "\t";
+static char* const g_escape_vertical_tab                = "\v";
+static char* const g_escape_backslash                   = "\\";
+static char* const g_escape_apostrophe                  = "\'";
+static char* const g_escape_quotation                   = "\"";
+static char* const g_escape_question_mark               = "\?";
+static char* const g_escape_null                        = "\0";
+static char* const g_llvm_escape_alert                  = "\\07";
+static char* const g_llvm_escape_backspace              = "\\08";
+static char* const g_llvm_escape_tab                    = "\\09";
+static char* const g_llvm_escape_newline                = "\\0A";
+static char* const g_llvm_escape_vertical_tab           = "\\0B";
+static char* const g_llvm_escape_form_feed              = "\\0C";
+static char* const g_llvm_escape_carriage_return        = "\\0D";
+static char* const g_llvm_escape_quotation              = "\\22";
+static char* const g_llvm_escape_null                   = "\\00";
+static char* const g_llvm_escape_backslash              = "\\5C";
+static char* const g_llvm_escape_question_mark          = "\\3F";
+static char* const g_apostrophe                         = "'";
+static char* const g_str                                = "%s";
+static char* const g_red                                = "\033[1;31m";
+static char* const g_green                              = "\033[1;32m";
+static char* const g_white                              = "\033[1;37m";
+static char* const g_normal                             = "\033[0m";
+static char* const g_underscore                         = "_";
+static char* const g_left_square                        = "[";
+static char* const g_rite_square                        = "]";
+static char* const g_left_curl                          = "{";
+static char* const g_rite_curl                          = "}";
+static char* const g_left_paren                         = "(";
+static char* const g_rite_paren                         = ")";
+static char* const g_semicolon                          = ";";
+static char* const g_space                              = " ";
+static char* const g_lower_begin                        = "a";
+static char* const g_lower_end                          = "z";
+static char* const g_upper_begin                        = "A";
+static char* const g_upper_end                          = "Z";
+static char* const g_digit_begin                        = "0";
+static char* const g_digit_end                          = "9";
+static char* const g_ellipses                           = "...";
+static char* const g_not                                = "!";
+static char* const g_type_cast                          = "<>";
+static char* const g_function                           = "()";
+static char* const g_index                              = "[]";
+static char* const g_dot                                = ".";
+static char* const g_add                                = "+";
+static char* const g_subtract                           = "-";
+static char* const g_divide                             = "/";
+static char* const g_mod                                = "%";
+static char* const g_multiply                           = "*";
+static char* const g_equals                             = "=";
+static char* const g_equal_to                           = "==";
+static char* const g_not_equal_to                       = "!=";
+static char* const g_less_equal_to                      = "<=";
+static char* const g_less                               = "<";
+static char* const g_greater_equal_to                   = ">=";
+static char* const g_greater                            = ">";
+static char* const g_shift_rite                         = ">>";
+static char* const g_shift_left                         = "<<";
+static char* const g_increment                          = "++";
+static char* const g_decrement                          = "--";
+static char* const g_bitwise_or                         = "|";
+static char* const g_bitwise_xor                        = "^";
+static char* const g_bitwise_and                        = "&";
+static char* const g_bitwise_not                        = "~";
+static char* const g_comma                              = ",";
+static char* const g_ampersand                          = "&";
+static char* const g_percent                            = "%";
+static char* const g_hash                               = "#";
+static char* const g_empty                              = "";
+static char* const g_colon                              = ":";
+static char* const g_question_mark                      = "?";
+static char* const g_dollar                             = "$";
+static char* const g_at                                 = "@";
+static char* const g_void                               = "void";
+static char* const g_i1                                 = "i1";
+static char* const g_i8                                 = "i8";
+static char* const g_i16                                = "i16";
+static char* const g_i32                                = "i32";
+static char* const g_i64                                = "i64";
+static char* const g_u1                                 = "u1";
+static char* const g_u8                                 = "u8";
+static char* const g_u16                                = "u16";
+static char* const g_u32                                = "u32";
+static char* const g_u64                                = "u64";
+static char* const g_double                             = "double";
+static char* const g_float                              = "float";
+static char* const g_ret                                = "ret";
+static char* const g_ptr                                = "ptr";
+static char* const g_if                                 = "if";
+static char* const g_else                               = "else";
+static char* const g_while                              = "while";
+static char* const g_break                              = "break";
+static char* const g_continue                           = "continue";
+static char* const g_type                               = "type";
+static char* const g_defer                              = "defer";
+static char* const g_new                                = "new";
+static char* const g_del                                = "del";
+static char* const g_sizeof                             = "sizeof";
+static char* const g_include                            = "include";
+static char* const g_opcode_type_def                    = "%%%s = type";
+static char* const g_opcode_label                       = "L%d:";
+static char* const g_opcode_branch_if_else              = "br i1 %%%d, label %%L%d, label %%L%d";
+static char* const g_opcode_branch                      = "br label %%L%d";
+static char* const g_opcode_target                      = "target triple = \"x86_64-pc-linux-gnu\"";
+static char* const g_opcode_signed_not                  = "%%%d = xor %s %%%d, true";
+static char* const g_opcode_signed_negative             = "%%%d = mul %s %%%d, -1";
+static char* const g_opcode_signed_mul                  = "%%%d = mul %s %%%d, %%%d";
+static char* const g_opcode_signed_divide               = "%%%d = sdiv %s %%%d, %%%d";
+static char* const g_opcode_signed_remainder            = "%%%d = srem %s %%%d, %%%d";
+static char* const g_opcode_signed_add                  = "%%%d = add %s %%%d, %%%d";
+static char* const g_opcode_signed_sub                  = "%%%d = sub %s %%%d, %%%d";
+static char* const g_opcode_signed_equal_to             = "%%%d = icmp eq %s %%%d, %%%d";
+static char* const g_opcode_signed_not_equal_to         = "%%%d = icmp ne %s %%%d, %%%d";
+static char* const g_opcode_signed_less                 = "%%%d = icmp slt %s %%%d, %%%d";
+static char* const g_opcode_signed_less_equal_to        = "%%%d = icmp sle %s %%%d, %%%d";
+static char* const g_opcode_signed_greater              = "%%%d = icmp sgt %s %%%d, %%%d";
+static char* const g_opcode_signed_greater_equal_to     = "%%%d = icmp sge %s %%%d, %%%d";
+static char* const g_opcode_signed_bitwise_or           = "%%%d = or %s %%%d, %%%d";
+static char* const g_opcode_signed_bitwise_not          = "%%%d = xor %s %%%d, -1";
+static char* const g_opcode_signed_bitwise_xor          = "%%%d = xor %s %%%d, %%%d";
+static char* const g_opcode_signed_bitwise_and          = "%%%d = and %s %%%d, %%%d";
+static char* const g_opcode_signed_shift_left           = "%%%d = shl %s %%%d, %%%d";
+static char* const g_opcode_signed_shift_rite           = "%%%d = ashr %s %%%d, %%%d";
+static char* const g_opcode_unsigned_mul                = "%%%d = mul %s %%%d, %%%d";
+static char* const g_opcode_unsigned_divide             = "%%%d = udiv %s %%%d, %%%d";
+static char* const g_opcode_unsigned_remainder          = "%%%d = urem %s %%%d, %%%d";
+static char* const g_opcode_unsigned_add                = "%%%d = add %s %%%d, %%%d";
+static char* const g_opcode_unsigned_sub                = "%%%d = sub %s %%%d, %%%d";
+static char* const g_opcode_unsigned_equal_to           = "%%%d = icmp eq %s %%%d, %%%d";
+static char* const g_opcode_unsigned_not_equal_to       = "%%%d = icmp ne %s %%%d, %%%d";
+static char* const g_opcode_unsigned_less               = "%%%d = icmp ult %s %%%d, %%%d";
+static char* const g_opcode_unsigned_less_equal_to      = "%%%d = icmp ule %s %%%d, %%%d";
+static char* const g_opcode_unsigned_greater            = "%%%d = icmp ugt %s %%%d, %%%d";
+static char* const g_opcode_unsigned_greater_equal_to   = "%%%d = icmp uge %s %%%d, %%%d";
+static char* const g_opcode_unsigned_bitwise_or         = "%%%d = or %s %%%d, %%%d";
+static char* const g_opcode_unsigned_bitwise_xor        = "%%%d = xor %s %%%d, %%%d";
+static char* const g_opcode_unsigned_bitwise_and        = "%%%d = and %s %%%d, %%%d";
+static char* const g_opcode_unsigned_shift_left         = "%%%d = shl %s %%%d, %%%d";
+static char* const g_opcode_unsigned_shift_rite         = "%%%d = lshr %s %%%d, %%%d";
+static char* const g_opcode_alloca                      = "%%%d = alloca %s";
+static char* const g_opcode_flat_gep                    = "%%%d = getelementptr ptr, ptr %%%d, %s %d";
+static char* const g_opcode_gep                         = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
+static char* const g_opcode_sizeof                      = "%%%d = getelementptr %s, ptr null, i64 1";
+static char* const g_opcode_type_field                  = "%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d";
+static char* const g_opcode_type_field_extract          = "%%%d = extractvalue %s %%%d, %d";
+static char* const g_opcode_ptr_to_int                  = "%%%d = ptrtoint ptr %%%d to %s";
+static char* const g_opcode_int_to_ptr                  = "%%%d = inttoptr %s %%%d to ptr";
+static char* const g_opcode_load_double                 = "%%%d = fadd %s %s, 0.0";
+static char* const g_opcode_load_signed                 = "%%%d = add %s %s, 0";
+static char* const g_opcode_load_character              = "%%%d = add %s %d, 0";
+static char* const g_opcode_ret                         = "ret %s %%%d";
+static char* const g_opcode_ret_void                    = "ret %s";
+static char* const g_opcode_define                      = "define %s @%s";
+static char* const g_opcode_declare                     = "declare %s @%s";
+static char* const g_opcode_load                        = "%%%d = load %s, ptr %%%d";
+static char* const g_opcode_store_direct                = "store %s %s, ptr %%%d";
+static char* const g_opcode_store_function              = "store %s @%s, ptr %%%d";
+static char* const g_opcode_store                       = "store %s %%%d, ptr %%%d";
+static char* const g_opcode_zero_init                   = "store %s zeroinitializer, ptr %%%d";
+static char* const g_opcode_type_slot                   = "%s %%%d";
+static char* const g_opcode_call                        = "%%%d = call %s @%s";
+static char* const g_opcode_void_call                   = "call %s @%s";
+static char* const g_opcode_variadic_call               = "%%%d = call %s (...) @%s";
+static char* const g_opcode_variadic_void_call          = "call %s (...) @%s";
+static char* const g_opcode_indirect_call               = "%%%d = call %s %%%d";
+static char* const g_opcode_indirect_void_call          = "call %s %%%d";
+static char* const g_opcode_variadic_indirect_call      = "%%%d = call %s (...) %%%d";
+static char* const g_opcode_variadic_indirect_void_call = "call %s (...) %%%d";
+static char* const g_opcode_entry                       = "entry:";
+static char* const g_opcode_zero_extend                 = "%%%d = zext %s %%%d to %s";
+static char* const g_opcode_signed_extend               = "%%%d = sext %s %%%d to %s";
+static char* const g_opcode_trunc                       = "%%%d = trunc %s %%%d to %s";
+static char* const g_opcode_malloc                      = "%%%d = call ptr @malloc(i64 %%%d)";
+static char* const g_opcode_free                        = "call void @free(ptr %%%d)";
+static char* const g_opcode_gep_string                  = "%%%d = getelementptr [%d x i8], ptr @%d, i64 0";
+static char* const g_opcode_string_const                = "@%d = private constant [%d x i8] c\"%s\"";
+static char* const g_opcode_increment                   = "%%%d = add %s %%%d, 1";
+static char* const g_opcode_decrement                   = "%%%d = sub %s %%%d, 1";
+static char* const g_opcode_floating_negative           = "%%%d = fmul %s %%%d, -1.0";
+static char* const g_opcode_floating_increment          = "%%%d = fadd %s %%%d, 1.0";
+static char* const g_opcode_floating_decrement          = "%%%d = fsub %s %%%d, 1.0";
+static char* const g_opcode_floating_mul                = "%%%d = fmul %s %%%d, %%%d";
+static char* const g_opcode_floating_div                = "%%%d = fdiv %s %%%d, %%%d";
+static char* const g_opcode_floating_add                = "%%%d = fadd %s %%%d, %%%d";
+static char* const g_opcode_floating_sub                = "%%%d = fsub %s %%%d, %%%d";
+static char* const g_opcode_floating_equal_to           = "%%%d = fcmp oeq %s %%%d, %%%d";
+static char* const g_opcode_floating_not_equal_to       = "%%%d = fcmp one %s %%%d, %%%d";
+static char* const g_opcode_floating_less               = "%%%d = fcmp olt %s %%%d, %%%d";
+static char* const g_opcode_floating_less_equal_to      = "%%%d = fcmp ole %s %%%d, %%%d";
+static char* const g_opcode_floating_greater            = "%%%d = fcmp ogt %s %%%d, %%%d";
+static char* const g_opcode_floating_greater_equal_to   = "%%%d = fcmp oge %s %%%d, %%%d";
+static char* const g_opcode_float_to_signed             = "%%%d = fptosi %s %%%d to %s";
+static char* const g_opcode_float_to_unsigned           = "%%%d = fptoui %s %%%d to %s";
+static char* const g_opcode_signed_to_floating          = "%%%d = sitofp %s %%%d to %s";
+static char* const g_opcode_unsigned_to_floating        = "%%%d = uitofp %s %%%d to %s";
+static char* const g_opcode_floating_trunc              = "%%%d = fptrunc %s %%%d to %s";
+static char* const g_opcode_floating_extend             = "%%%d = fpext %s %%%d to %s";
+static char* const g_opcode_signed_to_boolean           = "%%%d = trunc %s %%%d to %s";
+static char* const g_opcode_unsigned_to_boolean         = "%%%d = trunc %s %%%d to %s";
+static char* const g_opcode_boolean_to_signed           = "%%%d = zext %s %%%d to %s";
+static char* const g_opcode_boolean_to_unsigned         = "%%%d = zext %s %%%d to %s";
 
-char* g_operator_chars[] = {
+static char* g_operator_chars[] = {
     g_dot,
     g_not,
     g_add,
@@ -383,7 +379,7 @@ char* g_operator_chars[] = {
     nullptr
 };
 
-char* g_builtin_type_keywords[] = {
+static char* g_builtin_type_keywords[] = {
     g_void,
     g_i1,
     g_i8,
@@ -401,7 +397,7 @@ char* g_builtin_type_keywords[] = {
     nullptr
 };
 
-char* g_signed[] = {
+static char* g_signed[] = {
     g_i8,
     g_i16,
     g_i32,
@@ -409,7 +405,7 @@ char* g_signed[] = {
     nullptr
 };
 
-char* g_unsigned[] = {
+static char* g_unsigned[] = {
     g_u8,
     g_u16,
     g_u32,
@@ -417,19 +413,19 @@ char* g_unsigned[] = {
     nullptr
 };
 
-char* g_floating[] = {
+static char* g_floating[] = {
     g_double,
     g_float,
     nullptr
 };
 
-char* g_boolean[] = {
+static char* g_boolean[] = {
     g_i1,
     g_u1,
     nullptr
 };
 
-char* g_control_keywords[] = {
+static char* g_control_keywords[] = {
     g_ret,
     g_if,
     g_else,
@@ -440,7 +436,7 @@ char* g_control_keywords[] = {
     nullptr
 };
 
-char* g_construct_keywords[] = {
+static char* g_construct_keywords[] = {
     g_new,
     g_del,
     g_sizeof,
@@ -448,7 +444,7 @@ char* g_construct_keywords[] = {
     nullptr
 };
 
-char* g_operators_by_precedence[g_precedence_count][g_operator_precedences] = {
+static char* g_operators_by_precedence[g_precedence_count][g_operator_precedences] = {
     [ g_precedence_arithmetic_0 ]  = { g_multiply, g_divide, g_mod                            },
     [ g_precedence_arithmetic_1 ]  = { g_add, g_subtract                                      },
     [ g_precedence_shift        ]  = { g_shift_left, g_shift_rite                             },
@@ -460,23 +456,22 @@ char* g_operators_by_precedence[g_precedence_count][g_operator_precedences] = {
     [ g_precedence_assignment   ]  = { g_equals                                               },
 };
 
-code_t* get_code()
+static code_t* get_code()
 {
     return &g_file.code[g_file.module];
 }
 
-void code_rewind(int by)
+static void code_rewind(int by)
 {
     auto code = get_code();
     code->at -= by;
 }
 
 
-/* enable to type check the quit variadic */
 #if 0
 #define quit(...) printf(__VA_ARGS__)
 #else
-[[noreturn]] void quit(char* format, ...)
+[[noreturn]] static void quit(char* format, ...)
 {
     auto out = stderr;
     auto args = (va_list) {};
@@ -490,7 +485,7 @@ void code_rewind(int by)
 }
 #endif
 
-void emit(char* format, ...)
+static void emit(char* format, ...)
 {
     auto out = stdout;
     auto args = (va_list) {};
@@ -504,7 +499,7 @@ void emit(char* format, ...)
     fprintf(out, "%s", g_escape_newline);
 }
 
-void str_append(str_t* str, char* chars)
+static void str_append(str_t* str, char* chars)
 {
     while(*chars)
     {
@@ -513,19 +508,19 @@ void str_append(str_t* str, char* chars)
     }
 }
 
-str_t str_init(char* chars)
+static str_t str_init(char* chars)
 {
     auto str = (str_t) {};
     str_append(&str, chars);
     return str;
 }
 
-bool str_equal(char* str, char* other)
+static bool str_equal(char* str, char* other)
 {
     return strcmp(str, other) == 0;
 }
 
-bool str_in(str_t str, char** array)
+static bool str_in(str_t str, char** array)
 {
     while(*array)
     {
@@ -538,7 +533,7 @@ bool str_in(str_t str, char** array)
     return false;
 }
 
-str_t* str_in_list(str_t str, str_list_t* list)
+static str_t* str_in_list(str_t str, str_list_t* list)
 {
     for(auto i = 0; i < list->size; i++)
     {
@@ -551,12 +546,12 @@ str_t* str_in_list(str_t str, str_list_t* list)
     return nullptr;
 }
 
-char** get_operators(precedence_t precedence)
+static char** get_operators(precedence_t precedence)
 {
     return g_operators_by_precedence[precedence];
 }
 
-bool is_operator_char(char c)
+static bool is_operator_char(char c)
 {
     for(auto operator = g_operator_chars; *operator; operator++)
     {
@@ -568,61 +563,61 @@ bool is_operator_char(char c)
     return false;
 }
 
-bool is_relational(str_t operator)
+static bool is_relational(str_t operator)
 {
     return str_in(operator, get_operators(g_precedence_relational_0))
         || str_in(operator, get_operators(g_precedence_relational_1));
 }
 
-bool is_increment_decrement(str_t operator)
+static bool is_increment_decrement(str_t operator)
 {
     return str_equal(operator.begin, g_increment)
         || str_equal(operator.begin, g_decrement);
 }
 
-bool is_digit_char(char c)
+static bool is_digit_char(char c)
 {
     return c >= *g_digit_begin
         && c <= *g_digit_end;
 }
 
-bool is_numeric_char(char c)
+static bool is_numeric_char(char c)
 {
     return is_digit_char(c)
         || c == *g_dot;
 }
 
-bool is_not_semicolon(char c)
+static bool is_not_semicolon(char c)
 {
     return c != *g_semicolon;
 }
 
-bool is_lower_char(char c)
+static bool is_lower_char(char c)
 {
     return c >= *g_lower_begin
         && c <= *g_lower_end;
 }
 
-bool is_upper_char(char c)
+static bool is_upper_char(char c)
 {
     return c >= *g_upper_begin
         && c <= *g_upper_end;
 }
 
-bool is_alpha_char(char c)
+static bool is_alpha_char(char c)
 {
     return is_lower_char(c)
         || is_upper_char(c);
 }
 
-bool is_alnum_char(char c)
+static bool is_alnum_char(char c)
 {
     return is_alpha_char(c)
         || is_digit_char(c)
         || c == *g_underscore;
 }
 
-bool is_escape_char(char c)
+static bool is_escape_char(char c)
 {
     return c == *g_escape_alert
         || c == *g_escape_backspace
@@ -638,14 +633,14 @@ bool is_escape_char(char c)
         || c == *g_escape_null;
 }
 
-bool is_space_char(char c)
+static bool is_space_char(char c)
 {
     return c == *g_space
         || c == *g_escape_newline
         || c == *g_escape_tab;
 }
 
-bool is_every_other_char(char c)
+static bool is_every_other_char(char c)
 {
     return c == *g_dot
         || c == *g_divide
@@ -675,7 +670,7 @@ bool is_every_other_char(char c)
         || c == *g_rite_curl;
 }
 
-bool is_string_char(char c)
+static bool is_string_char(char c)
 {
     return is_alnum_char(c)
         || is_escape_char(c)
@@ -683,17 +678,17 @@ bool is_string_char(char c)
         || is_every_other_char(c);
 }
 
-bool is_assignment_operator(str_t operator)
+static bool is_assignment_operator(str_t operator)
 {
     return str_in(operator, get_operators(g_precedence_assignment));
 }
 
-bool is_builtin_type_name(str_t type_name)
+static bool is_builtin_type_name(str_t type_name)
 {
     return str_in(type_name, g_builtin_type_keywords);
 }
 
-bool is_aggregate_type_name(str_t type_name)
+static bool is_aggregate_type_name(str_t type_name)
 {
     for(auto i = 0; i < g_file.aggregates.size; i++)
     {
@@ -705,389 +700,390 @@ bool is_aggregate_type_name(str_t type_name)
     return false;
 }
 
-bool is_regular_pointer(type_t type)
+static bool is_regular_pointer(type_t type)
 {
     return type.stars > 0;
 }
 
-bool is_generic_pointer(type_t type)
+static bool is_generic_pointer(type_t type)
 {
     return str_equal(type.name.begin, g_ptr);
 }
 
-bool is_function_pointer(type_t type)
+static bool is_function_pointer(type_t type)
 {
     return type.is_function_pointer;
 }
 
-bool is_pointer(type_t type)
+static bool is_pointer(type_t type)
 {
     return is_regular_pointer(type)
         || is_generic_pointer(type)
         || is_function_pointer(type);
 }
 
-bool is_not_pointer(type_t type)
+static bool is_not_pointer(type_t type)
 {
     return !is_pointer(type);
 }
 
-bool is_function(type_t type)
+static bool is_function(type_t type)
 {
     return type.is_function;
 }
 
-bool is_callable(type_t type)
+static bool is_callable(type_t type)
 {
     return is_function_pointer(type) || is_function(type);
 }
 
-bool is_variadic(type_t type)
+static bool is_variadic(type_t type)
 {
     return type.is_variadic;
 }
 
-bool is_variadic_decl(str_t operator)
+static bool is_variadic_decl(str_t operator)
 {
     return str_equal(operator.begin, g_ellipses);
 }
 
-bool is_aggregate(type_t type)
+static bool is_aggregate(type_t type)
 {
     return is_not_pointer(type) && is_aggregate_type_name(type.name);
 }
 
-bool is_boolean(type_t type)
+static bool is_boolean(type_t type)
 {
     return is_not_pointer(type) && str_in(type.name, g_boolean);
 }
 
-bool is_floating(type_t type)
+static bool is_floating(type_t type)
 {
     return is_not_pointer(type) && str_in(type.name, g_floating);
 }
 
-bool is_size(type_t type)
+static bool is_size(type_t type)
 {
     return is_not_pointer(type) && (str_equal(type.name.begin, g_i64) || str_equal(type.name.begin, g_u64));
 }
 
-bool is_signed(type_t type)
+static bool is_signed(type_t type)
 {
     return is_not_pointer(type) && str_in(type.name, g_signed);
 }
 
-bool is_unsigned(type_t type)
+static bool is_unsigned(type_t type)
 {
     return is_not_pointer(type) && str_in(type.name, g_unsigned);
 }
 
-bool is_integral(type_t type)
+static bool is_integral(type_t type)
 {
     return is_signed(type) || is_unsigned(type);
 }
 
-bool is_numeric(type_t type)
+static bool is_numeric(type_t type)
 {
     return is_integral(type) || is_floating(type);
 }
 
-bool is_member_init(type_t type)
+static bool is_member_init(type_t type)
 {
     return is_integral(type) || is_floating(type) || is_boolean(type);
 }
 
-bool is_control_keyword(str_t keyword)
+static bool is_control_keyword(str_t keyword)
 {
     return str_in(keyword, g_control_keywords);
 }
 
-bool is_construct_keyword(str_t keyword)
+static bool is_construct_keyword(str_t keyword)
 {
     return str_in(keyword, g_construct_keywords);
 }
 
-bool is_type_name(str_t type_name)
+static bool is_type_name(str_t type_name)
 {
     return is_builtin_type_name(type_name)
         || is_aggregate_type_name(type_name);
 }
 
-bool is_reserved_keyword(str_t keyword)
+static bool is_reserved_keyword(str_t keyword)
 {
     return is_type_name(keyword)
         || is_control_keyword(keyword)
         || is_construct_keyword(keyword);
 }
 
-bool is_lvalue(value_t value)
+static bool is_lvalue(value_t value)
 {
     return value.is_lvalue;
 }
 
-bool is_rvalue(value_t value)
+static bool is_rvalue(value_t value)
 {
     return !is_lvalue(value);
 }
 
-bool must_check_args(value_t function)
+static bool must_check_args(value_t function)
 {
     return function.type.must_check_args;
 }
 
-bool is_type_def_keyword(str_t keyword)
+static bool is_type_def_keyword(str_t keyword)
 {
     return str_equal(keyword.begin, g_type);
 }
 
-bool is_include_keyword(str_t keyword)
+static bool is_include_keyword(str_t keyword)
 {
     return str_equal(keyword.begin, g_include);
 }
 
-bool is_llvm_type_signed(type_t type)
+static bool is_llvm_type_signed(type_t type)
 {
     return is_unsigned(type) || is_boolean(type);
 }
 
-bool is_ret(str_t keyword)
+static bool is_ret(str_t keyword)
 {
     return str_equal(keyword.begin, g_ret);
 }
 
-bool is_void(str_t keyword)
+static bool is_void(str_t keyword)
 {
     return str_equal(keyword.begin, g_void);
 }
 
-bool is_continue(str_t keyword)
+static bool is_continue(str_t keyword)
 {
     return str_equal(keyword.begin, g_continue);
 }
 
-bool is_break(str_t keyword)
+static bool is_break(str_t keyword)
 {
     return str_equal(keyword.begin, g_break);
 }
 
-bool is_defer(str_t keyword)
+static bool is_defer(str_t keyword)
 {
     return str_equal(keyword.begin, g_defer);
 }
 
-bool is_if(str_t keyword)
+static bool is_if(str_t keyword)
 {
     return str_equal(keyword.begin, g_if);
 }
 
-bool is_else(str_t keyword)
+static bool is_else(str_t keyword)
 {
     return str_equal(keyword.begin, g_else);
 }
 
-bool is_while(str_t keyword)
+static bool is_while(str_t keyword)
 {
     return str_equal(keyword.begin, g_while);
 }
 
-bool is_multiply(str_t operator)
+static bool is_multiply(str_t operator)
 {
     return str_equal(operator.begin, g_multiply);
 }
 
-bool is_divide(str_t operator)
+static bool is_divide(str_t operator)
 {
     return str_equal(operator.begin, g_divide);
 }
 
-bool is_mod(str_t operator)
+static bool is_mod(str_t operator)
 {
     return str_equal(operator.begin, g_mod);
 }
 
-bool is_add(str_t operator)
+static bool is_add(str_t operator)
 {
     return str_equal(operator.begin, g_add);
 }
 
-bool is_subtract(str_t operator)
+static bool is_subtract(str_t operator)
 {
     return str_equal(operator.begin, g_subtract);
 }
 
-bool is_equal_to(str_t operator)
+static bool is_equal_to(str_t operator)
 {
     return str_equal(operator.begin, g_equal_to);
 }
 
-bool is_not_equal_to(str_t operator)
+static bool is_not_equal_to(str_t operator)
 {
     return str_equal(operator.begin, g_not_equal_to);
 }
 
-bool is_less(str_t operator)
+static bool is_less(str_t operator)
 {
     return str_equal(operator.begin, g_less);
 }
 
-bool is_less_equal_to(str_t operator)
+static bool is_less_equal_to(str_t operator)
 {
     return str_equal(operator.begin, g_less_equal_to);
 }
 
-bool is_greater(str_t operator)
+static bool is_greater(str_t operator)
 {
     return str_equal(operator.begin, g_greater);
 }
 
-bool is_greater_equal_to(str_t operator)
+static bool is_greater_equal_to(str_t operator)
 {
     return str_equal(operator.begin, g_greater_equal_to);
 }
 
-bool is_bitwise_and(str_t operator)
+static bool is_bitwise_and(str_t operator)
 {
     return str_equal(operator.begin, g_bitwise_and);
 }
 
-bool is_bitwise_or(str_t operator)
+static bool is_bitwise_or(str_t operator)
 {
     return str_equal(operator.begin, g_bitwise_or);
 }
 
-bool is_bitwise_xor(str_t operator)
+static bool is_bitwise_xor(str_t operator)
 {
     return str_equal(operator.begin, g_bitwise_xor);
 }
 
-bool is_shift_left(str_t operator)
+static bool is_shift_left(str_t operator)
 {
     return str_equal(operator.begin, g_shift_left);
 }
 
-bool is_shift_rite(str_t operator)
+static bool is_shift_rite(str_t operator)
 {
     return str_equal(operator.begin, g_shift_rite);
 }
 
-bool is_new(str_t keyword)
+static bool is_new(str_t keyword)
 {
     return str_equal(keyword.begin, g_new);
 }
 
-bool is_sizeof(str_t keyword)
+static bool is_sizeof(str_t keyword)
 {
     return str_equal(keyword.begin, g_sizeof);
 }
 
-bool is_del(str_t keyword)
+static bool is_del(str_t keyword)
 {
     return str_equal(keyword.begin, g_del);
 }
 
-bool is_character_load(char c)
+static bool is_character_load(char c)
 {
     return c == *g_apostrophe;
 }
 
-bool is_string_load(char c)
+static bool is_string_load(char c)
 {
     return c == *g_escape_quotation;
 }
 
-bool is_grouped_expression(char c)
+static bool is_grouped_expression(char c)
 {
     return c == *g_left_paren;
 }
 
-bool is_direct_load(char c)
+static bool is_direct_load(char c)
 {
     return is_digit_char(c);
 }
 
-bool is_identifier_load(char c)
+static str_t peek_alnum();
+
+static bool is_identifier_load(char c)
 {
-    str_t peek_alnum();
     auto keyword = peek_alnum();
     return is_alpha_char(c) && !is_construct_keyword(keyword);
 }
 
-bool is_newline(char c)
+static bool is_newline(char c)
 {
     return c == *g_escape_newline;
 }
 
-bool is_commenting(char c)
+static bool is_commenting(char c)
 {
     return c == *g_divide;
 }
 
-bool is_escaping(char c)
+static bool is_escaping(char c)
 {
     return c == *g_escape_backslash;
 }
 
-bool is_end_of_statement(char c)
+static bool is_end_of_statement(char c)
 {
     return c == *g_semicolon;
 }
 
-bool is_function_postfix(char c)
+static bool is_function_postfix(char c)
 {
     return c == *g_left_paren;
 }
 
-bool is_field_access_postfix(char c)
+static bool is_field_access_postfix(char c)
 {
     return c == *g_dot;
 }
 
-bool is_array_access_postfix(char c)
+static bool is_array_access_postfix(char c)
 {
     return c == *g_left_square;
 }
 
-bool is_increment(str_t operator)
+static bool is_increment(str_t operator)
 {
     return str_equal(operator.begin, g_increment);
 }
 
-bool is_decrement(str_t operator)
+static bool is_decrement(str_t operator)
 {
     return str_equal(operator.begin, g_decrement);
 }
 
-bool is_type_cast(str_t operator)
+static bool is_type_cast(str_t operator)
 {
     return str_equal(operator.begin, g_less);
 }
 
-bool is_not(str_t operator)
+static bool is_not(str_t operator)
 {
     return str_equal(operator.begin, g_not);
 }
 
-bool is_bitwise_not(str_t operator)
+static bool is_bitwise_not(str_t operator)
 {
     return str_equal(operator.begin, g_bitwise_not);
 }
 
-bool is_positive(str_t operator)
+static bool is_positive(str_t operator)
 {
     return str_equal(operator.begin, g_add);
 }
 
-bool is_negative(str_t operator)
+static bool is_negative(str_t operator)
 {
     return str_equal(operator.begin, g_subtract);
 }
 
-bool is_address_of(str_t operator)
+static bool is_address_of(str_t operator)
 {
     return str_equal(operator.begin, g_ampersand);
 }
 
-bool is_dereference(str_t operator)
+static bool is_dereference(str_t operator)
 {
     /* these like to bunch with a peek_operator,
      * so peaking at the first one is okay, so long
@@ -1095,47 +1091,47 @@ bool is_dereference(str_t operator)
     return operator.begin[0] == *g_multiply;
 }
 
-bool is_star(int c)
+static bool is_star(int c)
 {
     return c == *g_multiply;
 }
 
-bool is_function_pointer_decl(char c)
+static bool is_function_pointer_decl(char c)
 {
     return c == *g_left_paren;
 }
 
-bool is_block_opening(char c)
+static bool is_block_opening(char c)
 {
     return c == *g_left_curl;
 }
 
-bool is_new_opening(char c)
+static bool is_new_opening(char c)
 {
     return c == *g_left_square;
 }
 
-bool is_end_of_arg_list(char c)
+static bool is_end_of_arg_list(char c)
 {
     return c == *g_rite_paren;
 }
 
-bool is_arg_separator(char c)
+static bool is_arg_separator(char c)
 {
     return c == *g_comma;
 }
 
-bool is_block_closing(char c)
+static bool is_block_closing(char c)
 {
     return c == *g_rite_curl;
 }
 
-bool is_aggregate_member_init(char c)
+static bool is_aggregate_member_init(char c)
 {
     return c == *g_equals;
 }
 
-str_t to_llvm_type(type_t type)
+static str_t to_llvm_type(type_t type)
 {
     if(is_pointer(type))
     {
@@ -1152,7 +1148,7 @@ str_t to_llvm_type(type_t type)
     return out;
 }
 
-value_t* value_in_list(str_t str, value_big_list_t* list)
+static value_t* value_in_list(str_t str, value_big_list_t* list)
 {
     for(auto i = 0; i < list->size; i++)
     {
@@ -1165,17 +1161,17 @@ value_t* value_in_list(str_t str, value_big_list_t* list)
     return nullptr;
 }
 
-value_t* get_aggregate(str_t name)
+static value_t* get_aggregate(str_t name)
 {
     return value_in_list(name, &g_file.aggregates);
 }
 
-value_t* get_value(str_t name)
+static value_t* get_value(str_t name)
 {
     return value_in_list(name, &g_file.values);
 }
 
-str_t to_stars(type_t value)
+static str_t to_stars(type_t value)
 {
     auto stars = str_init(g_empty);
     while(value.stars --> 0) /* do you like this goto zero operator? */
@@ -1185,7 +1181,7 @@ str_t to_stars(type_t value)
     return stars;
 }
 
-str_t to_print_type(type_t type)
+static str_t to_print_type(type_t type)
 {
     auto print = str_init(g_empty);
     str_append(&print, type.name.begin);
@@ -1202,7 +1198,7 @@ str_t to_print_type(type_t type)
 }
 
 [[noreturn]]
-void function_comma_dangled(value_t value)
+static void function_comma_dangled(value_t value)
 {
     auto print = to_print_type(value.type);
     char* name = list_empty(&value.name)
@@ -1212,7 +1208,7 @@ void function_comma_dangled(value_t value)
 }
 
 [[noreturn]]
-void unknown_operator(type_t left, type_t rite, str_t operator)
+static void unknown_operator(type_t left, type_t rite, str_t operator)
 {
     auto left_print = to_print_type(left);
     auto rite_print = to_print_type(rite);
@@ -1220,62 +1216,62 @@ void unknown_operator(type_t left, type_t rite, str_t operator)
 }
 
 [[noreturn]]
-void unknown_unary(str_t operator)
+static void unknown_unary(str_t operator)
 {
     quit("unknown unary operator '%s' encountered", operator.begin);
 }
 
 [[noreturn]]
-void unknown_type_cast(type_t left, type_t rite)
+static void unknown_type_cast(type_t left, type_t rite)
 {
     auto left_print = to_print_type(left);
     auto rite_print = to_print_type(rite);
-    quit("type cast from '%s' to '%s' not supported", left_print.begin, rite_print.begin);
+    quit("type cast with operator '%s' from '%s' to '%s' not supported", g_type_cast, left_print.begin, rite_print.begin);
 }
 
 [[noreturn]]
-void unknown_type_power(char* name)
+static void unknown_type_power(char* name)
 {
     quit("unknown type power '%s'", name);
 }
 
 [[noreturn]]
-void missing_if_binding()
+static void missing_if_binding()
 {
     quit("missing binding '%s'", g_if);
 }
 
 [[noreturn]]
-void block_was_terminated()
+static void block_was_terminated()
 {
     quit("block was already terminated - check for previous '%s', '%s', or '%s' statements", g_ret, g_break, g_continue);
 }
 
 [[noreturn]]
-void block_missing_ret()
+static void block_missing_ret()
 {
     quit("block missing '%s' statement", g_ret);
 }
 
 [[noreturn]]
-void not_in_loop(char* keyword)
+static void not_in_loop(char* keyword)
 {
     quit("%s statement not within a loop", keyword);
 }
 
 [[noreturn]]
-void expected_string(char* string)
+static void expected_string(char* string)
 {
     quit("expected '%s'", string);
 }
 
 [[noreturn]]
-void invalid_escape_char(char c)
+static void invalid_escape_char(char c)
 {
     quit("'%c' is an invalid escape character", c);
 }
 
-void assert_program_use(int argc)
+static void assert_program_use(int argc)
 {
     if(argc != 2)
     {
@@ -1283,7 +1279,7 @@ void assert_program_use(int argc)
     }
 }
 
-void assert_types_match(type_t left, type_t rite, str_t operator)
+static void assert_types_match(type_t left, type_t rite, str_t operator)
 {
     auto left_print = to_print_type(left);
     auto rite_print = to_print_type(rite);
@@ -1306,7 +1302,7 @@ void assert_types_match(type_t left, type_t rite, str_t operator)
     }
 }
 
-void assert_type(type_t type, str_t operator, bool with(type_t))
+static void assert_type(type_t type, str_t operator, bool with(type_t))
 {
     if(!with(type))
     {
@@ -1315,7 +1311,7 @@ void assert_type(type_t type, str_t operator, bool with(type_t))
     }
 }
 
-void assert_lvalue(value_t value, str_t operator)
+static void assert_lvalue(value_t value, str_t operator)
 {
     if(is_rvalue(value))
     {
@@ -1324,7 +1320,7 @@ void assert_lvalue(value_t value, str_t operator)
     }
 }
 
-void assert_rvalue(value_t value, str_t operator)
+static void assert_rvalue(value_t value, str_t operator)
 {
     if(is_lvalue(value))
     {
@@ -1333,7 +1329,7 @@ void assert_rvalue(value_t value, str_t operator)
     }
 }
 
-void assert_member_exists(type_t aggregate_type, str_t member_name, str_t operator)
+static void assert_member_exists(type_t aggregate_type, str_t member_name, str_t operator)
 {
     auto members = get_aggregate(aggregate_type.name);
     auto member = str_in_list(member_name, &members->names);
@@ -1344,15 +1340,7 @@ void assert_member_exists(type_t aggregate_type, str_t member_name, str_t operat
     }
 }
 
-void assert_aggregate_not_declared(str_t name)
-{
-    if(get_aggregate(name))
-    {
-        quit("type '%s' already declared", name.begin);
-    }
-}
-
-void assert_not_declared(str_t name)
+static void assert_not_declared(str_t name)
 {
     if(get_value(name))
     {
@@ -1360,7 +1348,7 @@ void assert_not_declared(str_t name)
     }
 }
 
-void assert_not_reserved(str_t name)
+static void assert_not_reserved(str_t name)
 {
     if(is_reserved_keyword(name))
     {
@@ -1368,7 +1356,7 @@ void assert_not_reserved(str_t name)
     }
 }
 
-void assert_valid_type(type_t type)
+static void assert_valid_type(type_t type)
 {
     if(!is_type_name(type.name))
     {
@@ -1376,7 +1364,7 @@ void assert_valid_type(type_t type)
     }
 }
 
-void assert_valid_member_type(value_t aggregate, type_t member_type, str_t member_name)
+static void assert_valid_member_type(value_t aggregate, type_t member_type, str_t member_name)
 {
     assert_valid_type(member_type);
     if(str_in_list(member_name, &aggregate.names))
@@ -1385,7 +1373,7 @@ void assert_valid_member_type(value_t aggregate, type_t member_type, str_t membe
     }
 }
 
-void assert_expectation(char* a, char* b)
+static void assert_expectation(char* a, char* b)
 {
     if(!str_equal(a, b))
     {
@@ -1393,7 +1381,7 @@ void assert_expectation(char* a, char* b)
     }
 }
 
-void assert_not_end_of_file()
+static void assert_not_end_of_file()
 {
     auto code = get_code();
     if(code->at == list_cap(&code->list))
@@ -1402,7 +1390,7 @@ void assert_not_end_of_file()
     }
 }
 
-void assert_include_path(str_t path)
+static void assert_include_path(str_t path)
 {
     if(path.size == 0)
     {
@@ -1410,7 +1398,7 @@ void assert_include_path(str_t path)
     }
 }
 
-void assert_file_opened(FILE* fp, str_t path)
+static void assert_file_opened(FILE* fp, str_t path)
 {
     if(fp == nullptr)
     {
@@ -1418,7 +1406,7 @@ void assert_file_opened(FILE* fp, str_t path)
     }
 }
 
-void assert_buffer_fit(code_t* code)
+static void assert_buffer_fit(code_t* code)
 {
     auto list = &code->list;
     if(list_full(list))
@@ -1427,7 +1415,7 @@ void assert_buffer_fit(code_t* code)
     }
 }
 
-void assert_declared(value_t* value, str_t name)
+static void assert_declared(value_t* value, str_t name)
 {
     if(value == nullptr)
     {
@@ -1435,7 +1423,7 @@ void assert_declared(value_t* value, str_t name)
     }
 }
 
-void assert_parameter_size(value_t function, type_list_t* expected)
+static void assert_parameter_size(value_t function, type_list_t* expected)
 {
     if(function.types.size != expected->size)
     {
@@ -1443,7 +1431,7 @@ void assert_parameter_size(value_t function, type_list_t* expected)
     }
 }
 
-void assert_parameter_type(value_t function, type_list_t* expected)
+static void assert_parameter_type(value_t function, type_list_t* expected)
 {
     auto operator = str_init(g_function);
     for(auto i = 0; i < expected->size; i++)
@@ -1452,38 +1440,46 @@ void assert_parameter_type(value_t function, type_list_t* expected)
     }
 }
 
-int get_block()
+static void assert_operator_format(type_t left, type_t rite, str_t operator, char* format)
+{
+    if(format == nullptr)
+    {
+        unknown_operator(left, rite, operator);
+    }
+}
+
+static int get_block()
 {
     g_file.block += 1;
     return g_file.block;
 }
 
-int get_slot()
+static int get_slot()
 {
     g_file.slot += 1;
     return g_file.slot;
 }
 
-int get_label()
+static int get_label()
 {
     g_file.label += 1;
     return g_file.label;
 }
 
-char peek_char()
+static char peek_char()
 {
     auto at = get_code()->at;
     return get_code()->list.begin[at];
 }
 
-void step()
+static void step()
 {
     auto code = get_code();
     code->at += 1;
     assert_not_end_of_file();
 }
 
-void read_comment()
+static void read_comment()
 {
     step();
     while(peek_char() != *g_escape_newline)
@@ -1492,7 +1488,7 @@ void read_comment()
     }
 }
 
-int skip_space_and_comment()
+static int skip_space_and_comment()
 {
     auto count = 0;
     for(;;)
@@ -1530,20 +1526,20 @@ int skip_space_and_comment()
     return count;
 }
 
-char next_char()
+static char next_char()
 {
     skip_space_and_comment();
     return peek_char();
 }
 
-bool is_end_of_file()
+static bool is_end_of_file()
 {
     auto code = get_code();
     skip_space_and_comment();
     return code->at == code->list.size;
 }
 
-void match(char* expected)
+static void match(char* expected)
 {
     auto size = (int) strlen(expected);
     str_t got = {};
@@ -1555,7 +1551,7 @@ void match(char* expected)
     assert_expectation(got.begin, expected);
 }
 
-char convert_escape_char(char c)
+static char convert_escape_char(char c)
 {
     if(c ==  'a') return *g_escape_alert;
     if(c ==  'b') return *g_escape_backspace;
@@ -1572,7 +1568,7 @@ char convert_escape_char(char c)
     invalid_escape_char(c);
 }
 
-str_t read_chars(bool matches(char))
+static str_t read_chars(bool matches(char))
 {
     auto str = str_init(g_empty);
     for(;;)
@@ -1596,19 +1592,19 @@ str_t read_chars(bool matches(char))
     return str;
 }
 
-str_t read_operator()
+static str_t read_operator()
 {
     skip_space_and_comment();
     return read_chars(is_operator_char);
 }
 
-str_t read_alnum()
+static str_t read_alnum()
 {
     skip_space_and_comment();
     return read_chars(is_alnum_char);
 }
 
-str_t read_string()
+static str_t read_string()
 {
     skip_space_and_comment();
     match(g_escape_quotation);
@@ -1617,32 +1613,32 @@ str_t read_string()
     return out;
 }
 
-str_t read_numeric()
+static str_t read_numeric()
 {
     skip_space_and_comment();
     return read_chars(is_numeric_char);
 }
 
-str_t read_till_semicolon()
+static str_t read_till_semicolon()
 {
     return read_chars(is_not_semicolon);
 }
 
-str_t peek_operator()
+static str_t peek_operator()
 {
     auto operator = read_operator();
     code_rewind(operator.size);
     return operator;
 }
 
-str_t peek_alnum()
+static str_t peek_alnum()
 {
     auto alnum = read_alnum();
     code_rewind(alnum.size);
     return alnum;
 }
 
-int read_stars()
+static int read_stars()
 {
     auto stars = 0;
     for(;;)
@@ -1661,7 +1657,7 @@ int read_stars()
     return stars;
 }
 
-type_t type_init(str_t name, int stars)
+static type_t type_init(str_t name, int stars)
 {
     auto type = (type_t) {};
     type.name = name;
@@ -1669,17 +1665,17 @@ type_t type_init(str_t name, int stars)
     return type;
 }
 
-type_t scalar_init(str_t name)
+static type_t scalar_init(str_t name)
 {
     return type_init(name, 0);
 }
 
-type_t pointer_init(str_t name, int stars)
+static type_t pointer_init(str_t name, int stars)
 {
     return type_init(name, stars);
 }
 
-type_t read_type()
+static type_t read_type()
 {
     auto type = type_init(read_alnum(), read_stars());
     auto operator = peek_operator();
@@ -1702,7 +1698,7 @@ type_t read_type()
     return type;
 }
 
-value_t rvalue(type_t type)
+static value_t rvalue(type_t type)
 {
     auto rvalue = (value_t) {
         .slot = get_slot(),
@@ -1712,16 +1708,16 @@ value_t rvalue(type_t type)
     return rvalue;
 }
 
-value_t lvalue(type_t type)
+static value_t lvalue(type_t type)
 {
     auto lvalue = rvalue(type);
     lvalue.is_lvalue = true;
     return lvalue;
 }
 
-value_list_t read_function_decl_arg_list();
+static value_list_t read_function_decl_arg_list();
 
-value_t read_value()
+static value_t read_value()
 {
     auto type = read_type();
     auto value = rvalue(type);
@@ -1730,7 +1726,7 @@ value_t read_value()
     return value;
 }
 
-value_t read_value_decl()
+static value_t read_value_decl()
 {
     auto value = read_value();
     assert_not_declared(value.name);
@@ -1739,7 +1735,7 @@ value_t read_value_decl()
     return value;
 }
 
-value_list_t read_function_decl_arg_list()
+static value_list_t read_function_decl_arg_list()
 {
     auto values = (value_list_t) {};
     match(g_left_paren);
@@ -1768,9 +1764,9 @@ value_list_t read_function_decl_arg_list()
     return values;
 }
 
-value_t read_expression();
+static value_t read_expression();
 
-void execute_defers(int total)
+static void execute_defers(int total)
 {
     auto code = get_code();
     auto at = code->at;
@@ -1785,7 +1781,7 @@ void execute_defers(int total)
     code->at = at;
 }
 
-value_t read_ret_statement(value_t ret_value)
+static value_t read_ret_statement(value_t ret_value)
 {
     read_alnum();
     if(is_void(ret_value.type.name))
@@ -1809,9 +1805,9 @@ value_t read_ret_statement(value_t ret_value)
     }
 }
 
-bool read_statement(value_t, scope_t, int);
+static bool read_statement(value_t, scope_t, int);
 
-void read_if_statement(value_t ret_value, branch_t branch)
+static void read_if_statement(value_t ret_value, branch_t branch)
 {
     read_alnum();
     match(g_left_paren);
@@ -1828,7 +1824,7 @@ void read_if_statement(value_t ret_value, branch_t branch)
     }
 }
 
-void read_else_statement(value_t ret_value, branch_t branch)
+static void read_else_statement(value_t ret_value, branch_t branch)
 {
     emit(g_opcode_label, branch.else_label);
     auto keyword = peek_alnum();
@@ -1847,7 +1843,7 @@ void read_else_statement(value_t ret_value, branch_t branch)
     }
 }
 
-void read_if_else_statement(value_t ret_value, int block)
+static void read_if_else_statement(value_t ret_value, int block)
 {
     auto branch = (branch_t) {
         .if_label = get_label(),
@@ -1860,7 +1856,7 @@ void read_if_else_statement(value_t ret_value, int block)
     emit(g_opcode_label, branch.end_label);
 }
 
-void read_defer_statement(scope_t scope, int block)
+static void read_defer_statement(scope_t scope, int block)
 {
     read_alnum();
     auto defer = (defer_t) {
@@ -1873,7 +1869,7 @@ void read_defer_statement(scope_t scope, int block)
     match(g_semicolon);
 }
 
-void execute_break_defers()
+static void execute_break_defers()
 {
     auto scopes = g_file.defers.begin;
     auto defers = 0;
@@ -1903,7 +1899,7 @@ void execute_break_defers()
     }
 }
 
-void read_break_statement()
+static void read_break_statement()
 {
     read_alnum();
     match(g_semicolon);
@@ -1917,7 +1913,7 @@ void read_break_statement()
     emit(g_opcode_branch, to);
 }
 
-void read_continue_statement()
+static void read_continue_statement()
 {
     read_alnum();
     match(g_semicolon);
@@ -1931,7 +1927,7 @@ void read_continue_statement()
     emit(g_opcode_branch, to);
 }
 
-void read_while_statement(value_t ret_value, int block)
+static void read_while_statement(value_t ret_value, int block)
 {
     auto again_label = get_label();
     auto while_label = get_label();
@@ -1958,9 +1954,9 @@ void read_while_statement(value_t ret_value, int block)
     g_file.loop_end.size -= 1;
 }
 
-value_t field_index(value_t, str_t);
+static value_t field_index(value_t, str_t);
 
-void default_init_aggregate(value_t value)
+static void default_init_aggregate(value_t value)
 {
     if(is_aggregate(value.type))
     {
@@ -1984,7 +1980,7 @@ void default_init_aggregate(value_t value)
     }
 }
 
-value_t alloca_value(value_t value)
+static value_t alloca_value(value_t value)
 {
     value.is_lvalue = true;
     auto llvm_type = to_llvm_type(value.type);
@@ -1994,22 +1990,22 @@ value_t alloca_value(value_t value)
     return value;
 }
 
-value_t declare_local_value()
+static value_t declare_local_value()
 {
     auto value = read_value_decl();
     list_push(&g_file.values, value);
     return alloca_value(value);
 }
 
-void type_check_return_value(value_t value, value_t ret_value)
+static void type_check_return_value(value_t value, value_t ret_value)
 {
     auto operator = str_init(g_ret);
     assert_types_match(value.type, ret_value.type, operator);
 }
 
-bool read_block(value_t, scope_t);
+static bool read_block(value_t, scope_t);
 
-bool read_statement(value_t ret_value, scope_t scope, int block)
+static bool read_statement(value_t ret_value, scope_t scope, int block)
 {
     auto keyword = peek_alnum();
     if(is_control_keyword(keyword))
@@ -2079,7 +2075,7 @@ bool read_statement(value_t ret_value, scope_t scope, int block)
     return false;
 }
 
-bool read_block(value_t ret_value, scope_t scope)
+static bool read_block(value_t ret_value, scope_t scope)
 {
     auto block = get_block();
     auto defers = g_file.defers.size;
@@ -2110,7 +2106,7 @@ bool read_block(value_t ret_value, scope_t scope)
     return terminated;
 }
 
-value_t collect_types(value_t value, value_list_t* args)
+static value_t collect_types(value_t value, value_list_t* args)
 {
     emit(g_str, g_left_paren);
     for(auto i = 0; i < args->size; i++)
@@ -2130,7 +2126,7 @@ value_t collect_types(value_t value, value_list_t* args)
     return value;
 }
 
-value_t as_function_declaration(value_t value, value_list_t* args)
+static value_t as_function_declaration(value_t value, value_list_t* args)
 {
     auto llvm_type = to_llvm_type(value.type);
     emit(g_opcode_declare, llvm_type.begin, value.name.begin);
@@ -2140,7 +2136,7 @@ value_t as_function_declaration(value_t value, value_list_t* args)
     return value;
 }
 
-value_t as_function_definition(value_t value, value_list_t* args)
+static value_t as_function_definition(value_t value, value_list_t* args)
 {
     auto llvm_type = to_llvm_type(value.type);
     emit(g_opcode_define, llvm_type.begin, value.name.begin);
@@ -2168,7 +2164,7 @@ value_t as_function_definition(value_t value, value_list_t* args)
     return value;
 }
 
-void read_function()
+static void read_function()
 {
     g_file.slot = 0;
     g_file.label = 0;
@@ -2192,7 +2188,7 @@ void read_function()
     emit(g_str, g_empty);
 }
 
-value_t read_type_def_members(value_t aggregate)
+static value_t read_type_def_members(value_t aggregate)
 {
     emit(g_str, g_left_curl);
     match(g_left_curl);
@@ -2232,11 +2228,11 @@ value_t read_type_def_members(value_t aggregate)
     return aggregate;
 }
 
-void read_type_def()
+static void read_type_def()
 {
     read_alnum();
     auto aggregate_name = read_alnum();
-    assert_aggregate_not_declared(aggregate_name);
+    assert_not_declared(aggregate_name);
     auto aggregate = (value_t) {};
     aggregate.name = aggregate.type.name = aggregate_name;
     emit(g_opcode_type_def, aggregate_name.begin);
@@ -2245,7 +2241,7 @@ void read_type_def()
     list_push(&g_file.aggregates, aggregate);
 }
 
-value_t to_rvalue(value_t value)
+static value_t to_rvalue(value_t value)
 {
     if(value.is_lvalue)
     {
@@ -2258,7 +2254,7 @@ value_t to_rvalue(value_t value)
     return value;
 }
 
-value_t load_indirect(value_t found)
+static value_t load_indirect(value_t found)
 {
     auto value = lvalue(found.type);
     if(found.type.is_function)
@@ -2276,7 +2272,7 @@ value_t load_indirect(value_t found)
     }
 }
 
-value_t load_direct()
+static value_t load_direct()
 {
     auto name = read_numeric();
     if(strchr(name.begin, *g_dot))
@@ -2293,7 +2289,7 @@ value_t load_direct()
     }
 }
 
-str_t to_llvm_escaped(str_t string, int* size)
+static str_t to_llvm_escaped(str_t string, int* size)
 {
     auto out = str_init(g_empty);
     auto size_with_null = string.size + 1;
@@ -2363,7 +2359,7 @@ str_t to_llvm_escaped(str_t string, int* size)
     return out;
 }
 
-slot_list_t read_function_call_arg_list(type_list_t* types)
+static slot_list_t read_function_call_arg_list(type_list_t* types)
 {
     auto list = (slot_list_t) {};
     match(g_left_paren);
@@ -2394,7 +2390,7 @@ slot_list_t read_function_call_arg_list(type_list_t* types)
     return list;
 }
 
-value_t increment(value_t value, bool prefix)
+static value_t increment(value_t value, bool prefix)
 {
     auto slot = value.slot;
     auto operator = str_init(g_increment);
@@ -2410,17 +2406,17 @@ value_t increment(value_t value, bool prefix)
     return prefix ? out : value;
 }
 
-value_t prefix_increment(value_t value)
+static value_t prefix_increment(value_t value)
 {
     return increment(value, true);
 }
 
-value_t postfix_increment(value_t value)
+static value_t postfix_increment(value_t value)
 {
     return increment(value, false);
 }
 
-value_t decrement(value_t value, bool prefix)
+static value_t decrement(value_t value, bool prefix)
 {
     auto slot = value.slot;
     auto operator = str_init(g_decrement);
@@ -2436,17 +2432,17 @@ value_t decrement(value_t value, bool prefix)
     return prefix ? out : value;
 }
 
-value_t prefix_decrement(value_t value)
+static value_t prefix_decrement(value_t value)
 {
     return decrement(value, true);
 }
 
-value_t postfix_decrement(value_t value)
+static value_t postfix_decrement(value_t value)
 {
     return decrement(value, false);
 }
 
-value_t get_address_of(value_t value)
+static value_t get_address_of(value_t value)
 {
     auto operator = str_init(g_ampersand);
     assert_lvalue(value, operator);
@@ -2455,7 +2451,7 @@ value_t get_address_of(value_t value)
     return value;
 }
 
-value_t dereference(value_t value)
+static value_t dereference(value_t value)
 {
     auto operator = str_init(g_multiply);
     assert_type(value.type, operator, is_pointer);
@@ -2473,14 +2469,14 @@ value_t dereference(value_t value)
     return value;
 }
 
-value_t to_positive(value_t value)
+static value_t to_positive(value_t value)
 {
     auto operator = str_init(g_add);
     assert_type(value.type, operator, is_numeric);
     return value;
 }
 
-value_t to_negative(value_t value)
+static value_t to_negative(value_t value)
 {
     auto operator = str_init(g_subtract);
     value = to_rvalue(value);
@@ -2493,7 +2489,7 @@ value_t to_negative(value_t value)
     return out;
 }
 
-value_t to_bitwise_not(value_t value)
+static value_t to_bitwise_not(value_t value)
 {
     auto operator = str_init(g_bitwise_not);
     value = to_rvalue(value);
@@ -2504,7 +2500,7 @@ value_t to_bitwise_not(value_t value)
     return out;
 }
 
-value_t to_not(value_t value)
+static value_t to_not(value_t value)
 {
     auto operator = str_init(g_not);
     value = to_rvalue(value);
@@ -2515,7 +2511,7 @@ value_t to_not(value_t value)
     return out;
 }
 
-value_t to_sizeof(value_t value)
+static value_t to_sizeof(value_t value)
 {
     value = to_rvalue(value);
     auto slot = get_slot();
@@ -2526,7 +2522,7 @@ value_t to_sizeof(value_t value)
     return out;
 }
 
-value_t to_type_sizeof(type_t value)
+static value_t to_type_sizeof(type_t value)
 {
     auto slot = get_slot();
     auto out = rvalue(scalar_init(str_init(g_u64)));
@@ -2536,14 +2532,14 @@ value_t to_type_sizeof(type_t value)
     return out;
 }
 
-value_t pointer_up(type_t type)
+static value_t pointer_up(type_t type)
 {
     auto out = rvalue(type);
     out.type.stars += 1;
     return out;
 }
 
-value_t to_new(type_t type)
+static value_t to_new(type_t type)
 {
     auto size = to_type_sizeof(type);
     if(is_new_opening(next_char()))
@@ -2567,7 +2563,7 @@ value_t to_new(type_t type)
     }
 }
 
-value_t do_del(value_t value)
+static value_t do_del(value_t value)
 {
     auto operator = str_init(g_del);
     assert_type(value.type, operator, is_pointer);
@@ -2576,7 +2572,7 @@ value_t do_del(value_t value)
     return rvalue(scalar_init(str_init(g_void)));
 }
 
-type_power_t type_power(type_t type)
+static type_power_t type_power(type_t type)
 {
     auto at = type.name.begin;
     if(str_equal(at, g_i1)
@@ -2615,21 +2611,21 @@ type_power_t type_power(type_t type)
     unknown_type_power(at);
 }
 
-value_t pointer_to_pointer(value_t value, type_t type)
+static value_t pointer_to_pointer(value_t value, type_t type)
 {
     auto out = value;
     out.type = type;
     return out;
 }
 
-value_t boolean_to_boolean(value_t value, type_t type)
+static value_t boolean_to_boolean(value_t value, type_t type)
 {
     auto out = value;
     out.type = type;
     return out;
 }
 
-value_t signed_to_pointer(value_t value, type_t type)
+static value_t signed_to_pointer(value_t value, type_t type)
 {
     auto llvm_type = to_llvm_type(value.type);
     auto out = rvalue(type);
@@ -2637,7 +2633,7 @@ value_t signed_to_pointer(value_t value, type_t type)
     return out;
 }
 
-value_t unsigned_to_pointer(value_t value, type_t type)
+static value_t unsigned_to_pointer(value_t value, type_t type)
 {
     auto llvm_type = to_llvm_type(value.type);
     auto out = rvalue(type);
@@ -2645,7 +2641,7 @@ value_t unsigned_to_pointer(value_t value, type_t type)
     return out;
 }
 
-value_t integral_to_integral(value_t value, type_t type, bool from_signed)
+static value_t integral_to_integral(value_t value, type_t type, bool from_signed)
 {
     auto llvm_left = to_llvm_type(value.type);
     auto llvm_rite = to_llvm_type(type);
@@ -2666,7 +2662,7 @@ value_t integral_to_integral(value_t value, type_t type, bool from_signed)
     return value;
 }
 
-value_t floating_to_signed(value_t value, type_t type)
+static value_t floating_to_signed(value_t value, type_t type)
 {
     auto llvm_left = to_llvm_type(value.type);
     auto llvm_rite = to_llvm_type(type);
@@ -2675,7 +2671,7 @@ value_t floating_to_signed(value_t value, type_t type)
     return out;
 }
 
-value_t floating_to_unsigned(value_t value, type_t type)
+static value_t floating_to_unsigned(value_t value, type_t type)
 {
     auto llvm_left = to_llvm_type(value.type);
     auto llvm_rite = to_llvm_type(type);
@@ -2684,7 +2680,7 @@ value_t floating_to_unsigned(value_t value, type_t type)
     return out;
 }
 
-value_t signed_to_floating(value_t value, type_t type)
+static value_t signed_to_floating(value_t value, type_t type)
 {
     auto llvm_left = to_llvm_type(value.type);
     auto llvm_rite = to_llvm_type(type);
@@ -2693,7 +2689,7 @@ value_t signed_to_floating(value_t value, type_t type)
     return out;
 }
 
-value_t signed_to_boolean(value_t value, type_t type)
+static value_t signed_to_boolean(value_t value, type_t type)
 {
     auto llvm_left = to_llvm_type(value.type);
     auto llvm_rite = to_llvm_type(type);
@@ -2702,7 +2698,7 @@ value_t signed_to_boolean(value_t value, type_t type)
     return out;
 }
 
-value_t unsigned_to_boolean(value_t value, type_t type)
+static value_t unsigned_to_boolean(value_t value, type_t type)
 {
     auto llvm_left = to_llvm_type(value.type);
     auto llvm_rite = to_llvm_type(type);
@@ -2711,7 +2707,7 @@ value_t unsigned_to_boolean(value_t value, type_t type)
     return out;
 }
 
-value_t boolean_to_signed(value_t value, type_t type)
+static value_t boolean_to_signed(value_t value, type_t type)
 {
     auto llvm_left = to_llvm_type(value.type);
     auto llvm_rite = to_llvm_type(type);
@@ -2720,7 +2716,7 @@ value_t boolean_to_signed(value_t value, type_t type)
     return out;
 }
 
-value_t boolean_to_unsigned(value_t value, type_t type)
+static value_t boolean_to_unsigned(value_t value, type_t type)
 {
     auto llvm_left = to_llvm_type(value.type);
     auto llvm_rite = to_llvm_type(type);
@@ -2729,7 +2725,7 @@ value_t boolean_to_unsigned(value_t value, type_t type)
     return out;
 }
 
-value_t unsigned_to_floating(value_t value, type_t type)
+static value_t unsigned_to_floating(value_t value, type_t type)
 {
     auto llvm_left = to_llvm_type(value.type);
     auto llvm_rite = to_llvm_type(type);
@@ -2738,7 +2734,7 @@ value_t unsigned_to_floating(value_t value, type_t type)
     return out;
 }
 
-value_t floating_to_floating(value_t value, type_t type)
+static value_t floating_to_floating(value_t value, type_t type)
 {
     auto llvm_left = to_llvm_type(value.type);
     auto llvm_rite = to_llvm_type(type);
@@ -2757,27 +2753,27 @@ value_t floating_to_floating(value_t value, type_t type)
     return value;
 }
 
-value_t signed_to_signed(value_t value, type_t type)
+static value_t signed_to_signed(value_t value, type_t type)
 {
     return integral_to_integral(value, type, true);
 }
 
-value_t signed_to_unsigned(value_t value, type_t type)
+static value_t signed_to_unsigned(value_t value, type_t type)
 {
     return integral_to_integral(value, type, true);
 }
 
-value_t unsigned_to_unsigned(value_t value, type_t type)
+static value_t unsigned_to_unsigned(value_t value, type_t type)
 {
     return integral_to_integral(value, type, false);
 }
 
-value_t unsigned_to_signed(value_t value, type_t type)
+static value_t unsigned_to_signed(value_t value, type_t type)
 {
     return integral_to_integral(value, type, false);
 }
 
-value_t type_cast(value_t value, type_t type)
+static value_t type_cast(value_t value, type_t type)
 {
     value = to_rvalue(value);
     if(is_pointer(value.type))
@@ -2866,10 +2862,10 @@ value_t type_cast(value_t value, type_t type)
     unknown_type_cast(value.type, type);
 }
 
-value_t read_postfix(value_t);
-value_t read_p0();
+static value_t read_postfix(value_t);
+static value_t read_p0();
 
-value_t read_prefix()
+static value_t read_prefix()
 {
     auto alnum = peek_alnum();
     if(is_new(alnum))
@@ -2961,12 +2957,12 @@ value_t read_prefix()
     unknown_unary(operator);
 }
 
-value_t field_access(value_t);
-value_t array_access(value_t);
-value_t call_direct_function(value_t);
-value_t call_indirect_function(value_t);
+static value_t field_access(value_t);
+static value_t array_access(value_t);
+static value_t call_direct_function(value_t);
+static value_t call_indirect_function(value_t);
 
-value_t read_postfix(value_t offset)
+static value_t read_postfix(value_t offset)
 {
     auto peek = next_char();
     if(is_function_postfix(peek))
@@ -2992,7 +2988,7 @@ value_t read_postfix(value_t offset)
     return offset;
 }
 
-value_t array_access(value_t pointer)
+static value_t array_access(value_t pointer)
 {
     auto operator = str_init(g_index);
     assert_type(pointer.type, operator, is_pointer);
@@ -3007,7 +3003,7 @@ value_t array_access(value_t pointer)
     return read_postfix(offset);
 }
 
-value_t field_access(value_t aggregate)
+static value_t field_access(value_t aggregate)
 {
     match(g_dot);
     auto field_name = read_alnum();
@@ -3015,7 +3011,7 @@ value_t field_access(value_t aggregate)
     return read_postfix(offset);
 }
 
-value_t load_string_literal()
+static value_t load_string_literal()
 {
     auto size = 0;
     auto literal = read_string();
@@ -3031,7 +3027,7 @@ value_t load_string_literal()
     return string;
 }
 
-value_t load_string()
+static value_t load_string()
 {
     auto string = load_string_literal();
     /* immediate pointer decay */
@@ -3041,7 +3037,7 @@ value_t load_string()
     return read_postfix(pointer);
 }
 
-value_t field_index(value_t aggregate, str_t field_name)
+static value_t field_index(value_t aggregate, str_t field_name)
 {
     if(is_pointer(aggregate.type))
     {
@@ -3072,7 +3068,7 @@ value_t field_index(value_t aggregate, str_t field_name)
     }
 }
 
-void check_function_args(value_t function, type_list_t* types)
+static void check_function_args(value_t function, type_list_t* types)
 {
     if(must_check_args(function))
     {
@@ -3081,7 +3077,7 @@ void check_function_args(value_t function, type_list_t* types)
     }
 }
 
-void emit_parameter_slots(type_list_t* types, slot_list_t* slots)
+static void emit_parameter_slots(type_list_t* types, slot_list_t* slots)
 {
     emit(g_str, g_left_paren);
     auto last = list_last(slots);
@@ -3099,7 +3095,7 @@ void emit_parameter_slots(type_list_t* types, slot_list_t* slots)
     emit(g_str, g_rite_paren);
 }
 
-void emit_indirect_call(value_t value, value_t function_pointer)
+static void emit_indirect_call(value_t value, value_t function_pointer)
 {
     auto llvm_type = to_llvm_type(value.type);
     if(is_variadic(value.type))
@@ -3112,7 +3108,7 @@ void emit_indirect_call(value_t value, value_t function_pointer)
             : emit(g_opcode_indirect_call, value.slot, llvm_type.begin, function_pointer.slot);
 }
 
-void emit_direct_call(value_t value, value_t function)
+static void emit_direct_call(value_t value, value_t function)
 {
     auto llvm_type = to_llvm_type(value.type);
     if(is_variadic(value.type))
@@ -3125,7 +3121,7 @@ void emit_direct_call(value_t value, value_t function)
             : emit(g_opcode_call, value.slot, llvm_type.begin, function.name.begin);
 }
 
-value_t call_direct_function(value_t function)
+static value_t call_direct_function(value_t function)
 {
     auto operator = str_init(g_function);
     assert_type(function.type, operator, is_callable);
@@ -3138,7 +3134,7 @@ value_t call_direct_function(value_t function)
     return read_postfix(value);
 }
 
-value_t call_indirect_function(value_t function_pointer)
+static value_t call_indirect_function(value_t function_pointer)
 {
     auto operator = str_init(g_function);
     assert_type(function_pointer.type, operator, is_callable);
@@ -3154,7 +3150,7 @@ value_t call_indirect_function(value_t function_pointer)
     return read_postfix(value);
 }
 
-value_t read_identifier()
+static value_t read_identifier()
 {
     auto name = read_alnum();
     auto found = get_value(name);
@@ -3163,7 +3159,7 @@ value_t read_identifier()
     return read_postfix(value);
 }
 
-value_t load_character()
+static value_t load_character()
 {
     match(g_escape_apostrophe);
     auto peek = peek_char();
@@ -3179,22 +3175,14 @@ value_t load_character()
     return value;
 }
 
-void assert_operator_format(type_t left, type_t rite, str_t operator, char* format)
-{
-    if(format == nullptr)
-    {
-        unknown_operator(left, rite, operator);
-    }
-}
-
-void emit_operation(value_t pure, value_t left, value_t rite, str_t operator, char* format)
+static void emit_operation(value_t pure, value_t left, value_t rite, str_t operator, char* format)
 {
     assert_operator_format(left.type, rite.type, operator, format);
     auto llvm_type = to_llvm_type(left.type);
     emit(format, pure.slot, llvm_type.begin, left.slot, rite.slot);
 }
 
-value_t assignment_operate(value_t left, value_t rite, str_t operator)
+static value_t assignment_operate(value_t left, value_t rite, str_t operator)
 {
     rite = to_rvalue(rite);
     assert_lvalue(left, operator);
@@ -3204,7 +3192,7 @@ value_t assignment_operate(value_t left, value_t rite, str_t operator)
     return to_rvalue(left);
 }
 
-value_t pure_value(type_t type, str_t operator)
+static value_t pure_value(type_t type, str_t operator)
 {
     auto pure = rvalue(type);
     pure.type.stars = 0;
@@ -3215,9 +3203,9 @@ value_t pure_value(type_t type, str_t operator)
     return pure;
 }
 
-value_t operate(value_t, value_t, str_t);
+static value_t operate(value_t, value_t, str_t);
 
-value_t aggregate_operate(value_t left, value_t rite, str_t operator)
+static value_t aggregate_operate(value_t left, value_t rite, str_t operator)
 {
     left = to_rvalue(left);
     rite = to_rvalue(rite);
@@ -3235,7 +3223,7 @@ value_t aggregate_operate(value_t left, value_t rite, str_t operator)
     return pure;
 }
 
-value_t floating_operate(value_t left, value_t rite, str_t operator)
+static value_t floating_operate(value_t left, value_t rite, str_t operator)
 {
     left = to_rvalue(left);
     rite = to_rvalue(rite);
@@ -3256,7 +3244,7 @@ value_t floating_operate(value_t left, value_t rite, str_t operator)
     return pure;
 }
 
-value_t unsigned_operate(value_t left, value_t rite, str_t operator)
+static value_t unsigned_operate(value_t left, value_t rite, str_t operator)
 {
     left = to_rvalue(left);
     rite = to_rvalue(rite);
@@ -3283,7 +3271,7 @@ value_t unsigned_operate(value_t left, value_t rite, str_t operator)
     return pure;
 }
 
-value_t signed_operate(value_t left, value_t rite, str_t operator)
+static value_t signed_operate(value_t left, value_t rite, str_t operator)
 {
     left = to_rvalue(left);
     rite = to_rvalue(rite);
@@ -3310,7 +3298,7 @@ value_t signed_operate(value_t left, value_t rite, str_t operator)
     return pure;
 }
 
-value_t pointer_operate(value_t left, value_t rite, str_t operator)
+static value_t pointer_operate(value_t left, value_t rite, str_t operator)
 {
     left = to_rvalue(left);
     rite = to_rvalue(rite);
@@ -3327,7 +3315,7 @@ value_t pointer_operate(value_t left, value_t rite, str_t operator)
     return pure;
 }
 
-value_t operate(value_t left, value_t rite, str_t operator)
+static value_t operate(value_t left, value_t rite, str_t operator)
 {
     assert_types_match(left.type, rite.type, operator);
     if(is_assignment_operator(operator))
@@ -3360,7 +3348,7 @@ value_t operate(value_t left, value_t rite, str_t operator)
     unknown_operator(left.type, rite.type, operator);
 }
 
-value_t read_ltor(value_t with(), precedence_t precedence)
+static value_t read_ltor(value_t with(), precedence_t precedence)
 {
     auto operators = get_operators(precedence);
     auto left = with();
@@ -3373,7 +3361,7 @@ value_t read_ltor(value_t with(), precedence_t precedence)
     return left;
 }
 
-value_t read_rtol(value_t with(), precedence_t precedence)
+static value_t read_rtol(value_t with(), precedence_t precedence)
 {
     auto operators = get_operators(precedence);
     auto left = with();
@@ -3386,7 +3374,7 @@ value_t read_rtol(value_t with(), precedence_t precedence)
     return to_rvalue(left);
 }
 
-value_t read_grouped_expression()
+static value_t read_grouped_expression()
 {
     match(g_left_paren);
     auto value = read_expression();
@@ -3394,7 +3382,7 @@ value_t read_grouped_expression()
     return value;
 }
 
-value_t read_p0()
+static value_t read_p0()
 {
     auto peek = next_char();
     if(is_character_load(peek))
@@ -3421,59 +3409,60 @@ value_t read_p0()
     return read_postfix(prefix);
 }
 
-value_t read_p1()
+static value_t read_p1()
 {
     return read_ltor(read_p0, g_precedence_arithmetic_0);
 }
 
-value_t read_p2()
+static value_t read_p2()
 {
     return read_ltor(read_p1, g_precedence_arithmetic_1);
 }
 
-value_t read_p3()
+static value_t read_p3()
 {
     return read_ltor(read_p2, g_precedence_shift);
 }
 
-value_t read_p4()
+static value_t read_p4()
 {
     return read_ltor(read_p3, g_precedence_relational_0);
 }
 
-value_t read_p5()
+static value_t read_p5()
 {
     return read_ltor(read_p4, g_precedence_relational_1);
 }
 
-value_t read_p6()
+static value_t read_p6()
 {
     return read_ltor(read_p5, g_precedence_bitwise_and);
 }
 
-value_t read_p7()
+static value_t read_p7()
 {
     return read_ltor(read_p6, g_precedence_bitwise_xor);
 }
 
-value_t read_p8()
+static value_t read_p8()
 {
     return read_ltor(read_p7, g_precedence_bitwise_or);
 }
 
-value_t read_p9()
+static value_t read_p9()
 {
     return read_rtol(read_p8, g_precedence_assignment);
 }
 
-value_t read_expression()
+static value_t read_expression()
 {
     return read_p9();
 }
 
-void read_code(str_t path)
+void static read_code(str_t path)
 {
-    auto fp = fopen(path.begin, "r");
+    auto mode = "r";
+    auto fp = fopen(path.begin, mode);
     assert_file_opened(fp, path);
     auto code = get_code();
     code->path = path;
@@ -3484,13 +3473,13 @@ void read_code(str_t path)
     assert_buffer_fit(code);
 }
 
-void push_code(str_t path)
+static void push_code(str_t path)
 {
     g_file.module += 1;
     read_code(path);
 }
 
-bool pop_code()
+static bool pop_code()
 {
     if(g_file.module > 0)
     {
@@ -3501,7 +3490,7 @@ bool pop_code()
     return false;
 }
 
-void read_include()
+static void read_include()
 {
     read_alnum();
     auto path = read_string();
@@ -3510,13 +3499,13 @@ void read_include()
     push_code(path);
 }
 
-void print_compile_stats()
+static void print_compile_stats()
 {
     auto code = get_code();
     fprintf(stderr, "%scompiled%s %s: %d bytes\n", g_green, g_normal, code->path.begin, code->list.size);
 }
 
-void dump_string_consts()
+static void dump_string_consts()
 {
     for(auto i = 0; i < g_file.const_strings.size; i++)
     {
@@ -3525,7 +3514,7 @@ void dump_string_consts()
     }
 }
 
-void read_top_level()
+static void read_top_level()
 {
     auto keyword = peek_alnum();
     if(is_type_def_keyword(keyword))
@@ -3543,13 +3532,13 @@ void read_top_level()
     }
 }
 
-void write_header()
+static void write_header()
 {
     emit(g_opcode_target);
     emit(g_str, g_empty);
 }
 
-void read_program()
+static void read_program()
 {
     write_header();
     for(;;)
