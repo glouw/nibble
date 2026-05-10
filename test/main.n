@@ -1740,11 +1740,6 @@ i64 test_type_cast_postfix_access()
     ret 1;
 }
 
-type int_t
-{
-    i64 value;
-};
-
 int_t ret_copy(int_t integer)
 {
     ret integer;

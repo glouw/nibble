@@ -2403,19 +2403,9 @@ value_t increment(value_t value, bool prefix)
     assert_type(value.type, operator, is_numeric);
     auto out = rvalue(value.type);
     auto llvm_type = to_llvm_type(out.type);
-    if(is_floating(value.type))
-    {
-        emit(g_opcode_floating_increment, out.slot, llvm_type.begin, value.slot);
-    }
-    else
-    if(is_integral(value.type))
-    {
-        emit(g_opcode_increment, out.slot, llvm_type.begin, value.slot);
-    }
-    else
-    {
-        quit("increment failed");
-    }
+    is_floating(value.type)
+        ? emit(g_opcode_floating_increment, out.slot, llvm_type.begin, value.slot)
+        : emit(g_opcode_increment, out.slot, llvm_type.begin, value.slot);
     emit(g_opcode_store, llvm_type.begin, out.slot, slot);
     return prefix ? out : value;
 }
@@ -2439,19 +2429,9 @@ value_t decrement(value_t value, bool prefix)
     assert_type(value.type, operator, is_numeric);
     auto out = rvalue(value.type);
     auto llvm_type = to_llvm_type(out.type);
-    if(is_floating(value.type))
-    {
-        emit(g_opcode_floating_decrement, out.slot, llvm_type.begin, value.slot);
-    }
-    else
-    if(is_integral(value.type))
-    {
-        emit(g_opcode_decrement, out.slot, llvm_type.begin, value.slot);
-    }
-    else
-    {
-        quit("decrement failed");
-    }
+    is_floating(value.type)
+        ? emit(g_opcode_floating_decrement, out.slot, llvm_type.begin, value.slot)
+        : emit(g_opcode_decrement, out.slot, llvm_type.begin, value.slot);
     emit(g_opcode_store, llvm_type.begin, out.slot, slot);
     return prefix ? out : value;
 }
