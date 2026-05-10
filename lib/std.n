@@ -23,74 +23,206 @@ double sin(double);
 double fabs(double);
 double floor(double);
 
+//
+// str - a string container
+//
+
 type str_t
 {
     i8* data;
     i64 size;
+    i64 cap;
 };
 
-str_t str_init(i8* data)
+str_t
+str_init(i8* raw)
 {
+    i64 raw_size = <i64>(strlen(raw));
     str_t self;
-    self.size = <i64>(strlen(data));
-    self.data = new i8[self.size + 1];
-    strcpy(self.data, data);
+    if(raw_size == 0)
+    {
+        ret self;
+    }
+    self.size = raw_size;
+    self.cap = self.size + 1;
+    self.data = new i8[self.cap];
+    i64 i;
+    while(i < raw_size)
+    {
+        self.data[i] = raw[i];
+        i++;
+    }
+    self.data[i] = '\0';
     ret self;
 }
 
-void str_cat(str_t* self, str_t* other)
-{
-    str_t out;
-    out.size = self.size + other.size;
-    out.data = new i8[out.size + 1];
-    i64 index;
-    strcpy(out.data, self.data);
-    strcat(out.data, other.data);
-    del self.data;
-    *self = out;
-    ret;
-}
-
-void str_cats(str_t* self, i8* other)
-{
-    str_t out;
-    out.size = self.size + <i64>(strlen(other));
-    out.data = new i8[out.size + 1];
-    i64 index;
-    strcpy(out.data, self.data);
-    strcat(out.data, other);
-    del self.data;
-    *self = out;
-    ret;
-}
-
-void str_del(str_t* self)
+void
+str_del(str_t* self)
 {
     del self.data;
-    self.size = 0;
     self.data = <i8*>(0);
-    ret;
-}
-
-i1 str_equal(str_t* self, str_t* other)
-{
-    ret strcmp(self.data, other.data) == <i32>(0);
-}
-
-void
-abort(i8* message)
-{
-    puts(message);
-    exit(<i32>(1));
+    self.size = 0;
+    self.cap = 0;
     ret;
 }
 
 void
-assert(i1 condition, i8* message)
+str_cat(str_t* self, i8* raw)
 {
-    if(!condition)
+    i64 raw_size = <i64>(strlen(raw));
+    str_t cat;
+    cat.size = self.size + raw_size;
+    cat.cap = cat.size + 1;
+    cat.data = new i8[cat.cap];
+    i64 i = 0;
+    while(i < self.size)
     {
-        abort(message);
+        cat.data[i] = self.data[i];
+        i++;
     }
+    i64 j = 0;
+    while(j < raw_size)
+    {
+        cat.data[i] = raw[j];
+        i++;
+        j++;
+    }
+    cat.data[i] = '\0';
+    str_del(self);
+    *self = cat;
+    ret;
+}
+
+i1
+str_equal(str_t* self, i8* raw)
+{
+    if(self.size != <i64>(strlen(raw)))
+    {
+        ret <i1>(0);
+    }
+    i64 i;
+    while(i < self.size)
+    {
+        if(self.data[i] != raw[i])
+        {
+            ret<i1>(0);
+        }
+        i++;
+    }
+    ret <i1>(1);
+}
+
+void
+str_push(str_t* self, i8 c)
+{
+    if(self.data == <i8*>(0))
+    {
+        self.size = 0;
+        self.cap = 8 + 1;
+        self.data = new i8[self.cap];
+    }
+    if(self.size == self.cap - 1)
+    {
+        str_t str;
+        str.size = self.size;
+        str.cap = 2 * self.cap + 1;
+        str.data = new i8[str.cap];
+        i64 i = 0;
+        while(i < self.size)
+        {
+            str.data[i] = self.data[i];
+            i++;
+        }
+        str_del(self);
+        *self = str;
+    }
+    self.data[self.size++] = c;
+    self.data[self.size] = '\0';
+    ret;
+}
+
+//
+// arr - a generic array container
+//
+
+type arr_t
+{
+    i8* data;
+    void() delete;
+    i64 size;
+    i64 elem_size;
+};
+
+i64
+arr_bytes(arr_t* self)
+{
+    ret self.size * self.elem_size;
+}
+
+void
+arr_clear(arr_t* self)
+{
+    i64 byte;
+    while(byte < arr_bytes(self))
+    {
+        self.data[byte] = <i8>(0);
+        byte++;
+    }
+    ret;
+}
+
+arr_t
+arr_init(i64 size, i64 elem_size, void() delete)
+{
+    arr_t self;
+    self.delete = delete;
+    self.elem_size = elem_size;
+    self.size = size;
+    self.data = new i8[arr_bytes(&self)];
+    arr_clear(&self);
+    ret self;
+}
+
+i8*
+arr_at(arr_t* self, i64 index)
+{
+    if(index < 0 | index >= self.size)
+    {
+        printf("arr_t['%d'] out of range: max size is '%d'\n", index, self.size);
+        exit(<i32>(1));
+    }
+    i64 byte = index * self.elem_size;
+    ret &self.data[byte];
+}
+
+void
+arr_del_elem(arr_t* self, i64 index)
+{
+    if(self.delete == <void()>(0))
+    {
+        printf("arr_t: missing deleter\n");
+        exit(<i32>(1));
+    }
+    self.delete(arr_at(self, index));
+    ret;
+}
+
+void
+arr_del_elems(arr_t* self)
+{
+    i64 index;
+    while(index < self.size)
+    {
+        arr_del_elem(self, index);
+        index++;
+    }
+    ret;
+}
+
+void
+arr_del(arr_t* self)
+{
+    arr_del_elems(self);
+    del self.data;
     ret;
 }

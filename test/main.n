@@ -1,3 +1,10 @@
+//
+// these are sentinel tests that were written
+// as the nibble compiler was being built.
+//
+// they serve to prevent regressions.
+//
+
 include "../lib/std.n";
 
 // comment
@@ -1143,34 +1150,6 @@ i64 test_type_access()
     ret 1;
 }
 
-i64 test_str()
-{
-    str_t message = str_init("test");
-    str_t a = str_init(" ");
-    str_t b = str_init("this");
-    str_t c = str_init(" ");
-    str_t d = str_init("\tmessage\nx\nx\nx\n");
-    str_t expect = str_init("test this \tmessage\nx\nx\nx\n");
-
-    defer str_del(&message);
-    defer str_del(&a);
-    defer str_del(&b);
-    defer str_del(&c);
-    defer str_del(&d);
-    defer str_del(&expect);
-
-    str_cat(&message, &a);
-    str_cat(&message, &b);
-    str_cat(&message, &c);
-    str_cat(&message, &d);
-
-    if(str_equal(&message, &expect))
-    {
-        ret 0;
-    }
-    ret 1;
-}
-
 void type_no_change(int_t int)
 {
     int.value = 42;
@@ -1283,30 +1262,6 @@ i64 test_prefix_decrement()
      & int.value == 42
      & --d.value == -1.0
     )
-    {
-        ret 0;
-    }
-    ret 1;
-}
-
-void stack_defer_exits(str_t* out)
-{
-    defer str_cats(out, "A");
-    defer str_cats(out, "B");
-    defer str_cats(out, "C");
-    defer str_cats(out, "D");
-    defer str_cats(out, "E");
-    ret;
-}
-
-i64 test_defer_prints()
-{
-    str_t out = str_init("");
-    stack_defer_exits(&out);
-    str_t expect = str_init("EDCBA");
-    defer str_del(&out);
-    defer str_del(&expect);
-    if(str_equal(&out, &expect))
     {
         ret 0;
     }
@@ -1761,6 +1716,78 @@ i64 test_type_cast_postfix_function()
     ret 1;
 }
 
+void i64_delete(i64* self)
+{
+    *self = 0;
+    ret;
+}
+
+i64 test_arr_t()
+{
+    arr_t arr = arr_init(4, <i64>(sizeof i64), i64_delete);
+    defer arr_del(&arr);
+    i64 index;
+    while(index < arr.size)
+    {
+        *<i64*>(arr_at(&arr, index)) = index;
+        index++;
+    }
+    i1 okay = <i1>(1);
+    okay = okay & *<i64*>(arr_at(&arr, 0)) == 0;
+    okay = okay & *<i64*>(arr_at(&arr, 1)) == 1;
+    okay = okay & *<i64*>(arr_at(&arr, 2)) == 2;
+    okay = okay & *<i64*>(arr_at(&arr, 3)) == 3;
+    arr_del_elems(&arr);
+    okay = okay & *<i64*>(arr_at(&arr, 0)) == 0;
+    okay = okay & *<i64*>(arr_at(&arr, 1)) == 0;
+    okay = okay & *<i64*>(arr_at(&arr, 2)) == 0;
+    okay = okay & *<i64*>(arr_at(&arr, 3)) == 0;
+    if(okay)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+void stack_defer_exits(str_t* str )
+{
+    defer str_cat(str, "A");
+    defer str_cat(str, "B");
+    defer str_cat(str, "C");
+    defer str_cat(str, "D");
+    defer str_cat(str, "E");
+    ret;
+}
+
+i64 test_defer_prints()
+{
+    str_t str = str_init("");
+    stack_defer_exits(&str);
+    defer str_del(&str);
+    if(str_equal(&str, "EDCBA"))
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+i64 test_str_push()
+{
+    str_t str = str_init("");
+    str_push(&str, 'A');
+    void() pppppppp = str_push;
+    pppppppp(&str, 'B');
+    str_push(&str, 'C');
+    str_push(&str, 'D');
+    str_push(&str, 'E');
+    defer str_del(&str);
+    if(str_equal(&str, "ABCDE"))
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     i64 result =
@@ -1814,14 +1841,12 @@ i32 main()
       | test_direct_function_deref()
       | test_type_copy()
       | test_type_access()
-      | test_str()
       | test_type_pass()
       | test_mod()
       | test_postix_increment()
       | test_postix_decrement()
       | test_prefix_increment()
       | test_prefix_decrement()
-      | test_defer_prints()
       | test_defer_continue()
       | test_ascii_char()
       | test_double_type_cast()
@@ -1840,6 +1865,9 @@ i32 main()
       | test_variadic_function_pointer()
       | test_type_cast_postfix_access()
       | test_type_cast_postfix_function()
+      | test_arr_t()
+      | test_defer_prints()
+      | test_str_push()
     ;
     if(result == 0)
     {

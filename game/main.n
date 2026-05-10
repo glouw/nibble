@@ -114,7 +114,6 @@ sheets_init()
 void
 sheets_push(sheets_t* self, sheet_t sheet)
 {
-    assert(self.size < self.cap, "sheets was full");
     self.sheet[self.size++] = sheet;
     ret;
 }
@@ -142,7 +141,6 @@ type sprite_t
 sprite_t
 sprite_init(i64 x, i64 y, sheets_t* sheets, i64 tag, i64 zoom)
 {
-    assert(zoom % 2 == 0, "sprite zoom must be even");
     sprite_t self;
     self.sheet = &sheets.sheet[tag];
     self.where.x = x;
@@ -171,7 +169,6 @@ sprites_init()
 void
 sprites_push(sprites_t* self, sprite_t sprite)
 {
-    assert(self.size < self.cap, "sprites was full");
     self.sprite[self.size++] = sprite;
     ret;
 }
@@ -325,7 +322,10 @@ sprite_set_state(sprite_t* self, glob_t* glob)
         if(state == glob.sprite_state.sleep)
             sprite_set_sleep_state(self, glob);
         else
-            abort("unknown sprite state encountered");
+        {
+            printf("unknown sprite state encountered\n");
+            exit(<i32>(1));
+        }
         self.state = state;
     }
     else

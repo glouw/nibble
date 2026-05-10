@@ -291,7 +291,7 @@ static char* const g_opcode_unsigned_bitwise_and        = "%%%d = and %s %%%d, %
 static char* const g_opcode_unsigned_shift_left         = "%%%d = shl %s %%%d, %%%d";
 static char* const g_opcode_unsigned_shift_rite         = "%%%d = lshr %s %%%d, %%%d";
 static char* const g_opcode_alloca                      = "%%%d = alloca %s";
-static char* const g_opcode_flat_gep                    = "%%%d = getelementptr ptr, ptr %%%d, %s %d";
+static char* const g_opcode_flat_gep                    = "%%%d = getelementptr ptr, ptr %%%d, i32 0";
 static char* const g_opcode_gep                         = "%%%d = getelementptr %s, ptr %%%d, %s %%%d";
 static char* const g_opcode_sizeof                      = "%%%d = getelementptr %s, ptr null, i64 1";
 static char* const g_opcode_type_field                  = "%%%d = getelementptr inbounds %s, ptr %%%d, i32 0, i32 %d";
@@ -311,10 +311,6 @@ static char* const g_opcode_store_function              = "store %s @%s, ptr %%%
 static char* const g_opcode_store                       = "store %s %%%d, ptr %%%d";
 static char* const g_opcode_zero_init                   = "store %s zeroinitializer, ptr %%%d";
 static char* const g_opcode_type_slot                   = "%s %%%d";
-static char* const g_opcode_call                        = "%%%d = call %s @%s";
-static char* const g_opcode_void_call                   = "call %s @%s";
-static char* const g_opcode_variadic_call               = "%%%d = call %s (...) @%s";
-static char* const g_opcode_variadic_void_call          = "call %s (...) @%s";
 static char* const g_opcode_indirect_call               = "%%%d = call %s %%%d";
 static char* const g_opcode_indirect_void_call          = "call %s %%%d";
 static char* const g_opcode_variadic_indirect_call      = "%%%d = call %s (...) %%%d";
@@ -1271,6 +1267,12 @@ static void invalid_escape_char(char c)
     quit("'%c' is an invalid escape character", c);
 }
 
+[[noreturn]]
+static void missing_expression(char* with)
+{
+    quit("'%s' expected an expression", with);
+}
+
 static void assert_program_use(int argc)
 {
     if(argc != 2)
@@ -1796,6 +1798,10 @@ static value_t read_ret_statement(value_t ret_value)
     }
     else
     {
+        if(is_end_of_statement(next_char()))
+        {
+            missing_expression(g_ret);
+        }
         auto value = read_expression();
         match(g_semicolon);
         auto llvm_type = to_llvm_type(value.type);
@@ -1811,6 +1817,10 @@ static void read_if_statement(value_t ret_value, branch_t branch)
 {
     read_alnum();
     match(g_left_paren);
+    if(is_end_of_arg_list(next_char()))
+    {
+        missing_expression(g_if);
+    }
     auto value = read_expression();
     auto operator = str_init(g_if);
     assert_type(value.type, operator, is_boolean);
@@ -1938,6 +1948,10 @@ static void read_while_statement(value_t ret_value, int block)
     emit(g_opcode_label, again_label);
     read_alnum();
     match(g_left_paren);
+    if(is_end_of_arg_list(next_char()))
+    {
+        missing_expression(g_while);
+    }
     auto value = read_expression();
     match(g_rite_paren);
     auto operator = str_init(g_while);
@@ -2254,11 +2268,21 @@ static value_t to_rvalue(value_t value)
     return value;
 }
 
+static value_t inherit(value_t value, value_t other)
+{
+    value.name = other.name;
+    value.type = other.type;
+    value.types = other.types;
+    value.names = other.names;
+    return value;
+}
+
 static value_t load_indirect(value_t found)
 {
     auto value = lvalue(found.type);
     if(found.type.is_function)
     {
+        value = inherit(value, found);
         value.type.is_function_pointer = true;
         value = alloca_value(value);
         auto llvm_type = to_llvm_type(value.type);
@@ -2267,7 +2291,7 @@ static value_t load_indirect(value_t found)
     }
     else
     {
-        emit(g_opcode_flat_gep, value.slot, found.slot, g_i32, 0);
+        emit(g_opcode_flat_gep, value.slot, found.slot);
         return value;
     }
 }
@@ -2914,6 +2938,10 @@ static value_t read_prefix()
         auto type = read_type();
         match(g_greater);
         match(g_left_paren);
+        if(is_end_of_arg_list(next_char()))
+        {
+            missing_expression(g_type_cast);
+        }
         auto value = read_expression();
         match(g_rite_paren);
         return type_cast(value, type);
@@ -2959,7 +2987,6 @@ static value_t read_prefix()
 
 static value_t field_access(value_t);
 static value_t array_access(value_t);
-static value_t call_direct_function(value_t);
 static value_t call_indirect_function(value_t);
 
 static value_t read_postfix(value_t offset)
@@ -2967,9 +2994,7 @@ static value_t read_postfix(value_t offset)
     auto peek = next_char();
     if(is_function_postfix(peek))
     {
-        return is_function_pointer(offset.type)
-            ? call_indirect_function(offset)
-            : call_direct_function(offset);
+        return call_indirect_function(offset);
     }
     if(is_increment_decrement(peek_operator()))
     {
@@ -3108,32 +3133,6 @@ static void emit_indirect_call(value_t value, value_t function_pointer)
             : emit(g_opcode_indirect_call, value.slot, llvm_type.begin, function_pointer.slot);
 }
 
-static void emit_direct_call(value_t value, value_t function)
-{
-    auto llvm_type = to_llvm_type(value.type);
-    if(is_variadic(value.type))
-        is_void(value.type.name)
-            ? emit(g_opcode_variadic_void_call, llvm_type.begin, function.name.begin)
-            : emit(g_opcode_variadic_call, value.slot, llvm_type.begin, function.name.begin);
-    else
-        is_void(value.type.name)
-            ? emit(g_opcode_void_call, llvm_type.begin, function.name.begin)
-            : emit(g_opcode_call, value.slot, llvm_type.begin, function.name.begin);
-}
-
-static value_t call_direct_function(value_t function)
-{
-    auto operator = str_init(g_function);
-    assert_type(function.type, operator, is_callable);
-    auto types = (type_list_t) {};
-    auto slots = read_function_call_arg_list(&types);
-    auto value = rvalue(function.type);
-    check_function_args(function, &types);
-    emit_direct_call(value, function);
-    emit_parameter_slots(&types, &slots);
-    return read_postfix(value);
-}
-
 static value_t call_indirect_function(value_t function_pointer)
 {
     auto operator = str_init(g_function);
@@ -3142,8 +3141,10 @@ static value_t call_indirect_function(value_t function_pointer)
     auto types = (type_list_t) {};
     auto slots = read_function_call_arg_list(&types);
     auto value = rvalue(function_pointer.type);
-    /* function pointers are designed to take an unspecified number
-     * of parameters, so skip the argument checker */
+    if(function_pointer.type.must_check_args)
+    {
+        check_function_args(function_pointer, &types);
+    }
     value.type.is_function_pointer = false;
     emit_indirect_call(value, function_pointer);
     emit_parameter_slots(&types, &slots);
@@ -3199,6 +3200,8 @@ static value_t pure_value(type_t type, str_t operator)
     if(is_relational(operator))
     {
         pure.type.name = str_init(g_i1);
+        pure.type.is_function_pointer = false;
+        pure.type.is_variadic = false;
     }
     return pure;
 }
