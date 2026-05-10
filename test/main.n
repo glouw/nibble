@@ -1,7 +1,7 @@
 include "../lib/std.n";
 
 // comment
-//
+
 i64 add(i64 a, i64 b)
 {
     ret a + b;
@@ -967,6 +967,7 @@ i64** new_2d_array(i64 ysize, i64 xsize)
         y[i] = new i64[xsize];
         i = i + 1;
     }
+    y[0][0] = y[0][0];
     ret y;
 }
 
@@ -1727,6 +1728,44 @@ i64 test_variadic_function_pointer()
     ret 1;
 }
 
+i64 test_type_cast_postfix_access()
+{
+    i64* array = new i64[32];
+    defer del array;
+    array[0] = 42;
+    if(<i64*>(array)[0] == 42)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
+type int_t
+{
+    i64 value;
+};
+
+int_t ret_copy(int_t integer)
+{
+    ret integer;
+}
+
+int_t* ret_pointer(int_t* integer)
+{
+    ret integer;
+}
+
+i64 test_type_cast_postfix_function()
+{
+    int_t integer;
+    integer.value = 42;
+    if(<int_t()>(ret_copy)(integer).value == 42 & <int_t*()>(ret_pointer)(&integer).value == 42)
+    {
+        ret 0;
+    }
+    ret 1;
+}
+
 i32 main()
 {
     i64 result =
@@ -1804,6 +1843,8 @@ i32 main()
       | test_pointer_in_type()
       | test_string_return()
       | test_variadic_function_pointer()
+      | test_type_cast_postfix_access()
+      | test_type_cast_postfix_function()
     ;
     if(result == 0)
     {

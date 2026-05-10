@@ -985,16 +985,6 @@ bool is_del(str_t keyword)
     return str_equal(keyword.begin, g_del);
 }
 
-bool is_increment(str_t keyword)
-{
-    return str_equal(keyword.begin, g_increment);
-}
-
-bool is_decrement(str_t keyword)
-{
-    return str_equal(keyword.begin, g_decrement);
-}
-
 bool is_character_load(char c)
 {
     return c == *g_apostrophe;
@@ -1057,39 +1047,52 @@ bool is_array_access_postfix(char c)
     return c == *g_left_square;
 }
 
-bool is_type_cast(char c)
+bool is_increment(str_t operator)
 {
-    return c == *g_less;
+    return str_equal(operator.begin, g_increment);
 }
 
-bool is_not(char c)
+bool is_decrement(str_t operator)
 {
-    return c == *g_not;
+    return str_equal(operator.begin, g_decrement);
 }
 
-bool is_bitwise_not(char c)
+bool is_type_cast(str_t operator)
 {
-    return c == *g_bitwise_not;
+    return str_equal(operator.begin, g_less);
 }
 
-bool is_positive(char c)
+bool is_not(str_t operator)
 {
-    return c == *g_add;
+    return str_equal(operator.begin, g_not);
 }
 
-bool is_negative(char c)
+bool is_bitwise_not(str_t operator)
 {
-    return c == *g_subtract;
+    return str_equal(operator.begin, g_bitwise_not);
 }
 
-bool is_address_of(char c)
+bool is_positive(str_t operator)
 {
-    return c == *g_ampersand;
+    return str_equal(operator.begin, g_add);
 }
 
-bool is_dereference(char c)
+bool is_negative(str_t operator)
 {
-    return c == *g_multiply;
+    return str_equal(operator.begin, g_subtract);
+}
+
+bool is_address_of(str_t operator)
+{
+    return str_equal(operator.begin, g_ampersand);
+}
+
+bool is_dereference(str_t operator)
+{
+    /* these like to bunch with a peek_operator,
+     * so peaking at the first one is okay, so long
+     * as is_dereference is last in line in read_prefix */
+    return operator.begin[0] == *g_multiply;
 }
 
 bool is_star(int c)
@@ -1217,9 +1220,9 @@ void unknown_operator(type_t left, type_t rite, str_t operator)
 }
 
 [[noreturn]]
-void unknown_unary()
+void unknown_unary(str_t operator)
 {
-    quit("unknown unary operator encountered");
+    quit("unknown unary operator '%s' encountered", operator.begin);
 }
 
 [[noreturn]]
@@ -1723,6 +1726,7 @@ value_t read_value()
     auto type = read_type();
     auto value = rvalue(type);
     value.name = read_alnum();
+    value.is_lvalue = true;
     return value;
 }
 
@@ -2394,13 +2398,24 @@ value_t increment(value_t value, bool prefix)
 {
     auto slot = value.slot;
     auto operator = str_init(g_increment);
+    assert_lvalue(value, operator);
     value = to_rvalue(value);
     assert_type(value.type, operator, is_numeric);
     auto out = rvalue(value.type);
     auto llvm_type = to_llvm_type(out.type);
-    is_floating(value.type)
-        ? emit(g_opcode_floating_increment, out.slot, llvm_type.begin, value.slot)
-        : emit(g_opcode_increment, out.slot, llvm_type.begin, value.slot);
+    if(is_floating(value.type))
+    {
+        emit(g_opcode_floating_increment, out.slot, llvm_type.begin, value.slot);
+    }
+    else
+    if(is_integral(value.type))
+    {
+        emit(g_opcode_increment, out.slot, llvm_type.begin, value.slot);
+    }
+    else
+    {
+        quit("increment failed");
+    }
     emit(g_opcode_store, llvm_type.begin, out.slot, slot);
     return prefix ? out : value;
 }
@@ -2419,13 +2434,24 @@ value_t decrement(value_t value, bool prefix)
 {
     auto slot = value.slot;
     auto operator = str_init(g_decrement);
+    assert_lvalue(value, operator);
     value = to_rvalue(value);
     assert_type(value.type, operator, is_numeric);
     auto out = rvalue(value.type);
     auto llvm_type = to_llvm_type(out.type);
-    is_floating(value.type)
-        ? emit(g_opcode_floating_decrement, out.slot, llvm_type.begin, value.slot)
-        : emit(g_opcode_decrement, out.slot, llvm_type.begin, value.slot);
+    if(is_floating(value.type))
+    {
+        emit(g_opcode_floating_decrement, out.slot, llvm_type.begin, value.slot);
+    }
+    else
+    if(is_integral(value.type))
+    {
+        emit(g_opcode_decrement, out.slot, llvm_type.begin, value.slot);
+    }
+    else
+    {
+        quit("decrement failed");
+    }
     emit(g_opcode_store, llvm_type.begin, out.slot, slot);
     return prefix ? out : value;
 }
@@ -2860,11 +2886,11 @@ value_t type_cast(value_t value, type_t type)
     unknown_type_cast(value.type, type);
 }
 
+value_t read_postfix(value_t);
 value_t read_p0();
 
 value_t read_prefix()
 {
-    auto peek = next_char();
     auto alnum = peek_alnum();
     if(is_new(alnum))
     {
@@ -2906,7 +2932,7 @@ value_t read_prefix()
         auto value = read_p0();
         return prefix_decrement(value);
     }
-    if(is_type_cast(peek))
+    if(is_type_cast(operator))
     {
         match(g_less);
         auto type = read_type();
@@ -2916,43 +2942,43 @@ value_t read_prefix()
         match(g_rite_paren);
         return type_cast(value, type);
     }
-    if(is_not(peek))
+    if(is_not(operator))
     {
         match(g_not);
         auto value = read_p0();
         return to_not(value);
     }
-    if(is_bitwise_not(peek))
+    if(is_bitwise_not(operator))
     {
         match(g_bitwise_not);
         auto value = read_p0();
         return to_bitwise_not(value);
     }
-    if(is_positive(peek))
+    if(is_positive(operator))
     {
         match(g_add);
         auto value = read_p0();
         return to_positive(value);
     }
-    if(is_negative(peek))
+    if(is_negative(operator))
     {
         match(g_subtract);
         auto value = read_p0();
         return to_negative(value);
     }
-    if(is_address_of(peek))
+    if(is_address_of(operator))
     {
         match(g_ampersand);
         auto value = read_p0();
         return get_address_of(value);
     }
-    if(is_dereference(peek))
+    if(is_dereference(operator))
     {
         match(g_multiply);
         auto value = read_p0();
         return dereference(value);
     }
-    unknown_unary();
+    unknown_unary(operator);
 }
 
 value_t field_access(value_t);
@@ -2965,38 +2991,23 @@ value_t read_postfix(value_t offset)
     auto peek = next_char();
     if(is_function_postfix(peek))
     {
-        if(is_function_pointer(offset.type))
-        {
-            offset = load_indirect(offset);
-            return call_indirect_function(offset);
-        }
-        else
-        {
-            return call_direct_function(offset);
-        }
+        return is_function_pointer(offset.type)
+            ? call_indirect_function(offset)
+            : call_direct_function(offset);
     }
-    offset = load_indirect(offset);
-    if(is_field_access_postfix(peek))
+    if(is_increment_decrement(peek_operator()))
     {
-        return field_access(offset);
+        return is_increment(read_operator())
+            ? postfix_increment(offset)
+            : postfix_decrement(offset);
     }
     if(is_array_access_postfix(peek))
     {
         return array_access(offset);
     }
-    auto operator = peek_operator();
-    if(is_increment_decrement(operator))
+    if(is_field_access_postfix(peek))
     {
-        if(str_equal(operator.begin, g_increment))
-        {
-            read_operator();
-            return postfix_increment(offset);
-        }
-        if(str_equal(operator.begin, g_decrement))
-        {
-            read_operator();
-            return postfix_decrement(offset);
-        }
+        return field_access(offset);
     }
     return offset;
 }
@@ -3010,7 +3021,7 @@ value_t array_access(value_t pointer)
     assert_type(index.type, operator, is_size);
     match(g_rite_square);
     auto value = dereference(pointer);
-    auto offset = rvalue(value.type);
+    auto offset = lvalue(value.type);
     auto llvm_type = to_llvm_type(offset.type);
     emit(g_opcode_gep, offset.slot, llvm_type.begin, value.slot, g_i64, index.slot);
     return read_postfix(offset);
@@ -3144,7 +3155,7 @@ value_t call_direct_function(value_t function)
     check_function_args(function, &types);
     emit_direct_call(value, function);
     emit_parameter_slots(&types, &slots);
-    return value;
+    return read_postfix(value);
 }
 
 value_t call_indirect_function(value_t function_pointer)
@@ -3160,15 +3171,16 @@ value_t call_indirect_function(value_t function_pointer)
     value.type.is_function_pointer = false;
     emit_indirect_call(value, function_pointer);
     emit_parameter_slots(&types, &slots);
-    return value;
+    return read_postfix(value);
 }
 
-value_t read_identifier_then_postfix()
+value_t read_identifier()
 {
     auto name = read_alnum();
-    auto value = get_value(name);
-    assert_declared(value, name);
-    return read_postfix(*value);
+    auto found = get_value(name);
+    assert_declared(found, name);
+    auto value = load_indirect(*found);
+    return read_postfix(value);
 }
 
 value_t load_character()
@@ -3419,13 +3431,14 @@ value_t read_p0()
     }
     if(is_identifier_load(peek))
     {
-        return read_identifier_then_postfix();
+        return read_identifier();
     }
     if(is_grouped_expression(peek))
     {
         return read_grouped_expression();
     }
-    return read_prefix();
+    auto prefix = read_prefix();
+    return read_postfix(prefix);
 }
 
 value_t read_p1()
