@@ -66,7 +66,7 @@ i64* new_int(i64 value)
 i32
 main()
 {
-    sdl_t sdl = sdl_init(1024, 768, "tree");
+    sdl_t sdl = sdl_init(640, 480, "tree");
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     tree_t tree = tree_init(compare, delete);
     defer sdl_del(&sdl);

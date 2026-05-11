@@ -17,6 +17,81 @@ type sheet_t
     i64 states;
 };
 
+type sheets_t
+{
+    sheet_t* sheet;
+    i64 size;
+    i64 cap;
+};
+
+type tag_t
+{
+    i64 black_chicken = 0;
+    i64 white_chicken = 1;
+    i64 brown_chicken = 2;
+    i64 brown_nest = 3;
+    i64 count = 4;
+};
+
+type state_t
+{
+    i64 idle = 0;
+    i64 walk = 1;
+    i64 sleep = 2;
+};
+
+type cycle_t
+{
+    i64 idle = 30;
+    i64 walk = 40;
+    i64 sleep = 500;
+};
+
+type dice_t
+{
+    i64 idle = 20;
+    i64 walk = 98;
+    i64 sleep = 100;
+};
+
+type glob_t
+{
+    tag_t tags;
+    state_t states;
+    cycle_t cycles;
+    dice_t dices;
+    sdl_scancode_t scancode;
+    i64 percent_cap = 100;
+    i64 cycles_per_frame = 5;
+};
+
+type sprite_t
+{
+    sheet_t* sheet;
+    point_t where;
+    point_t velocity;
+    i64 state;
+    i64 frame;
+    i64 tag;
+    i64 zoom;
+    i64 cycle;
+    i1 is_facing_right;
+    i1 is_bottom_sort;
+    i8* message;
+};
+
+type sprites_t
+{
+    sprite_t* sprite;
+    i64 size;
+    i64 cap;
+};
+
+i64 rand64(i64 max)
+{
+    ret <i64>(rand()) % max;
+}
+
 sheet_t
 sheet_init(sdl_t* sdl, i8* path, i64 tile_width, i64 tile_height, i64 frames, i64 states)
 {
@@ -38,69 +113,12 @@ sheet_del(sheet_t* self)
     ret;
 }
 
-type chicken_t
-{
-    i64 black = 0;
-    i64 white = 1;
-    i64 brown = 2;
-};
-
-type nest_t
-{
-    i64 brown = 3;
-};
-
-type sprite_tag_t
-{
-    chicken_t chicken;
-    nest_t nest;
-};
-
-type sprite_state_t
-{
-    i64 idle = 0;
-    i64 walk = 1;
-    i64 sleep = 2;
-};
-
-type sprite_cycles_t
-{
-    i64 idle = 30;
-    i64 walk = 40;
-    i64 sleep = 500;
-};
-
-type sprite_dice_t
-{
-    i64 idle = 20;
-    i64 walk = 98;
-    i64 sleep = 100;
-};
-
-type glob_t
-{
-    sprite_tag_t sprite_tag;
-    sprite_state_t sprite_state;
-    sprite_cycles_t sprite_cycles;
-    sprite_dice_t sprite_dice;
-    sdl_scancode_t scancode;
-    i64 percent_cap = 100;
-    i64 cycles_per_frame = 5;
-};
-
 glob_t
 glob_init()
 {
     glob_t self;
     ret self;
 }
-
-type sheets_t
-{
-    sheet_t* sheet;
-    i64 size;
-    i64 cap;
-};
 
 sheets_t
 sheets_init()
@@ -114,6 +132,11 @@ sheets_init()
 void
 sheets_push(sheets_t* self, sheet_t sheet)
 {
+    if(self.size >= self.cap)
+    {
+        printf("too many sheets!\n");
+        exit(<i32>(1));
+    }
     self.sheet[self.size++] = sheet;
     ret;
 }
@@ -125,21 +148,28 @@ sheets_del(sheets_t* self)
     ret;
 }
 
-type sprite_t
+i1
+is_chicken(sprite_t* self, tag_t* tags)
 {
-    sheet_t* sheet;
-    point_t where;
-    point_t velocity;
-    i64 state;
-    i64 frame;
-    i64 tag;
-    i64 zoom;
-    i64 cycle;
-    i1 is_facing_right;
-};
+    ret self.tag == tags.black_chicken
+      | self.tag == tags.white_chicken
+      | self.tag == tags.brown_chicken;
+}
+
+i1
+is_nest(sprite_t* self, tag_t* tags)
+{
+    ret self.tag == tags.brown_nest;
+}
+
+i1
+is_bottom_sort(sprite_t* self, tag_t* tags)
+{
+    ret is_chicken(self, tags);
+}
 
 sprite_t
-sprite_init(i64 x, i64 y, sheets_t* sheets, i64 tag, i64 zoom)
+sprite_init(i64 x, i64 y, sheets_t* sheets, i64 tag, i64 zoom, tag_t* tags)
 {
     sprite_t self;
     self.sheet = &sheets.sheet[tag];
@@ -147,30 +177,8 @@ sprite_init(i64 x, i64 y, sheets_t* sheets, i64 tag, i64 zoom)
     self.where.y = y;
     self.tag = tag;
     self.zoom = zoom;
+    self.is_bottom_sort = is_bottom_sort(&self, tags);
     ret self;
-}
-
-type sprites_t
-{
-    sprite_t* sprite;
-    i64 size;
-    i64 cap;
-};
-
-sprites_t
-sprites_init()
-{
-    sprites_t self;
-    self.cap = 512;
-    self.sprite = new sprite_t[self.cap];
-    ret self;
-}
-
-void
-sprites_push(sprites_t* self, sprite_t sprite)
-{
-    self.sprite[self.size++] = sprite;
-    ret;
 }
 
 point_t
@@ -198,7 +206,11 @@ i64
 sprite_get_foot(sprite_t* self)
 {
     sdl_rect_t rect = sprite_get_dest_rect(self);
-    ret <i64>(rect.y + rect.h);
+    if(self.is_bottom_sort)
+    {
+        ret <i64>(rect.y + rect.h);
+    }
+    ret <i64>(rect.y);
 }
 
 i32
@@ -208,25 +220,12 @@ sprite_compare_feet(sprite_t* left, sprite_t* rite)
 }
 
 void
-sprites_sort(sprites_t* self)
-{
-    qsort(<ptr>(self.sprite), <u64>(self.size), sizeof self.sprite[0], sprite_compare_feet);
-    ret;
-}
-
-void
-sprites_del(sprites_t* self)
-{
-    del self.sprite;
-    ret;
-}
-
-void
 sprite_set_idle_state(sprite_t* self, glob_t* glob)
 {
     point_t zero;
     self.velocity = zero;
-    self.cycle = glob.sprite_cycles.idle;
+    self.cycle = glob.cycles.idle;
+    self.state = glob.states.idle;
     ret;
 }
 
@@ -236,7 +235,16 @@ sprite_set_walk_state(sprite_t* self, glob_t* glob)
     i64 shift = self.zoom / 2;
     self.velocity.x = <i64>(rand()) % (self.zoom + 1) - shift;
     self.velocity.y = <i64>(rand()) % (self.zoom + 1) - shift;
-    self.cycle = glob.sprite_cycles.walk;
+    point_t zero;
+    if(self.velocity.x == 0 & self.velocity.y == 0)
+    {
+        sprite_set_walk_state(self, glob); // Reroll
+    }
+    else
+    {
+        self.cycle = glob.cycles.walk;
+        self.state = glob.states.walk;
+    }
     ret;
 }
 
@@ -245,7 +253,8 @@ sprite_set_sleep_state(sprite_t* self, glob_t* glob)
 {
     point_t zero;
     self.velocity = zero;
-    self.cycle = glob.sprite_cycles.sleep;
+    self.cycle = glob.cycles.sleep;
+    self.state = glob.states.sleep;
     ret;
 }
 
@@ -275,7 +284,7 @@ sprite_is_out_of_bounds(sprite_t* self, sdl_t* sdl)
 i1
 sprite_can_walk(sprite_t* self, glob_t* glob)
 {
-    ret self.sheet.states > glob.sprite_state.walk;
+    ret self.sheet.states > glob.states.walk;
 }
 
 void
@@ -288,8 +297,9 @@ sprite_move(sprite_t* self, sdl_t* sdl, glob_t* glob)
         if(sprite_is_out_of_bounds(self, sdl))
         {
             self.where = revert;
+            sprite_set_idle_state(self, glob);
         }
-        if(self.state == glob.sprite_state.walk)
+        if(self.state == glob.states.walk)
         {
             self.is_facing_right = self.velocity.x > 0;
         }
@@ -301,10 +311,10 @@ i64
 sprite_roll_state(sprite_t* self, glob_t* glob)
 {
     i64 roll = <i64>(rand()) % glob.percent_cap;
-    if(roll < glob.sprite_dice.idle ) ret glob.sprite_state.idle;
-    if(roll < glob.sprite_dice.walk ) ret glob.sprite_state.walk;
-    if(roll < glob.sprite_dice.sleep) ret glob.sprite_state.sleep;
-    ret glob.sprite_state.idle;
+    if(roll < glob.dices.idle ) ret glob.states.idle;
+    if(roll < glob.dices.walk ) ret glob.states.walk;
+    if(roll < glob.dices.sleep) ret glob.states.sleep;
+    ret glob.states.idle;
 }
 
 void
@@ -313,20 +323,19 @@ sprite_set_state(sprite_t* self, glob_t* glob)
     if(self.cycle == 0)
     {
         i64 state = sprite_roll_state(self, glob);
-        if(state == glob.sprite_state.idle)
+        if(state == glob.states.idle)
             sprite_set_idle_state(self, glob);
         else
-        if(state == glob.sprite_state.walk)
+        if(state == glob.states.walk)
             sprite_set_walk_state(self, glob);
         else
-        if(state == glob.sprite_state.sleep)
+        if(state == glob.states.sleep)
             sprite_set_sleep_state(self, glob);
         else
         {
             printf("unknown sprite state encountered\n");
             exit(<i32>(1));
         }
-        self.state = state;
     }
     else
     {
@@ -335,14 +344,137 @@ sprite_set_state(sprite_t* self, glob_t* glob)
     ret;
 }
 
+i1
+sprite_is_close(sprite_t* self, sprite_t* other)
+{
+    if(self == other)
+    {
+        ret <i1>(0);
+    }
+    i64 by = 32;
+    point_t delta = self.where - other.where;
+    delta.x = llabs(delta.x);
+    delta.y = llabs(delta.y);
+    ret delta.x < by & delta.y < by;
+}
+
+void
+sprite_bawk(sprite_t* self, sprite_t* other, glob_t* glob)
+{
+    if(self.state != glob.states.sleep)
+    {
+        if(is_chicken(other, &glob.tags))
+        {
+            if(other.state == glob.states.sleep)
+            {
+                self.message = "bawk...";
+            }
+            if(self.is_facing_right & !other.is_facing_right)
+            {
+                self.message = "bawk!";
+            }
+            if(!self.is_facing_right & other.is_facing_right)
+            {
+                self.message = "bawk!";
+            }
+        }
+        if(is_nest(other, &glob.tags))
+        {
+            self.message = "bawk?";
+            other.message = "rustle";
+        }
+    }
+    ret;
+}
+
+sprite_t*
+sprite_interact(sprite_t* self, sprites_t* sprites, i1() condition)
+{
+    i64 i;
+    while(i < sprites.size)
+    {
+        sprite_t* other = &sprites.sprite[i];
+        if(condition(self, other))
+        {
+            ret other;
+        }
+        i++;
+    }
+    ret <sprite_t*>(0);
+}
+
+sprites_t
+sprites_init()
+{
+    sprites_t self;
+    self.cap = 32;
+    self.sprite = new sprite_t[self.cap];
+    ret self;
+}
+
+void
+sprites_push(sprites_t* self, sprite_t sprite)
+{
+    if(self.size >= self.cap)
+    {
+        printf("too many sprites!\n");
+        exit(<i32>(1));
+    }
+    self.sprite[self.size++] = sprite;
+    ret;
+}
+
+void
+sprites_sort(sprites_t* self)
+{
+    qsort(<ptr>(self.sprite), <u64>(self.size), sizeof self.sprite[0], sprite_compare_feet);
+    ret;
+}
+
+void
+sprites_del(sprites_t* self)
+{
+    del self.sprite;
+    ret;
+}
+
+void
+sprites_bawk(sprites_t* self, sdl_t* sdl, glob_t* glob)
+{
+    i64 i;
+    while(i < self.size)
+    {
+        sprite_t* sprite = &self.sprite[i];
+        sprite_t* other = sprite_interact(sprite, self, sprite_is_close);
+        if(other != <sprite_t*>(0))
+        {
+            sprite_bawk(sprite, other, glob);
+        }
+        i++;
+    }
+    ret;
+}
+
+void
+sprites_reset(sprites_t* self, glob_t* glob)
+{
+    i64 i;
+    while(i < self.size)
+    {
+        sprite_t* sprite = &self.sprite[i];
+        sprite.message = "";
+        i++;
+    }
+    ret;
+}
+
 void
 sprites_move(sprites_t* self, sdl_t* sdl, glob_t* glob)
 {
-    i64 i = 0;
-    sprite_t* sprite;
+    i64 i;
     while(i < self.size)
     {
-        sprite = &self.sprite[i];
+        sprite_t* sprite = &self.sprite[i];
         sprite_set_state(sprite, glob);
         sprite_move(sprite, sdl, glob);
         i++;
@@ -351,18 +483,15 @@ sprites_move(sprites_t* self, sdl_t* sdl, glob_t* glob)
 }
 
 void
-sprites_render(sprites_t* self, sdl_t* sdl, glob_t* glob, i64 cycle)
+sprites_render(sprites_t* self, sdl_t* sdl, sdl_font_t* font, glob_t* glob, i64 cycle)
 {
-    i64 i = 0;
-    sprite_t* sprite;
-    sdl_rect_t source;
-    sdl_rect_t dest;
+    i64 i;
     i32 flip;
     while(i < self.size)
     {
-        sprite = &self.sprite[i];
-        source = sprite_get_source_rect(sprite, glob);
-        dest = sprite_get_dest_rect(sprite);
+        sprite_t* sprite = &self.sprite[i];
+        sdl_rect_t source = sprite_get_source_rect(sprite, glob);
+        sdl_rect_t dest = sprite_get_dest_rect(sprite);
         if(sprite.is_facing_right)
         {
             flip = <i32>(1);
@@ -372,6 +501,7 @@ sprites_render(sprites_t* self, sdl_t* sdl, glob_t* glob, i64 cycle)
             flip = <i32>(0);
         }
         sdl_render_copy_ex(sdl, sprite.sheet.texture, &source, &dest, flip);
+        sdl_write_font(sdl, font, sprite.message, <i64>(dest.x), <i64>(dest.y));
         if(cycle % glob.cycles_per_frame == 0)
         {
             sprite.frame++;
@@ -396,27 +526,35 @@ sprites_t
 populate_sprites(sdl_t* sdl, glob_t* glob, sheets_t* sheets)
 {
     sprites_t self = sprites_init();
-    sprites_push(&self, sprite_init(  0,   0, sheets, glob.sprite_tag.chicken.black, 4));
-    sprites_push(&self, sprite_init(100, 100, sheets, glob.sprite_tag.chicken.white, 8));
-    sprites_push(&self, sprite_init(200, 200, sheets, glob.sprite_tag.chicken.brown, 4));
-    sprites_push(&self, sprite_init(300, 200, sheets, glob.sprite_tag.chicken.brown, 6));
-    sprites_push(&self, sprite_init(400, 200, sheets, glob.sprite_tag.chicken.white, 4));
-    sprites_push(&self, sprite_init(440, 280, sheets, glob.sprite_tag.chicken.black, 6));
-    sprites_push(&self, sprite_init(600, 270, sheets, glob.sprite_tag.chicken.black, 4));
-    sprites_push(&self, sprite_init(700, 270, sheets, glob.sprite_tag.chicken.white, 6));
-    sprites_push(&self, sprite_init(400, 400, sheets, glob.sprite_tag.nest.brown,    4));
+    i64 i;
+    while(i < self.cap)
+    {
+        i64 tag = rand64(glob.tags.count);
+        sprite_t sprite = sprite_init(0, 0, sheets, tag, 2, &glob.tags);
+        point_t size = sprite_get_true_size(&sprite);
+        sprite.where.x = rand64(sdl.xres - size.x);
+        sprite.where.y = rand64(sdl.yres - size.y);
+        sprites_push(&self, sprite);
+        i++;
+    }
     ret self;
 }
 
 i32
 main()
 {
+    i8* name = "chickens";
     glob_t glob = glob_init();
-    sdl_t sdl = sdl_init(1024, 768, "chickens?");
+    sdl_t sdl = sdl_init(640, 480, name);
     sheets_t sheets = populate_sheets(&sdl);
     sprites_t sprites = populate_sprites(&sdl, &glob, &sheets);
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     sdl_average_t fps = sdl_average_init(8);
+    defer sdl_del(&sdl);
+    defer sheets_del(&sheets);
+    defer sprites_del(&sprites);
+    defer sdl_font_del(&font);
+    defer sdl_average_del(&fps);
     double dt;
     i64 cycle;
     while(<i1>(1))
@@ -426,14 +564,13 @@ main()
         {
             break;
         }
+        sprites_reset(&sprites, &glob);
         sprites_move(&sprites, &sdl, &glob);
+        sprites_bawk(&sprites, &sdl, &glob);
         sprites_sort(&sprites);
         sdl_clear_screen(&sdl);
-        sprites_render(&sprites, &sdl, &glob, cycle);
-        sdl_scroll_t scroll = sdl_scroll_init(&sdl);
-        sdl_scroll_write(&scroll, &sdl, &font, "bawk?");
-        sdl_scroll_write(&scroll, &sdl, &font, "bawk!?\nanother bawk!");
-        sdl_scroll_write(&scroll, &sdl, &font, "bbbbbbawk!");
+        sprites_render(&sprites, &sdl, &font, &glob, cycle);
+        sdl_write_font(&sdl, &font, name, sdl.margin, sdl.margin);
         sdl_write_fps(&sdl, &font, &fps);
         sdl_present(&sdl);
         double t1 = sdl_get_seconds();
@@ -444,10 +581,5 @@ main()
         }
         cycle++;
     }
-    sdl_del(&sdl);
-    sheets_del(&sheets);
-    sprites_del(&sprites);
-    sdl_font_del(&font);
-    sdl_average_del(&fps);
     ret <i32>(0);
 }

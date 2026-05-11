@@ -598,6 +598,10 @@ sdl_font_get_dest_rect(sdl_font_t* self, i64 x, i64 y)
 i64
 sdl_write_font(sdl_t* sdl, sdl_font_t* self, i8* message, i64 x, i64 y)
 {
+    if(message == <i8*>(0))
+    {
+        ret 0;
+    }
     i8 ch;
     i64 i;
     i64 begin = x;

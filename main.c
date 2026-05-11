@@ -106,6 +106,7 @@ typedef struct
     str_list_t init;
     slot_list_t slots;
     bool is_function;
+    bool is_type;
 }
 aggregate_t;
 
@@ -708,26 +709,40 @@ static bool is_builtin_type_name(str_t type_name)
     return str_in(type_name, g_builtin_type_keywords);
 }
 
-static bool is_aggregate_function(aggregate_t* aggregate)
+static bool with_aggregate_function(aggregate_t* aggregate)
 {
     return aggregate->is_function;
 }
 
-static bool is_aggregate_type_name(str_t type_name)
+static bool with_aggregate_type(aggregate_t* aggregate)
+{
+    return aggregate->is_type;
+}
+
+static aggregate_t* find_aggregate(str_t type_name, bool with(aggregate_t*))
 {
     for(auto i = 0; i < g_file.aggregates.size; i++)
     {
         auto at = &g_file.aggregates.begin[i];
         if(str_equal(type_name.begin, at->name.begin))
         {
-            if(is_aggregate_function(at))
+            if(with(at))
             {
-                return false;
+                return at;
             }
-            return true;
         }
     }
-    return false;
+    return nullptr;
+}
+
+static aggregate_t* find_type_aggregate(str_t type_name)
+{
+    return find_aggregate(type_name, with_aggregate_type);
+}
+
+static aggregate_t* find_function_aggregate(str_t type_name)
+{
+    return find_aggregate(type_name, with_aggregate_function);
 }
 
 static bool is_regular_pointer(type_t type)
@@ -779,7 +794,7 @@ static bool is_variadic_decl(str_t operator)
 
 static bool is_aggregate_type(type_t type)
 {
-    return is_not_pointer(type) && is_aggregate_type_name(type.name);
+    return is_not_pointer(type) && find_type_aggregate(type.name);
 }
 
 static bool is_boolean(type_t type)
@@ -835,7 +850,7 @@ static bool is_construct_keyword(str_t keyword)
 static bool is_type_name(str_t type_name)
 {
     return is_builtin_type_name(type_name)
-        || is_aggregate_type_name(type_name);
+        || find_type_aggregate(type_name);
 }
 
 static bool is_reserved_keyword(str_t keyword)
@@ -1205,27 +1220,9 @@ static value_t* value_in_list(str_t name, value_big_list_t* list)
     return nullptr;
 }
 
-static aggregate_t* aggregate_in_list(str_t name, aggregate_big_list_t* list)
-{
-    for(auto i = 0; i < list->size; i++)
-    {
-        auto found = &list->begin[i];
-        if(str_equal(name.begin, found->name.begin))
-        {
-            return found;
-        }
-    }
-    return nullptr;
-}
-
 static value_t* get_value(str_t name)
 {
     return value_in_list(name, &g_file.values);
-}
-
-static aggregate_t* get_aggregate(str_t name)
-{
-    return aggregate_in_list(name, &g_file.aggregates);
 }
 
 static str_t to_stars(type_t value)
@@ -1625,11 +1622,11 @@ static value_t read_value_decl()
     {
         if(is_prototype(found->type))
         {
-            assert_types_match(found->type, value.type, str_init(""));
+            /* pass through - prototypes override definition of same name */
         }
         else
         {
-            quit("'%s' is already declared value name", value.name.begin);
+            quit("'%s' is already declared", value.name.begin);
         }
     }
     if(is_reserved_keyword(value.name))
@@ -1852,7 +1849,7 @@ static void default_init_aggregate(value_t value)
 {
     if(is_aggregate_type(value.type))
     {
-        auto members = get_aggregate(value.type.name);
+        auto members = find_type_aggregate(value.type.name);
         for(auto i = 0; i < members->init.size; i++)
         {
             auto name = members->names.begin[i];
@@ -2146,7 +2143,8 @@ static void read_function()
 static aggregate_t read_type_members(str_t name)
 {
     auto aggregate = (aggregate_t) {
-        .name = name
+        .name = name,
+        .is_type = true,
     };
     emit(g_opcode_type_def, name.begin);
     emit(g_str, g_left_curl);
@@ -3015,7 +3013,11 @@ static value_t field_index(value_t aggregate, str_t field_name)
     }
     auto operator = str_init(g_dot);
     assert_type(aggregate.type, operator, is_aggregate_type);
-    auto members = get_aggregate(aggregate.type.name);
+    auto members = find_type_aggregate(aggregate.type.name);
+    if(members == nullptr)
+    {
+        quit("aggregate type name '%s' does not exist", aggregate.type.name.begin);
+    }
     auto member = str_in_list(field_name, &members->names);
     if(member == nullptr)
     {
@@ -3049,13 +3051,12 @@ static void check_function_args(value_t function, type_list_t* types)
     }
     else
     {
-        auto size = get_aggregate(function.name)->names.size;
-        if(size != types->size)
+        auto members = find_function_aggregate(function.name);
+        if(members->types.size != types->size)
         {
-            quit("function '%s' expected '%d' arguments but got '%d'", function.name.begin, size, types->size);
+            quit("function '%s' expected '%d' argument(s) but got '%d'", function.name.begin, members->types.size, types->size);
         }
         auto operator = str_init(g_function);
-        auto members = get_aggregate(function.name);
         for(auto i = 0; i < types->size; i++)
         {
             assert_types_match(members->types.begin[i], types->begin[i], operator);
@@ -3177,7 +3178,7 @@ static value_t aggregate_operate(value_t left, value_t rite, str_t operator)
     left = to_rvalue(left);
     rite = to_rvalue(rite);
     auto pure = alloca_value(pure_value(left.type, operator));
-    auto members = get_aggregate(left.type.name);
+    auto members = find_type_aggregate(left.type.name);
     for(auto i = 0; i < members->names.size; i++)
     {
         auto name = members->names.begin[i];
