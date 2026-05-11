@@ -45,6 +45,7 @@ i32 SDL_LockTexture(ptr texture, sdl_rect_t* rect, ptr* pixels, i32* pitch);
 void SDL_UnlockTexture(ptr texture);
 u32 SDL_GetTicks();
 i32 SDL_GetCPUCount();
+i64 SDL_RenderDrawLine(ptr renderer, i64 x1, i64 y1, i64 x2, i64 y2);
 
 type sdl_t
 {
@@ -93,9 +94,23 @@ sdl_del(sdl_t* self)
 }
 
 void
+sdl_set_render_draw_color(sdl_t* self, i64 r, i64 g, i64 b, i64 a)
+{
+    SDL_SetRenderDrawColor(self.renderer, <u8>(r), <u8>(g), <u8>(b), <u8>(a));
+    ret;
+}
+
+void
+sdl_render_draw_line(sdl_t* self, i64 x1, i64 y1, i64 x2, i64 y2)
+{
+    SDL_RenderDrawLine(self.renderer, x1, y1, x2, y2);
+    ret;
+}
+
+void
 sdl_clear_screen(sdl_t* self)
 {
-    SDL_SetRenderDrawColor(self.renderer, <u8>(0), <u8>(0), <u8>(0), <u8>(0));
+    sdl_set_render_draw_color(self, 0, 0, 0, 0);
     SDL_RenderClear(self.renderer);
     ret;
 }

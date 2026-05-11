@@ -23,6 +23,17 @@ double sin(double);
 double fabs(double);
 double floor(double);
 
+void
+assert(i1 condition, i8* message)
+{
+    if(!condition)
+    {
+        puts(message);
+        exit(<i32>(1));
+    }
+    ret;
+}
+
 //
 // str - a string container
 //
@@ -60,9 +71,8 @@ void
 str_del(str_t* self)
 {
     del self.data;
-    self.data = <i8*>(0);
-    self.size = 0;
-    self.cap = 0;
+    str_t zero;
+    *self = zero;
     ret;
 }
 
@@ -224,9 +234,568 @@ arr_del(arr_t* self)
 {
     arr_del_elems(self);
     del self.data;
-    self.data = <i8*>(0);
-    self.delete = <void()>(0);
-    self.size = 0;
-    self.elem_size = 0;
+    arr_t zero;
+    *self = zero;
+    ret;
+}
+
+//
+// tree - a red black tree
+//
+
+type tree_node_t
+{
+    tree_node_t* l;
+    tree_node_t* r;
+    tree_node_t* p;
+    ptr key;
+    i64 color;
+};
+
+type tree_t
+{
+    tree_node_t* root;
+    i64 size;
+    i64() compare;
+    void() delete;
+};
+
+void! tree_remove_1(tree_t*, tree_node_t*);
+void! tree_remove_2(tree_t*, tree_node_t*);
+void! tree_remove_3(tree_t*, tree_node_t*);
+void! tree_remove_4(tree_t*, tree_node_t*);
+void! tree_remove_5(tree_t*, tree_node_t*);
+void! tree_remove_6(tree_t*, tree_node_t*);
+void! tree_insert_1(tree_t*, tree_node_t*);
+void! tree_insert_2(tree_t*, tree_node_t*);
+void! tree_insert_3(tree_t*, tree_node_t*);
+void! tree_insert_4(tree_t*, tree_node_t*);
+void! tree_insert_5(tree_t*, tree_node_t*);
+
+i64
+node_color(tree_node_t* self)
+{
+    if(self == <tree_node_t*>(0))
+    {
+        ret 1;
+    }
+    ret self .color;
+}
+
+i1
+node_is_blk(tree_node_t* self)
+{
+    ret node_color(self) == 1;
+}
+
+i1
+node_is_red(tree_node_t* self)
+{
+    ret node_color(self) == 0;
+}
+
+void
+node_property_1(tree_node_t* self)
+{
+    assert(node_is_red(self) | node_is_blk(self), "node_property_1 failure");
+    if(self != <tree_node_t*>(0))
+    {
+        node_property_1(self.l);
+        node_property_1(self.r);
+    }
+    ret;
+}
+
+void
+node_property_2(tree_node_t* self)
+{
+    assert(node_is_blk(self), "node_property_2 failure");
+    ret;
+}
+
+void
+node_property_4(tree_node_t* self)
+{
+    if(node_is_red(self))
+    {
+        assert(node_is_blk(self.l), "node_property_4 failure: case 1");
+        assert(node_is_blk(self.r), "node_property_4 failure: case 2");
+        assert(node_is_blk(self.p), "node_property_4 failure: case 3");
+    }
+    if(self != <tree_node_t*>(0))
+    {
+        node_property_4(self.l);
+        node_property_4(self.r);
+    }
+    ret;
+}
+
+void
+node_count_black(tree_node_t* self, i64 black_nodes, i64* path_black_nodes)
+{
+    if(node_is_blk(self))
+    {
+        black_nodes++;
+    }
+    if(self != <tree_node_t*>(0))
+    {
+        node_count_black(self.l, black_nodes, path_black_nodes);
+        node_count_black(self.r, black_nodes, path_black_nodes);
+    }
+    else
+    {
+        if(*path_black_nodes == -1)
+        {
+            *path_black_nodes = black_nodes;
+        }
+        else
+        {
+            assert(black_nodes == *path_black_nodes, "node_count_black");
+        }
+    }
+    ret;
+}
+
+void
+node_property_5(tree_node_t* self)
+{
+    i64 black_count_path = -1;
+    node_count_black(self, 0, &black_count_path);
+    ret;
+}
+
+void
+tree_verify(tree_t* self)
+{
+    node_property_1(self.root); // Each node is either red or black.
+    node_property_2(self.root); // The root node is black.
+    // Property 3: leaves are colored black; implicitly guareenteed via node_color
+    node_property_4(self.root); // Every red node has two black ndoes.
+    node_property_5(self.root); // All paths from a node have the same number of black nodes.
+    ret;
+}
+
+tree_node_t*
+node_maximum(tree_node_t* self)
+{
+    while(self.r != <tree_node_t*>(0))
+    {
+        self = self.r;
+    }
+    ret self;
+}
+
+tree_node_t*
+node_grandfather(tree_node_t* self)
+{
+    ret self.p.p;
+}
+
+tree_node_t*
+node_sibling(tree_node_t* self)
+{
+    if(self == self.p.l)
+    {
+        ret self.p.r;
+    }
+    ret self.p.l;
+}
+
+tree_node_t*
+node_uncle(tree_node_t* self)
+{
+    ret node_sibling(self.p);
+}
+
+tree_node_t*
+node_init(ptr key, i64 color)
+{
+    tree_node_t* self = new tree_node_t;
+    self.key = key;
+    self.color = color;
+    self.l = self.r = self.p = <tree_node_t*>(0);
+    ret self;
+}
+
+tree_node_t*
+node_find(tree_t* self, ptr key)
+{
+    tree_node_t* node = self.root;
+    while(node != <tree_node_t*>(0))
+    {
+        i64 diff = self.compare(key, node.key);
+        if(diff == 0)
+        {
+            ret node;
+        }
+        else
+        if(diff < 0)
+        {
+            node = node.l;
+        }
+        else
+        {
+            node = node.r;
+        }
+    }
+    ret node;
+}
+
+void
+node_replace(tree_t* self, tree_node_t* from, tree_node_t* to)
+{
+    if(from.p != <tree_node_t*>(0))
+    {
+        if(from == from.p.l)
+        {
+            from.p.l = to;
+        }
+        else
+        {
+            from.p.r = to;
+        }
+    }
+    else
+    {
+        self.root = to;
+    }
+    if(to != <tree_node_t*>(0))
+    {
+        to.p = from.p;
+    }
+    ret;
+}
+
+tree_t
+tree_init(i64() compare, void() delete)
+{
+    tree_t self;
+    self.compare = compare;
+    self.delete = delete;
+    ret self;
+}
+
+void
+tree_rotate_l(tree_t* self, tree_node_t* node)
+{
+    tree_node_t* rite = node.r;
+    node_replace(self, node, rite);
+    node.r = rite.l;
+    if(rite.l != <tree_node_t*>(0))
+    {
+        rite.l.p = node;
+    }
+    rite.l = node;
+    node.p = rite;
+    ret;
+}
+
+void
+tree_rotate_r(tree_t* self, tree_node_t* node)
+{
+    tree_node_t* left = node.l;
+    node_replace(self, node, left);
+    node.l = left.r;
+    if(left.r != <tree_node_t*>(0))
+    {
+        left.r.p = node;
+    }
+    left.r = node;
+    node.p = left;
+    ret;
+}
+
+void
+tree_insert(tree_t* self, ptr key)
+{
+    tree_node_t* insert = node_init(key, 0);
+    if(self.root != <tree_node_t*>(0))
+    {
+        tree_node_t* node = self.root;
+        while(<i1>(1))
+        {
+            i64 diff = self.compare(key, node.key);
+            if(diff == 0)
+            {
+                self.delete(insert);
+                del insert;
+                ret;
+            }
+            else
+            if(diff < 0)
+            {
+                if(node.l != <tree_node_t*>(0))
+                {
+                    node = node.l;
+                }
+                else
+                {
+                    node.l = insert;
+                    break;
+                }
+            }
+            else
+            {
+                if(node.r != <tree_node_t*>(0))
+                {
+                    node = node.r;
+                }
+                else
+                {
+                    node.r = insert;
+                    break;
+                }
+            }
+        }
+        insert.p = node;
+    }
+    else
+    {
+        self.root = insert;
+    }
+    tree_insert_1(self, insert);
+    self.size++;
+    tree_verify(self);
+    ret;
+}
+
+void
+tree_insert_1(tree_t* self, tree_node_t* node)
+{
+    if(node.p != <tree_node_t*>(0))
+    {
+        tree_insert_2(self, node);
+    }
+    else
+    {
+        node.color = 1;
+    }
+    ret;
+}
+
+void
+tree_insert_2(tree_t* self, tree_node_t* node)
+{
+    if(node_is_blk(node.p))
+    {
+        ret;
+    }
+    else
+    {
+        tree_insert_3(self, node);
+    }
+    ret;
+}
+
+void
+tree_insert_3(tree_t* self, tree_node_t* node)
+{
+    if(node_is_red(node_uncle(node)))
+    {
+        node.p.color = 1;
+        node_uncle(node).color = 1;
+        node_grandfather(node).color = 0;
+        tree_insert_1(self, node_grandfather(node));
+    }
+    else
+    {
+        tree_insert_4(self, node);
+    }
+    ret;
+}
+
+void
+tree_insert_4(tree_t* self, tree_node_t* node)
+{
+    if(node == node.p.r & node.p == node_grandfather(node).l)
+    {
+        tree_rotate_l(self, node.p);
+        node = node.l;
+    }
+    else
+    if(node == node.p.l & node.p == node_grandfather(node).r)
+    {
+        tree_rotate_r(self, node.p);
+        node = node.r;
+    }
+    tree_insert_5(self, node);
+    ret;
+}
+
+void
+tree_insert_5(tree_t* self, tree_node_t* node)
+{
+    node.p.color = 1;
+    node_grandfather(node).color = 0;
+    if(node == node.p.l & node.p == node_grandfather(node).l)
+    {
+        tree_rotate_r(self, node_grandfather(node));
+    }
+    else
+    {
+        tree_rotate_l(self, node_grandfather(node));
+    }
+    ret;
+}
+
+void
+tree_remove(tree_t* self, ptr key)
+{
+    tree_node_t* child;
+    tree_node_t* node = node_find(self, key);
+    if(node != <tree_node_t*>(0))
+    {
+        if(node .l != <tree_node_t*>(0)
+         & node .r != <tree_node_t*>(0))
+        {
+            tree_node_t* pred = node_maximum(node.l);
+            node .key = pred.key;
+            node  = pred;
+        }
+        if(node.r != <tree_node_t*>(0))
+        {
+            child = node.r;
+        }
+        else
+        {
+            child = node.l;
+        }
+        if(node_is_blk(node))
+        {
+            node.color = node_color(child);
+            tree_remove_1(self, node);
+        }
+        node_replace(self, node, child);
+        if(node.p == <tree_node_t*>(0) & child != <tree_node_t*>(0))
+        {
+            child.color = 1;
+        }
+        self.delete(node);
+        del node;
+        self.size--;
+        tree_verify(self);
+    }
+    ret;
+}
+
+void
+tree_remove_1(tree_t* self, tree_node_t* node)
+{
+    if(node.p != <tree_node_t*>(0))
+    {
+        tree_remove_2(self, node);
+    }
+    ret;
+}
+
+void
+tree_remove_2(tree_t* self, tree_node_t* node)
+{
+    if(node_is_red(node_sibling(node)))
+    {
+        node.p.color = 0;
+        node_sibling(node).color = 1;
+        if(node == node.p.l)
+        {
+            tree_rotate_l(self, node.p);
+        }
+        else
+        {
+            tree_rotate_r(self, node.p);
+        }
+    }
+    tree_remove_3(self, node);
+    ret;
+}
+
+void
+tree_remove_3(tree_t* self, tree_node_t* node)
+{
+    if(node_is_blk(node.p)
+    & node_is_blk(node_sibling(node))
+    & node_is_blk(node_sibling(node).l)
+    & node_is_blk(node_sibling(node).r))
+    {
+        node_sibling(node).color = 0;
+        tree_remove_1(self, node.p);
+    }
+    else
+    {
+        tree_remove_4(self, node);
+    }
+    ret;
+}
+
+void
+tree_remove_4(tree_t* self, tree_node_t* node)
+{
+    if(node_is_red(node.p)
+    & node_is_blk(node_sibling(node))
+    & node_is_blk(node_sibling(node).l)
+    & node_is_blk(node_sibling(node).r))
+    {
+        node_sibling(node).color = 0;
+        node.p.color = 1;
+    }
+    else
+    {
+        tree_remove_5(self, node);
+    }
+    ret;
+}
+
+void
+tree_remove_5(tree_t* self, tree_node_t* node)
+{
+    if(node == node.p.l
+    & node_is_blk(node_sibling(node))
+    & node_is_red(node_sibling(node).l)
+    & node_is_blk(node_sibling(node).r))
+    {
+        node_sibling(node).color = 0;
+        node_sibling(node).l.color = 1;
+        tree_rotate_r(self, node_sibling(node));
+    }
+    else
+    if(node == node.p.r
+    & node_is_blk(node_sibling(node))
+    & node_is_red(node_sibling(node).r)
+    & node_is_blk(node_sibling(node).l))
+    {
+        node_sibling(node).color = 0;
+        node_sibling(node).r.color = 1;
+        tree_rotate_l(self, node_sibling(node));
+    }
+    tree_remove_6(self, node);
+    ret;
+}
+
+void
+tree_remove_6(tree_t* self, tree_node_t* node)
+{
+    node_sibling(node).color = node_color(node.p);
+    node.p.color = 1;
+    if(node == node.p.l)
+    {
+        node_sibling(node).r.color = 1;
+        tree_rotate_l(self, node.p);
+    }
+    else
+    {
+        node_sibling(node).l.color = 1;
+        tree_rotate_r(self, node.p);
+    }
+    ret;
+}
+
+void
+tree_del(tree_t* self)
+{
+    while(self.size > 0)
+    {
+        tree_remove(self, self.root.key);
+    }
+    tree_t zero;
+    *self = zero;
     ret;
 }

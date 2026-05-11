@@ -1,0 +1,101 @@
+include "../lib/std.n";
+include "../lib/sdl.n";
+
+void
+draw(sdl_t* self, tree_node_t* node, i1* done, i64 x, i64 y, i64 width, i64 height)
+{
+    if(node != <tree_node_t*>(0))
+    {
+        if(sdl_is_done())
+        {
+            *done = <i1>(1);
+        }
+        i64 half = width / 2;
+        i64 xa = x - half;
+        i64 xb = x + half;
+        i64 ya = y + height;
+        i64 red;
+        i64 green;
+        i64 on = 255;
+        if(node_is_red(node))
+            red = on;
+        else
+            green = on;
+        sdl_set_render_draw_color(self, red, green, 0, 0);
+        sdl_render_draw_line(self, x, y, xa, ya);
+        sdl_render_draw_line(self, x, y, xb, ya);
+        draw(self, node.l, done, xa, ya, half, height);
+        draw(self, node.r, done, xb, ya, half, height);
+    }
+    ret;
+}
+
+void
+render(sdl_t* self, tree_t* tree, i1* done)
+{
+    sdl_clear_screen(self);
+    i64 border = 32;
+    i64 x = self.xres / 2;
+    i64 y = self.yres / 5;
+    i64 w = self.xres / 2 - border;
+    i64 h = 32;
+    draw(self, tree.root, done, x, y, w, h);
+    sdl_present(self);
+    ret;
+}
+
+i64
+compare(i64* x, i64* y)
+{
+    ret *x - *y;
+}
+
+void
+delete(i64* self)
+{
+    ret;
+}
+
+i64* new_int(i64 value)
+{
+    i64* self = new i64;
+    *self = value;
+    ret self;
+}
+
+i32
+main()
+{
+    sdl_t sdl = sdl_init(1024, 768, "tree");
+    sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
+    tree_t tree = tree_init(compare, delete);
+    defer sdl_del(&sdl);
+    defer sdl_font_del(&font);
+    defer tree_del(&tree);
+    i1 done = <i1>(0);
+    i64 size = 512;
+    while(!done)
+    {
+        i64 i;
+        while(i < size)
+        {
+            tree_insert(&tree, <ptr>(new_int(<i64>(rand()))));
+            render(&sdl, &tree, &done);
+            i++;
+            if(done)
+            {
+                break;
+            }
+        }
+        while(tree.size > 0)
+        {
+            tree_remove(&tree, tree.root.key);
+            render(&sdl, &tree, &done);
+            if(done)
+            {
+                break;
+            }
+        }
+    }
+    ret <i32>(0);
+}

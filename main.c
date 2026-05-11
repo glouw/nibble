@@ -73,6 +73,7 @@ typedef struct
     bool is_function;
     bool must_skip_arg_check;
     bool is_variadic;
+    bool is_prototype;
 }
 type_t;
 
@@ -1129,6 +1130,11 @@ static bool is_function_pointer_decl(char c)
     return c == *g_left_paren;
 }
 
+static bool is_prototype_decl(char c)
+{
+    return c == *g_not;
+}
+
 static bool is_block_opening(char c)
 {
     return c == *g_left_curl;
@@ -1232,6 +1238,11 @@ static str_t to_stars(type_t value)
     return stars;
 }
 
+bool is_prototype(type_t type)
+{
+    return type.is_prototype;
+}
+
 static str_t to_print_type(type_t type)
 {
     auto print = str_init(g_empty);
@@ -1243,6 +1254,10 @@ static str_t to_print_type(type_t type)
     if(is_function_pointer(type))
     {
         str_append(&print, g_function);
+    }
+    if(is_prototype(type))
+    {
+        str_append(&print, g_not);
     }
     str_append(&print, to_stars(type).begin);
     return print;
@@ -1568,6 +1583,11 @@ static type_t read_type()
         type.is_function_pointer = true;
         type.must_skip_arg_check = true;
     }
+    if(is_prototype_decl(next_char()))
+    {
+        match(g_not);
+        type.is_prototype = true;
+    }
     return type;
 }
 
@@ -1600,9 +1620,17 @@ static value_t read_value()
 static value_t read_value_decl()
 {
     auto value = read_value();
-    if(get_value(value.name))
+    auto found = get_value(value.name);
+    if(found)
     {
-        quit("'%s' is already declared value name", value.name.begin);
+        if(is_prototype(found->type))
+        {
+            assert_types_match(found->type, value.type, str_init(""));
+        }
+        else
+        {
+            quit("'%s' is already declared value name", value.name.begin);
+        }
     }
     if(is_reserved_keyword(value.name))
     {
@@ -1970,24 +1998,6 @@ static bool read_block(value_t ret_value, scope_t scope)
     return terminated;
 }
 
-static void emit_function_params(aggregate_t* params)
-{
-    emit(g_str, g_left_paren);
-    auto last = list_last(&params->names);
-    for(auto i = 0; i < params->names.size; i++)
-    {
-        auto type = params->types.begin[i];
-        auto slot = params->slots.begin[i];
-        auto llvm_type = to_llvm_type(type);
-        emit(g_opcode_type_slot, llvm_type.begin, slot);
-        if(i < last)
-        {
-            emit(g_str, g_comma);
-        }
-    }
-    emit(g_str, g_rite_paren);
-}
-
 static aggregate_t read_function_params(str_t name)
 {
     auto aggregate = (aggregate_t) {
@@ -2031,12 +2041,6 @@ static value_t aggregate_value_at(aggregate_t* aggregate, int index)
     };
 }
 
-static void emit_function_name(value_t value, bool is_define)
-{
-    auto llvm_type = to_llvm_type(value.type);
-    emit(is_define ? g_opcode_define : g_opcode_declare, llvm_type.begin, value.name.begin);
-}
-
 static void load_function_params(aggregate_t* params)
 {
     for(auto i = 0; i < params->names.size; i++)
@@ -2066,16 +2070,48 @@ static void read_function_block(value_t value, aggregate_t* params)
     g_file.values.size -= params->names.size;
 }
 
+static void emit_function_name(value_t value, bool is_define)
+{
+    auto llvm_type = to_llvm_type(value.type);
+    emit(is_define ? g_opcode_define : g_opcode_declare, llvm_type.begin, value.name.begin);
+}
+
+static void emit_function_params(aggregate_t* params)
+{
+    emit(g_str, g_left_paren);
+    auto last = list_last(&params->names);
+    for(auto i = 0; i < params->names.size; i++)
+    {
+        auto type = params->types.begin[i];
+        auto slot = params->slots.begin[i];
+        auto llvm_type = to_llvm_type(type);
+        emit(g_opcode_type_slot, llvm_type.begin, slot);
+        if(i < last)
+        {
+            emit(g_str, g_comma);
+        }
+    }
+    emit(g_str, g_rite_paren);
+}
+
 static void emit_function_signature(value_t value, aggregate_t* params, bool is_define)
 {
     emit_function_name(value, is_define);
     emit_function_params(params);
-    list_push(&g_file.values, value);
 }
 
 static void read_function_declaration(value_t value, aggregate_t* params)
 {
-    emit_function_signature(value, params, false);
+    if(is_prototype(value.type))
+    {
+        /* no need to emit prototypes - they need to be implemented
+         * in the same file */
+    }
+    else
+    {
+        emit_function_signature(value, params, false);
+    }
+    list_push(&g_file.values, value);
     list_push(&g_file.aggregates, *params);
     match(g_semicolon);
 }
@@ -2083,6 +2119,7 @@ static void read_function_declaration(value_t value, aggregate_t* params)
 static void read_function_definition(value_t value, aggregate_t* params)
 {
     emit_function_signature(value, params, true);
+    list_push(&g_file.values, value);
     read_function_block(value, params);
 }
 
@@ -2124,8 +2161,15 @@ static aggregate_t read_type_members(str_t name)
         auto member_name = read_alnum();
         if(!is_type_name(member_type.name))
         {
-            auto print = to_print_type(member_type);
-            quit("'%s' not a valid type", print.begin);
+            if(str_equal(member_type.name.begin, name.begin))
+            {
+                /* okay, pointers to this this type are fine */
+            }
+            else
+            {
+                auto print = to_print_type(member_type);
+                quit("'%s' not a valid type", print.begin);
+            }
         }
         if(str_in_list(member_name, &aggregate.names))
         {

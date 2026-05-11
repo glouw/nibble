@@ -8,6 +8,7 @@ all: nibble
 	make -C test
 	make -C game
 	make -C shaders
+	make -C tree
 
 nibble: force
 	$(CC) $(CFLAGS) $(WFLAGS) $(SRC) -o $(BIN)
@@ -17,5 +18,6 @@ clean:
 	make -C test clean
 	make -C game clean
 	make -C shaders clean
+	make -C tree clean
 
 force:
