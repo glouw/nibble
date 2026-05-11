@@ -22,7 +22,7 @@ run(sdl_vec4() shader, i8* name)
         defer del slices;
         slice_run_cores(slices, cores);
         sdl_send_stream(&stream, &sdl);
-        sdl_write_font(&sdl, &font, name, sdl.margin, sdl.margin);
+        sdl_write_font(&sdl, &font, sdl.name, sdl.margin, sdl.margin);
         sdl_write_fps(&sdl, &font, &average);
         sdl_present(&sdl);
         double t1 = sdl_get_seconds();

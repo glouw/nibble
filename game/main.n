@@ -543,18 +543,12 @@ populate_sprites(sdl_t* sdl, glob_t* glob, sheets_t* sheets)
 i32
 main()
 {
-    i8* name = "chickens";
     glob_t glob = glob_init();
-    sdl_t sdl = sdl_init(640, 480, name);
+    sdl_t sdl = sdl_init(640, 480, "chickens");
     sheets_t sheets = populate_sheets(&sdl);
     sprites_t sprites = populate_sprites(&sdl, &glob, &sheets);
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     sdl_average_t fps = sdl_average_init(8);
-    defer sdl_del(&sdl);
-    defer sheets_del(&sheets);
-    defer sprites_del(&sprites);
-    defer sdl_font_del(&font);
-    defer sdl_average_del(&fps);
     double dt;
     i64 cycle;
     while(<i1>(1))
@@ -570,7 +564,7 @@ main()
         sprites_sort(&sprites);
         sdl_clear_screen(&sdl);
         sprites_render(&sprites, &sdl, &font, &glob, cycle);
-        sdl_write_font(&sdl, &font, name, sdl.margin, sdl.margin);
+        sdl_write_font(&sdl, &font, sdl.name, sdl.margin, sdl.margin);
         sdl_write_fps(&sdl, &font, &fps);
         sdl_present(&sdl);
         double t1 = sdl_get_seconds();
@@ -581,5 +575,10 @@ main()
         }
         cycle++;
     }
+    sdl_font_del(&font);
+    sdl_del(&sdl);
+    sheets_del(&sheets);
+    sprites_del(&sprites);
+    sdl_average_del(&fps);
     ret <i32>(0);
 }

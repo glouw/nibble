@@ -31,7 +31,7 @@ draw(sdl_t* self, tree_node_t* node, i1* done, i64 x, i64 y, i64 width, i64 heig
 }
 
 void
-render(sdl_t* self, tree_t* tree, i1* done)
+render(sdl_t* self, sdl_font_t* font, tree_t* tree, i1* done)
 {
     sdl_clear_screen(self);
     i64 border = 32;
@@ -40,6 +40,7 @@ render(sdl_t* self, tree_t* tree, i1* done)
     i64 w = self.xres / 2 - border;
     i64 h = 32;
     draw(self, tree.root, done, x, y, w, h);
+    sdl_write_font(self, font, self.name, self.margin, self.margin);
     sdl_present(self);
     ret;
 }
@@ -69,9 +70,6 @@ main()
     sdl_t sdl = sdl_init(640, 480, "tree");
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     tree_t tree = tree_init(compare, delete);
-    defer sdl_del(&sdl);
-    defer sdl_font_del(&font);
-    defer tree_del(&tree);
     i1 done = <i1>(0);
     i64 size = 512;
     while(!done)
@@ -80,7 +78,7 @@ main()
         while(i < size)
         {
             tree_insert(&tree, <ptr>(new_int(<i64>(rand()))));
-            render(&sdl, &tree, &done);
+            render(&sdl, &font, &tree, &done);
             i++;
             if(done)
             {
@@ -90,12 +88,15 @@ main()
         while(tree.size > 0)
         {
             tree_remove(&tree, tree.root.key);
-            render(&sdl, &tree, &done);
+            render(&sdl, &font, &tree, &done);
             if(done)
             {
                 break;
             }
         }
     }
+    sdl_font_del(&font);
+    sdl_del(&sdl);
+    tree_del(&tree);
     ret <i32>(0);
 }

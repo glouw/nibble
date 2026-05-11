@@ -2,6 +2,7 @@ ptr malloc(u64 size);
 void free(ptr pointer);
 i32 putchar(i32 value);
 i32 puts(i8* string);
+i64 atoll(i8* string);
 i32 printf...(i8* format);
 i32 sprintf...(i8* string, i8* format);
 void qsort(ptr base, u64 size, u64 elem_size, i32() comparator);
