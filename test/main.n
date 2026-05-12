@@ -1801,10 +1801,10 @@ i64 test_person_modify()
 {
     person_t person;
     person.height = 42.0;
-    ++ ret_person_pointer(&person).height    ;
-       ret_person_pointer(&person).height ++ ;
-    -- ret_person_pointer(&person).height    ;
-       ret_person_pointer(&person).height -- ;
+    ++ (person_t*() ret_person_pointer)(&person).height    ;
+    -- (person_t*() ret_person_pointer)(&person).height    ;
+       (person_t*() ret_person_pointer)(&person).height ++ ;
+       (person_t*() ret_person_pointer)(&person).height -- ;
     if(person.height == 42.0)
     {
         ret 0;

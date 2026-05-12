@@ -1035,11 +1035,6 @@ static bool is_string_load(char c)
     return c == *g_escape_quotation;
 }
 
-static bool is_grouped_expression(char c)
-{
-    return c == *g_left_paren;
-}
-
 static bool is_direct_load(char c)
 {
     return is_digit_char(c);
@@ -1047,9 +1042,11 @@ static bool is_direct_load(char c)
 
 static str_t peek_alnum();
 
-static bool is_identifier_load(char c)
+static bool is_identifier_load(str_t name)
 {
-    return is_alpha_char(c) && !is_construct_keyword(peek_alnum());
+    return is_alpha_char(name.begin[0])
+        && !is_construct_keyword(name)
+        && !is_type_name(name);
 }
 
 static bool is_newline(char c)
@@ -1085,6 +1082,11 @@ static bool is_field_access_postfix(char c)
 static bool is_array_access_postfix(char c)
 {
     return c == *g_left_square;
+}
+
+static bool is_grouped_expression(char c)
+{
+    return c == *g_left_paren;
 }
 
 static bool is_increment(str_t operator)
@@ -1424,7 +1426,7 @@ static void match(char* expected)
     }
     if(!str_equal(got.begin, expected))
     {
-        quit("expected '%s' but got '%s'", expected, got.begin);
+        quit("expected '%s' but got '%s' - current is '%c'", expected, got.begin, peek_char());
     }
 }
 
@@ -2807,7 +2809,7 @@ static value_t type_cast(value_t value, type_t type)
         {
             return floating_to_unsigned(value, type);
         }
-        if(is_floating(value.type))
+        if(is_floating(type))
         {
             return floating_to_floating(value, type);
         }
@@ -2832,9 +2834,15 @@ static value_t type_cast(value_t value, type_t type)
 
 static value_t read_postfix(value_t);
 static value_t read_p0();
+static value_t read_grouped_expression();
 
 static value_t read_prefix()
 {
+    auto peek = peek_char();
+    if(is_grouped_expression(peek))
+    {
+        return read_grouped_expression();
+    }
     auto alnum = peek_alnum();
     if(is_new(alnum))
     {
@@ -2876,6 +2884,12 @@ static value_t read_prefix()
         auto value = read_p0();
         return prefix_decrement(value);
     }
+    if(is_type_name(alnum))
+    {
+        auto type = read_type();
+        auto value = read_p0();
+        return type_cast(value, type);
+    }
     if(is_not(operator))
     {
         match(g_not);
@@ -2912,7 +2926,7 @@ static value_t read_prefix()
         auto value = read_p0();
         return dereference(value);
     }
-    quit("unknown unary operator '%s' encountered", operator.begin);
+    quit("unknown unary operator '%s' or '%s' encountered - peek was '%c'", operator.begin, alnum.begin, peek_char());
 }
 
 static value_t field_access(value_t);
@@ -3354,22 +3368,11 @@ static value_t read_p0()
     {
         return load_direct();
     }
-    if(is_identifier_load(peek))
+    if(is_identifier_load(peek_alnum()))
     {
-        if(is_type_name(peek_alnum()))
-        {
-            auto type = read_type();
-            auto value = read_p0();
-            return type_cast(value, type);
-        }
         return read_identifier();
     }
-    if(is_grouped_expression(peek))
-    {
-        return read_grouped_expression();
-    }
-    auto prefix = read_prefix();
-    return read_postfix(prefix);
+    return read_postfix(read_prefix());
 }
 
 static value_t read_p1()
