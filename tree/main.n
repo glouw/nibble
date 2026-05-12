@@ -4,11 +4,11 @@ include "../lib/sdl.n";
 void
 draw(sdl_t* self, tree_node_t* node, i1* done, i64 x, i64 y, i64 width, i64 height)
 {
-    if(node != <tree_node_t*>(0))
+    if(node != tree_node_t* 0)
     {
         if(sdl_is_done())
         {
-            *done = <i1>(1);
+            *done = i1 1;
         }
         i64 half = width / 2;
         i64 xa = x - half;
@@ -67,10 +67,10 @@ i64* new_int(i64 value)
 i32
 main(i32 argc, i8** argv)
 {
-    if(<i64>(argc) != 5)
+    if(argc != i32 5)
     {
         printf("required args: x y xres yres\n");
-        exit(<i32>(1));
+        exit(i32 1);
     }
     sdl_t sdl = sdl_init(
         atoll(argv[1]),
@@ -80,14 +80,14 @@ main(i32 argc, i8** argv)
         "tree");
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     tree_t tree = tree_init(compare, delete);
-    i1 done = <i1>(0);
+    i1 done = i1 0;
     i64 size = 512;
     while(!done)
     {
         i64 i;
         while(i < size)
         {
-            tree_insert(&tree, <ptr>(new_int(<i64>(rand()))));
+            tree_insert(&tree, ptr new_int(i64 rand()));
             render(&sdl, &font, &tree, &done);
             i++;
             if(done)
@@ -108,5 +108,5 @@ main(i32 argc, i8** argv)
     sdl_font_del(&font);
     sdl_del(&sdl);
     tree_del(&tree);
-    ret <i32>(0);
+    ret i32 0;
 }

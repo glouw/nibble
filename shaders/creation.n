@@ -47,5 +47,5 @@ i32
 main(i32 argc, i8** argv)
 {
     run(argc, argv, creation, "creation\nby danilo guanabara");
-    ret <i32>(0);
+    ret i32 0;
 }

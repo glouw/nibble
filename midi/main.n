@@ -1,0 +1,360 @@
+include "../lib/std.n";
+
+type constants_t
+{
+    float pi = 3.14159265358979323846;
+    i64 note_attack = 4;
+    i64 note_amplification = 15;
+    i64 notes_max = 128;
+    i64 channel_max = 16;
+    i64 note_decay = 512;
+    i64 bend_default = 8192;
+    i64 sample_freq = 44100;
+    i64 video_samples = 2048;
+    i64 video_grain = 5;
+    i64 modulation_gain = 512;
+    i64 bank_width = 8;
+};
+
+type track_t
+{
+    u8* data;
+    u32 id;
+    u32 size;
+    u32 index;
+    u32 number;
+    i64 delay;
+    u8 running_status;
+    i1 run;
+};
+
+type meta_t
+{
+    u32 tempo;
+    i32* instruments;
+    i32* bend;
+    float* volume;
+};
+
+type note_t
+{
+    i32 gain;
+    i32 gain_setpoint;
+    i32 progress;
+    i32 bend_last;
+    i32 cycle;
+    float id;
+    i1 on;
+    i1 wait;
+    i1 was_init;
+};
+
+void
+track_back(track_t* self)
+{
+    self.index = self.index - u32 1;
+    ret;
+}
+
+void
+track_next(track_t* self)
+{
+    self.index = self.index + u32 1;
+    ret;
+}
+
+u8
+track_u8(track_t* self)
+{
+    u8 byte = self.data[i64 self.index];
+    track_next(self);
+    ret byte;
+}
+
+void
+track_spin(track_t* self, i64 size)
+{
+    while(size-- != 0)
+    {
+        track_u8(self);
+    }
+    ret;
+}
+
+u32
+track_var(track_t* self)
+{
+    u32 var = u32 0;
+    i1 run = i1 1;
+    while(run)
+    {
+        u8 byte = track_u8(self);
+        var = u32 (var << u32 7) | u32 (byte & u8 127);
+        run = i1 (byte >> u8 7);
+    }
+    ret var;
+}
+
+i8*
+track_str(track_t* self)
+{
+    u8 len = track_u8(self);
+    i8* str = new i8[i64 len + 1];
+    u8 i = u8 0;
+    while(i < len)
+    {
+        str[i64 i] = i8 track_u8(self);
+        i++;
+    }
+    str[i64 len] = '\0';
+    ret str;
+}
+
+type bytes_t
+{
+    u8* data;
+    u32 size;
+};
+
+bytes_t
+track_bytes(track_t* self)
+{
+    bytes_t bytes;
+    bytes.size = track_var(self);
+    bytes.data = new u8[i64 bytes.size];
+    u32 i;
+    while(i < bytes.size)
+    {
+        bytes.data[i64 i] = track_u8(self);
+        i++;
+    }
+    ret bytes;
+}
+
+u8
+track_status(track_t* self, u8 status)
+{
+    if((status >> u8 3) == u8 1)
+    {
+        self.running_status = status;
+        ret status;
+    }
+    track_back(self);
+    ret self.running_status;
+}
+
+i1
+is_percussive(u8 channel)
+{
+    ret channel == u8 9;
+}
+
+void
+track_real_event(track_t* self, meta_t* meta, note_t** notes, u8 leader)
+{
+    u8 channel = leader & u8 15;
+    u8 status = track_status(self, leader >> u8 4);
+    if(status == u8 8)
+    {
+        u8 note_index = track_u8(self);
+        track_u8(self);
+        if(!is_percussive(channel))
+        {
+            note_t* note = &notes[i64 channel][i64 note_index];
+            note.gain_setpoint = i32 0;
+            //meta->bend[channel] = CONST_BEND_DEFAULT;
+        }
+    }
+    // Note On.
+    //case 0x9:
+    //{
+    //    uint8_t note_index = Track_U8(track);
+    //    uint8_t note_velocity = Track_U8(track);
+    //    if(!IsPercussive(channel))
+    //    {
+    //        Note* note = &notes->note[channel][note_index];
+    //        note->gain_setpoint = CONST_NOTE_ATTACK * note_velocity * meta->volume[channel];
+    //        note->on = true;
+    //        meta->bend[channel] = CONST_BEND_DEFAULT;
+    //    }
+    //    break;
+    //}
+    //// Note Aftertouch.
+    //case 0xA:
+    //{
+    //    Track_Spin(track, 2);
+    //    break;
+    //}
+    //// Controller.
+    //case 0xB:
+    //{
+    //    uint8_t type = Track_U8(track);
+    //    uint8_t value = Track_U8(track);
+    //    switch(type)
+    //    {
+    //        case 0x07:
+    //            meta->volume[channel] = value / 127.0f;
+    //            break;
+    //        default:
+    //            break;
+    //    }
+    //    break;
+    //}
+    //// Program Change.
+    //case 0xC:
+    //{
+    //    uint8_t program = Track_U8(track);
+    //    meta->instruments[channel] = program;
+    //    break;
+    //}
+    //// Channel Aftertouch.
+    //case 0xD:
+    //{
+    //    Track_U8(track);
+    //    break;
+    //}
+    //// Pitch Bend.
+    //case 0xE:
+    //{
+    //    uint8_t lsb = Track_U8(track);
+    //    uint8_t msb = Track_U8(track);
+    //    uint16_t bend = (msb << 7) | lsb;
+    //    meta->bend[channel] = bend;
+    //    break;
+    //}
+    //default:
+    //{
+    //    Track_Crash(track);
+    //    break;
+    //}
+    ret;
+}
+//
+//static void
+//Track_MetaEvent(Track* track, Meta* meta)
+//{
+//    switch(Track_U8(track))
+//    {
+//        default:
+//        {
+//            Track_Crash(track);
+//            break;
+//        }
+//        // Sequence Number.
+//        case 0x00:
+//        {
+//            Track_Spin(track, 3);
+//            break;
+//        }
+//        case 0x01: // Text Event.
+//        case 0x02: // Copyright Notice.
+//        case 0x03: // Track Name.
+//        case 0x04: // Instrument Name.
+//        case 0x05: // Lyric.
+//        case 0x06: // Marker.
+//        case 0x07: // Cue Point.
+//        case 0x08: // Program Name.
+//        case 0x09: // Device Name.
+//        {
+//            free(Track_Str(track));
+//            break;
+//        }
+//        // Channel Prefix.
+//        case 0x20:
+//        {
+//            Track_Spin(track, 2);
+//            break;
+//        }
+//        // Midi Port.
+//        case 0x21:
+//        {
+//            Track_Spin(track, 2);
+//            break;
+//        }
+//        // End of Track.
+//        case 0x2F:
+//        {
+//            track->run = Track_U8(track);
+//            break;
+//        }
+//        // Tempo.
+//        case 0x51:
+//        {
+//            Track_U8(track);
+//            uint8_t a = Track_U8(track);
+//            uint8_t b = Track_U8(track);
+//            uint8_t c = Track_U8(track);
+//            meta->tempo = (a << 16) | (b << 8) | c;
+//            break;
+//        }
+//        // SMPTE Offset.
+//        case 0X54:
+//        {
+//            Track_Spin(track, 6);
+//            break;
+//        }
+//        // Time Signature.
+//        case 0x58:
+//        {
+//            Track_Spin(track, 5);
+//            break;
+//        }
+//        // Key Signature.
+//        case 0x59:
+//        {
+//            Track_Spin(track, 3);
+//            break;
+//        }
+//        case 0xF0: // Sysex Start.
+//        case 0xF7: // Sysex End.
+//        case 0x7F: // Systex Running Status.
+//        {
+//            Bytes bytes = Track_Bytes(track);
+//            Bytes_Free(&bytes);
+//            break;
+//        }
+//    }
+//}
+//
+//static void
+//Track_Play(Track* track, Notes* notes, Meta* meta)
+//{
+//    int end = -1;
+//    if(track->run)
+//    {
+//        if(track->delay > end)
+//            track->delay -= 1;
+//        if(track->delay == end)
+//            track->delay = Track_Var(track);
+//        if(track->delay == 0)
+//        {
+//            uint8_t leader = Track_U8(track);
+//            leader == 0xFF
+//                ? Track_MetaEvent(track, meta)
+//                : Track_RealEvent(track, meta, notes, leader);
+//            // Notes with zero delay must immediately process
+//            // the next note before moving onto the next track.
+//            Track_Play(track, notes, meta);
+//        }
+//    }
+//}
+//
+//static Track
+//Track_Init(Bytes* bytes, uint32_t offset, uint32_t number)
+//{
+//    Track track = { 0 };
+//    track.id = Bytes_U32(bytes, offset);
+//    track.size = Bytes_U32(bytes, offset + 4);
+//    track.data = calloc(track.size, sizeof(*track.data));
+//    track.run = true;
+//    track.number = number;
+//    for(uint32_t i = 0; i < track.size; i++)
+//        track.data[i] = Bytes_U8(bytes, offset + 8 + i);
+//    return track;
+//}
+
+
+i32 main()
+{
+    ret i32 0;
+}

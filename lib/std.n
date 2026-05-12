@@ -30,7 +30,7 @@ assert(i1 condition, i8* message)
     if(!condition)
     {
         puts(message);
-        exit(<i32>(1));
+        exit(i32 1);
     }
     ret;
 }
@@ -49,7 +49,7 @@ type str_t
 str_t
 str_init(i8* raw)
 {
-    i64 raw_size = <i64>(strlen(raw));
+    i64 raw_size = i64 strlen(raw);
     str_t self;
     if(raw_size == 0)
     {
@@ -80,7 +80,7 @@ str_del(str_t* self)
 void
 str_cat(str_t* self, i8* raw)
 {
-    i64 raw_size = <i64>(strlen(raw));
+    i64 raw_size = i64 strlen(raw);
     str_t cat;
     cat.size = self.size + raw_size;
     cat.cap = cat.size + 1;
@@ -107,26 +107,26 @@ str_cat(str_t* self, i8* raw)
 i1
 str_equal(str_t* self, i8* raw)
 {
-    if(self.size != <i64>(strlen(raw)))
+    if(self.size != i64 strlen(raw))
     {
-        ret <i1>(0);
+        ret i1 0;
     }
     i64 i;
     while(i < self.size)
     {
         if(self.data[i] != raw[i])
         {
-            ret<i1>(0);
+            ret i1 0;
         }
         i++;
     }
-    ret <i1>(1);
+    ret i1 1;
 }
 
 void
 str_push(str_t* self, i8 c)
 {
-    if(self.data == <i8*>(0))
+    if(self.data == i8* 0)
     {
         self.size = 0;
         self.cap = 8 + 1;
@@ -176,7 +176,7 @@ arr_clear(arr_t* self)
     i64 byte;
     while(byte < arr_bytes(self))
     {
-        self.data[byte] = <i8>(0);
+        self.data[byte] = i8 0;
         byte++;
     }
     ret;
@@ -200,7 +200,7 @@ arr_at(arr_t* self, i64 index)
     if(index < 0 | index >= self.size)
     {
         printf("arr_t['%d'] out of range: max size is '%d'\n", index, self.size);
-        exit(<i32>(1));
+        exit(i32 1);
     }
     i64 byte = index * self.elem_size;
     ret &self.data[byte];
@@ -209,10 +209,10 @@ arr_at(arr_t* self, i64 index)
 void
 arr_del_elem(arr_t* self, i64 index)
 {
-    if(self.delete == <void()>(0))
+    if(self.delete == void() 0)
     {
         printf("arr_t: missing deleter\n");
-        exit(<i32>(1));
+        exit(i32 1);
     }
     self.delete(arr_at(self, index));
     ret;
@@ -276,7 +276,7 @@ void! tree_insert_5(tree_t*, tree_node_t*);
 i64
 node_color(tree_node_t* self)
 {
-    if(self == <tree_node_t*>(0))
+    if(self == tree_node_t* 0)
     {
         ret 1;
     }
@@ -299,7 +299,7 @@ void
 node_property_1(tree_node_t* self)
 {
     assert(node_is_red(self) | node_is_blk(self), "node_property_1 failure");
-    if(self != <tree_node_t*>(0))
+    if(self != tree_node_t* 0)
     {
         node_property_1(self.l);
         node_property_1(self.r);
@@ -323,7 +323,7 @@ node_property_4(tree_node_t* self)
         assert(node_is_blk(self.r), "node_property_4 failure: case 2");
         assert(node_is_blk(self.p), "node_property_4 failure: case 3");
     }
-    if(self != <tree_node_t*>(0))
+    if(self != tree_node_t* 0)
     {
         node_property_4(self.l);
         node_property_4(self.r);
@@ -338,7 +338,7 @@ node_count_black(tree_node_t* self, i64 black_nodes, i64* path_black_nodes)
     {
         black_nodes++;
     }
-    if(self != <tree_node_t*>(0))
+    if(self != tree_node_t* 0)
     {
         node_count_black(self.l, black_nodes, path_black_nodes);
         node_count_black(self.r, black_nodes, path_black_nodes);
@@ -379,7 +379,7 @@ tree_verify(tree_t* self)
 tree_node_t*
 node_maximum(tree_node_t* self)
 {
-    while(self.r != <tree_node_t*>(0))
+    while(self.r != tree_node_t* 0)
     {
         self = self.r;
     }
@@ -414,7 +414,7 @@ node_init(ptr key, i64 color)
     tree_node_t* self = new tree_node_t;
     self.key = key;
     self.color = color;
-    self.l = self.r = self.p = <tree_node_t*>(0);
+    self.l = self.r = self.p = tree_node_t* 0;
     ret self;
 }
 
@@ -422,7 +422,7 @@ tree_node_t*
 node_find(tree_t* self, ptr key)
 {
     tree_node_t* node = self.root;
-    while(node != <tree_node_t*>(0))
+    while(node != tree_node_t* 0)
     {
         i64 diff = self.compare(key, node.key);
         if(diff == 0)
@@ -445,7 +445,7 @@ node_find(tree_t* self, ptr key)
 void
 node_replace(tree_t* self, tree_node_t* from, tree_node_t* to)
 {
-    if(from.p != <tree_node_t*>(0))
+    if(from.p != tree_node_t* 0)
     {
         if(from == from.p.l)
         {
@@ -460,7 +460,7 @@ node_replace(tree_t* self, tree_node_t* from, tree_node_t* to)
     {
         self.root = to;
     }
-    if(to != <tree_node_t*>(0))
+    if(to != tree_node_t* 0)
     {
         to.p = from.p;
     }
@@ -482,7 +482,7 @@ tree_rotate_l(tree_t* self, tree_node_t* node)
     tree_node_t* rite = node.r;
     node_replace(self, node, rite);
     node.r = rite.l;
-    if(rite.l != <tree_node_t*>(0))
+    if(rite.l != tree_node_t* 0)
     {
         rite.l.p = node;
     }
@@ -497,7 +497,7 @@ tree_rotate_r(tree_t* self, tree_node_t* node)
     tree_node_t* left = node.l;
     node_replace(self, node, left);
     node.l = left.r;
-    if(left.r != <tree_node_t*>(0))
+    if(left.r != tree_node_t* 0)
     {
         left.r.p = node;
     }
@@ -510,10 +510,10 @@ void
 tree_insert(tree_t* self, ptr key)
 {
     tree_node_t* insert = node_init(key, 0);
-    if(self.root != <tree_node_t*>(0))
+    if(self.root != tree_node_t* 0)
     {
         tree_node_t* node = self.root;
-        while(<i1>(1))
+        while(i1 1)
         {
             i64 diff = self.compare(key, node.key);
             if(diff == 0)
@@ -525,7 +525,7 @@ tree_insert(tree_t* self, ptr key)
             else
             if(diff < 0)
             {
-                if(node.l != <tree_node_t*>(0))
+                if(node.l != tree_node_t* 0)
                 {
                     node = node.l;
                 }
@@ -537,7 +537,7 @@ tree_insert(tree_t* self, ptr key)
             }
             else
             {
-                if(node.r != <tree_node_t*>(0))
+                if(node.r != tree_node_t* 0)
                 {
                     node = node.r;
                 }
@@ -563,7 +563,7 @@ tree_insert(tree_t* self, ptr key)
 void
 tree_insert_1(tree_t* self, tree_node_t* node)
 {
-    if(node.p != <tree_node_t*>(0))
+    if(node.p != tree_node_t* 0)
     {
         tree_insert_2(self, node);
     }
@@ -644,16 +644,16 @@ tree_remove(tree_t* self, ptr key)
 {
     tree_node_t* child;
     tree_node_t* node = node_find(self, key);
-    if(node != <tree_node_t*>(0))
+    if(node != tree_node_t* 0)
     {
-        if(node .l != <tree_node_t*>(0)
-         & node .r != <tree_node_t*>(0))
+        if(node .l != tree_node_t* 0
+         & node .r != tree_node_t* 0)
         {
             tree_node_t* pred = node_maximum(node.l);
             node .key = pred.key;
             node  = pred;
         }
-        if(node.r != <tree_node_t*>(0))
+        if(node.r != tree_node_t* 0)
         {
             child = node.r;
         }
@@ -667,7 +667,7 @@ tree_remove(tree_t* self, ptr key)
             tree_remove_1(self, node);
         }
         node_replace(self, node, child);
-        if(node.p == <tree_node_t*>(0) & child != <tree_node_t*>(0))
+        if(node.p == tree_node_t* 0 & child != tree_node_t* 0)
         {
             child.color = 1;
         }
@@ -682,7 +682,7 @@ tree_remove(tree_t* self, ptr key)
 void
 tree_remove_1(tree_t* self, tree_node_t* node)
 {
-    if(node.p != <tree_node_t*>(0))
+    if(node.p != tree_node_t* 0)
     {
         tree_remove_2(self, node);
     }

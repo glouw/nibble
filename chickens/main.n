@@ -89,7 +89,7 @@ type sprites_t
 
 i64 rand64(i64 max)
 {
-    ret <i64>(rand()) % max;
+    ret i64 rand() % max;
 }
 
 sheet_t
@@ -135,7 +135,7 @@ sheets_push(sheets_t* self, sheet_t sheet)
     if(self.size >= self.cap)
     {
         printf("too many sheets!\n");
-        exit(<i32>(1));
+        exit(i32 1);
     }
     self.sheet[self.size++] = sheet;
     ret;
@@ -195,10 +195,10 @@ sprite_get_dest_rect(sprite_t* self)
 {
     point_t size = sprite_get_true_size(self);
     sdl_rect_t rect;
-    rect.x = <i32>(self.where.x);
-    rect.y = <i32>(self.where.y);
-    rect.w = <i32>(size.x);
-    rect.h = <i32>(size.y);
+    rect.x = i32 self.where.x;
+    rect.y = i32 self.where.y;
+    rect.w = i32 size.x;
+    rect.h = i32 size.y;
     ret rect;
 }
 
@@ -208,15 +208,15 @@ sprite_get_foot(sprite_t* self)
     sdl_rect_t rect = sprite_get_dest_rect(self);
     if(self.is_bottom_sort)
     {
-        ret <i64>(rect.y + rect.h);
+        ret i64 (rect.y + rect.h);
     }
-    ret <i64>(rect.y);
+    ret i64 rect.y;
 }
 
 i32
 sprite_compare_feet(sprite_t* left, sprite_t* rite)
 {
-    ret <i32>(sprite_get_foot(left) > sprite_get_foot(rite));
+    ret i32 (sprite_get_foot(left) > sprite_get_foot(rite));
 }
 
 void
@@ -233,8 +233,8 @@ void
 sprite_set_walk_state(sprite_t* self, glob_t* glob)
 {
     i64 shift = self.zoom / 2;
-    self.velocity.x = <i64>(rand()) % (self.zoom + 1) - shift;
-    self.velocity.y = <i64>(rand()) % (self.zoom + 1) - shift;
+    self.velocity.x = i64 rand() % (self.zoom + 1) - shift;
+    self.velocity.y = i64 rand() % (self.zoom + 1) - shift;
     point_t zero;
     if(self.velocity.x == 0 & self.velocity.y == 0)
     {
@@ -264,10 +264,10 @@ sprite_get_source_rect(sprite_t* self, glob_t* glob)
     i64 frame = self.frame % self.sheet.frames;
     i64 state = self.state % self.sheet.states;
     sdl_rect_t rect;
-    rect.x = <i32>(self.sheet.tile_width * frame);
-    rect.y = <i32>(self.sheet.tile_height * state);
-    rect.w = <i32>(self.sheet.tile_width);
-    rect.h = <i32>(self.sheet.tile_height);
+    rect.x = i32 (self.sheet.tile_width * frame);
+    rect.y = i32 (self.sheet.tile_height * state);
+    rect.w = i32 (self.sheet.tile_width);
+    rect.h = i32 (self.sheet.tile_height);
     ret rect;
 }
 
@@ -310,7 +310,7 @@ sprite_move(sprite_t* self, sdl_t* sdl, glob_t* glob)
 i64
 sprite_roll_state(sprite_t* self, glob_t* glob)
 {
-    i64 roll = <i64>(rand()) % glob.percent_cap;
+    i64 roll = i64 rand() % glob.percent_cap;
     if(roll < glob.dices.idle ) ret glob.states.idle;
     if(roll < glob.dices.walk ) ret glob.states.walk;
     if(roll < glob.dices.sleep) ret glob.states.sleep;
@@ -334,7 +334,7 @@ sprite_set_state(sprite_t* self, glob_t* glob)
         else
         {
             printf("unknown sprite state encountered\n");
-            exit(<i32>(1));
+            exit(i32 1);
         }
     }
     else
@@ -349,7 +349,7 @@ sprite_is_close(sprite_t* self, sprite_t* other)
 {
     if(self == other)
     {
-        ret <i1>(0);
+        ret i1 0;
     }
     i64 by = 32;
     point_t delta = self.where - other.where;
@@ -400,7 +400,7 @@ sprite_interact(sprite_t* self, sprites_t* sprites, i1() condition)
         }
         i++;
     }
-    ret <sprite_t*>(0);
+    ret sprite_t* 0;
 }
 
 sprites_t
@@ -418,7 +418,7 @@ sprites_push(sprites_t* self, sprite_t sprite)
     if(self.size >= self.cap)
     {
         printf("too many sprites!\n");
-        exit(<i32>(1));
+        exit(i32 1);
     }
     self.sprite[self.size++] = sprite;
     ret;
@@ -427,7 +427,7 @@ sprites_push(sprites_t* self, sprite_t sprite)
 void
 sprites_sort(sprites_t* self)
 {
-    qsort(<ptr>(self.sprite), <u64>(self.size), sizeof self.sprite[0], sprite_compare_feet);
+    qsort(ptr self.sprite, u64 self.size, sizeof self.sprite[0], sprite_compare_feet);
     ret;
 }
 
@@ -446,7 +446,7 @@ sprites_bawk(sprites_t* self, sdl_t* sdl, glob_t* glob)
     {
         sprite_t* sprite = &self.sprite[i];
         sprite_t* other = sprite_interact(sprite, self, sprite_is_close);
-        if(other != <sprite_t*>(0))
+        if(other != sprite_t* 0)
         {
             sprite_bawk(sprite, other, glob);
         }
@@ -493,11 +493,11 @@ sprites_render(sprites_t* self, sdl_t* sdl, sdl_font_t* font, glob_t* glob, i64 
         sdl_rect_t source = sprite_get_source_rect(sprite, glob);
         sdl_rect_t dest = sprite_get_dest_rect(sprite);
         if(sprite.is_facing_right)
-            flip = <i32>(1);
+            flip = i32 1;
         else
-            flip = <i32>(0);
+            flip = i32 0;
         sdl_render_copy_ex(sdl, sprite.sheet.texture, &source, &dest, flip);
-        sdl_write_font(sdl, font, sprite.message, <i64>(dest.x), <i64>(dest.y));
+        sdl_write_font(sdl, font, sprite.message, i64 dest.x, i64 dest.y);
         if(cycle % glob.cycles_per_frame == 0)
         {
             sprite.frame++;
@@ -517,10 +517,10 @@ render_floor(sdl_t* sdl, sheets_t* sheets, glob_t* glob)
     i64 xtiles = sdl.xres / w + 1;
     i64 ytiles = sdl.yres / h + 1;
     sdl_rect_t source;
-    source.x = <i32>(0);
-    source.y = <i32>(0);
-    source.w = <i32>(sheet.tile_width);
-    source.h = <i32>(sheet.tile_height);
+    source.x = i32 0;
+    source.y = i32 0;
+    source.w = i32 sheet.tile_width;
+    source.h = i32 sheet.tile_height;
     i64 y;
     while(y < ytiles)
     {
@@ -528,11 +528,11 @@ render_floor(sdl_t* sdl, sheets_t* sheets, glob_t* glob)
         while(x < xtiles)
         {
             sdl_rect_t dest;
-            dest.x = <i32>(x * w);
-            dest.y = <i32>(y * h);
-            dest.w = <i32>(w);
-            dest.h = <i32>(h);
-            sdl_render_copy_ex(sdl, sheet.texture, &source, &dest, <i32>(0));
+            dest.x = i32 x * i32 w;
+            dest.y = i32 y * i32 h;
+            dest.w = i32 w;
+            dest.h = i32 h;
+            sdl_render_copy_ex(sdl, sheet.texture, &source, &dest, i32 0);
             x++;
         }
         y++;
@@ -573,10 +573,10 @@ populate_sprites(sdl_t* sdl, glob_t* glob, sheets_t* sheets)
 i32
 main(i32 argc, i8** argv)
 {
-    if(<i64>(argc) != 5)
+    if(argc != i32 5)
     {
         printf("required args: x y xres yres\n");
-        exit(<i32>(1));
+        exit(i32 1);
     }
     glob_t glob = glob_init();
     sdl_t sdl = sdl_init(
@@ -591,7 +591,7 @@ main(i32 argc, i8** argv)
     sdl_average_t fps = sdl_average_init(8);
     double dt;
     i64 cycle;
-    while(<i1>(1))
+    while(i1 1)
     {
         double t0 = sdl_get_seconds();
         if(sdl_is_done())
@@ -621,5 +621,5 @@ main(i32 argc, i8** argv)
     sheets_del(&sheets);
     sprites_del(&sprites);
     sdl_average_del(&fps);
-    ret <i32>(0);
+    ret i32 0;
 }

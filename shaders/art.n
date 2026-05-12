@@ -52,5 +52,5 @@ i32
 main(i32 argc, i8** argv)
 {
     run(argc, argv, art, "shader art\nby kishimisu");
-    ret <i32>(0);
+    ret i32 0;
 }

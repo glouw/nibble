@@ -1097,11 +1097,6 @@ static bool is_decrement(str_t operator)
     return str_equal(operator.begin, g_decrement);
 }
 
-static bool is_type_cast(str_t operator)
-{
-    return str_equal(operator.begin, g_less);
-}
-
 static bool is_not(str_t operator)
 {
     return str_equal(operator.begin, g_not);
@@ -1576,9 +1571,17 @@ static type_t read_type()
     if(is_function_pointer_decl(next_char()))
     {
         match(g_left_paren);
-        match(g_rite_paren);
-        type.is_function_pointer = true;
-        type.must_skip_arg_check = true;
+        auto read = skip_space_and_comment();
+        if(peek_char() == *g_rite_paren)
+        {
+            match(g_rite_paren);
+            type.is_function_pointer = true;
+            type.must_skip_arg_check = true;
+        }
+        else
+        {
+            code_rewind(read + 1);
+        }
     }
     if(is_prototype_decl(next_char()))
     {
@@ -2873,20 +2876,6 @@ static value_t read_prefix()
         auto value = read_p0();
         return prefix_decrement(value);
     }
-    if(is_type_cast(operator))
-    {
-        match(g_less);
-        auto type = read_type();
-        match(g_greater);
-        match(g_left_paren);
-        if(is_end_of_args(next_char()))
-        {
-            quit("'%s' expected an expression", g_type_cast);
-        }
-        auto value = read_expression();
-        match(g_rite_paren);
-        return type_cast(value, type);
-    }
     if(is_not(operator))
     {
         match(g_not);
@@ -3367,6 +3356,12 @@ static value_t read_p0()
     }
     if(is_identifier_load(peek))
     {
+        if(is_type_name(peek_alnum()))
+        {
+            auto type = read_type();
+            auto value = read_p0();
+            return type_cast(value, type);
+        }
         return read_identifier();
     }
     if(is_grouped_expression(peek))
