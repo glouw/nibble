@@ -30,7 +30,7 @@ type tag_t
     i64 white_chicken = 1;
     i64 brown_chicken = 2;
     i64 brown_nest = 3;
-    i64 count = 4;
+    i64 wood_floor = 4;
 };
 
 type state_t
@@ -407,7 +407,7 @@ sprites_t
 sprites_init()
 {
     sprites_t self;
-    self.cap = 10;
+    self.cap = 12;
     self.sprite = new sprite_t[self.cap];
     ret self;
 }
@@ -507,6 +507,39 @@ sprites_render(sprites_t* self, sdl_t* sdl, sdl_font_t* font, glob_t* glob, i64 
     ret;
 }
 
+void
+render_floor(sdl_t* sdl, sheets_t* sheets, glob_t* glob)
+{
+    sheet_t* sheet = &sheets.sheet[glob.tags.wood_floor];
+    i64 zoom = 2;
+    i64 w = zoom * sheet.tile_width;
+    i64 h = zoom * sheet.tile_height;
+    i64 xtiles = sdl.xres / w + 1;
+    i64 ytiles = sdl.yres / h + 1;
+    sdl_rect_t source;
+    source.x = <i32>(0);
+    source.y = <i32>(0);
+    source.w = <i32>(sheet.tile_width);
+    source.h = <i32>(sheet.tile_height);
+    i64 y;
+    while(y < ytiles)
+    {
+        i64 x;
+        while(x < xtiles)
+        {
+            sdl_rect_t dest;
+            dest.x = <i32>(x * w);
+            dest.y = <i32>(y * h);
+            dest.w = <i32>(w);
+            dest.h = <i32>(h);
+            sdl_render_copy_ex(sdl, sheet.texture, &source, &dest, <i32>(0));
+            x++;
+        }
+        y++;
+    }
+    ret;
+}
+
 sheets_t
 populate_sheets(sdl_t* sdl)
 {
@@ -515,6 +548,7 @@ populate_sheets(sdl_t* sdl)
     sheets_push(&self, sheet_init(sdl, "white_chicken.bmp", 32, 32, 3, 3));
     sheets_push(&self, sheet_init(sdl, "brown_chicken.bmp", 32, 32, 3, 3));
     sheets_push(&self, sheet_init(sdl, "brown_nest.bmp",    32, 32, 2, 1));
+    sheets_push(&self, sheet_init(sdl, "wood_floor.bmp",    32, 32, 1, 1));
     ret self;
 }
 
@@ -525,7 +559,7 @@ populate_sprites(sdl_t* sdl, glob_t* glob, sheets_t* sheets)
     i64 i;
     while(i < self.cap)
     {
-        i64 tag = rand64(glob.tags.count);
+        i64 tag = rand64(glob.tags.wood_floor);
         sprite_t sprite = sprite_init(0, 0, sheets, tag, 2, &glob.tags);
         point_t size = sprite_get_true_size(&sprite);
         sprite.where.x = rand64(sdl.xres - size.x);
@@ -569,6 +603,7 @@ main(i32 argc, i8** argv)
         sprites_bawk(&sprites, &sdl, &glob);
         sprites_sort(&sprites);
         sdl_clear_screen(&sdl);
+        render_floor(&sdl, &sheets, &glob);
         sprites_render(&sprites, &sdl, &font, &glob, cycle);
         sdl_write_font(&sdl, &font, sdl.name, sdl.margin, sdl.margin);
         sdl_write_fps(&sdl, &font, &fps);

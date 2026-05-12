@@ -6,7 +6,7 @@ Nibble was written in 3000 lines of C to demonstrate an approach to LLVM IR
 generation without relying on external dependencies or heap allocations.
 
 Nibble supports features such as defer, recursion, integer, floating, and boolean types,
-structs (simply named `type`s), GLSL-like struct operators, pointers,
+structs (simply named types), GLSL-like struct operators, pointers,
 function pointers, branching, loops, type checking, basic C interoperability via generic pointers,
 and reasonable error messages.
 
@@ -19,5 +19,6 @@ demo demonstrates a basic setup for game programming.
 
 Please note, Nibble compiles top down in a single pass and allocas freely, even within loops,
 by design. This simplified front-end design greatly improves `main.c` readability, but causes
-stack overflows when Nibble compiles Nibble programs with Clang's -O0 optimization flag enabled.
-Clang's back-end optimizer is (probably too eagerly) relied upon in this regard.
+stack overflows when Nibble compiles Nibble programs with Clang's `-O0` optimization flag enabled.
+Clang's back-end optimizer is (probably too eagerly) relied upon in this regard, but readability
+of `main.c` and `.n` programs was the design goal.
