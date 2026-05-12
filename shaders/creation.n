@@ -44,8 +44,8 @@ creation(sdl_vec2 res, sdl_vec2 coord, double secs)
 }
 
 i32
-main()
+main(i32 argc, i8** argv)
 {
-    run(creation, "creation\nby danilo guanabara");
+    run(argc, argv, creation, "creation\nby danilo guanabara");
     ret <i32>(0);
 }

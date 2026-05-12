@@ -60,7 +60,7 @@ type sdl_t
 };
 
 sdl_t
-sdl_init(i64 xres, i64 yres, i8* name)
+sdl_init(i64 x, i64 y, i64 xres, i64 yres, i8* name)
 {
     u32 init_video = <u32>(32);
     SDL_Init(init_video);
@@ -72,10 +72,10 @@ sdl_init(i64 xres, i64 yres, i8* name)
     self.name = name;
     self.window = SDL_CreateWindow(
         self.name,
-        <i32>(0),
-        <i32>(0),
-        <i32>(self.xres),
-        <i32>(self.yres),
+        <i32>(x),
+        <i32>(y),
+        <i32>(xres),
+        <i32>(yres),
         <u32>(0)
     );
     u32 accelerated = <u32>(2);

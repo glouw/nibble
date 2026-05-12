@@ -49,8 +49,8 @@ art(sdl_vec2 res, sdl_vec2 coord, double secs)
 }
 
 i32
-main()
+main(i32 argc, i8** argv)
 {
-    run(art, "shader art\nby kishimisu");
+    run(argc, argv, art, "shader art\nby kishimisu");
     ret <i32>(0);
 }

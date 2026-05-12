@@ -407,7 +407,7 @@ sprites_t
 sprites_init()
 {
     sprites_t self;
-    self.cap = 32;
+    self.cap = 10;
     self.sprite = new sprite_t[self.cap];
     ret self;
 }
@@ -493,13 +493,9 @@ sprites_render(sprites_t* self, sdl_t* sdl, sdl_font_t* font, glob_t* glob, i64 
         sdl_rect_t source = sprite_get_source_rect(sprite, glob);
         sdl_rect_t dest = sprite_get_dest_rect(sprite);
         if(sprite.is_facing_right)
-        {
             flip = <i32>(1);
-        }
         else
-        {
             flip = <i32>(0);
-        }
         sdl_render_copy_ex(sdl, sprite.sheet.texture, &source, &dest, flip);
         sdl_write_font(sdl, font, sprite.message, <i64>(dest.x), <i64>(dest.y));
         if(cycle % glob.cycles_per_frame == 0)
@@ -541,10 +537,20 @@ populate_sprites(sdl_t* sdl, glob_t* glob, sheets_t* sheets)
 }
 
 i32
-main()
+main(i32 argc, i8** argv)
 {
+    if(<i64>(argc) != 5)
+    {
+        printf("required args: x y xres yres\n");
+        exit(<i32>(1));
+    }
     glob_t glob = glob_init();
-    sdl_t sdl = sdl_init(640, 480, "chickens");
+    sdl_t sdl = sdl_init(
+        atoll(argv[1]),
+        atoll(argv[2]),
+        atoll(argv[3]),
+        atoll(argv[4]),
+        "chickens");
     sheets_t sheets = populate_sheets(&sdl);
     sprites_t sprites = populate_sprites(&sdl, &glob, &sheets);
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);

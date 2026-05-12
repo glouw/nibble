@@ -1,8 +1,18 @@
 void
-run(sdl_vec4() shader, i8* name)
+run(i32 argc, i8** argv, sdl_vec4() shader, i8* name)
 {
+    if(<i64>(argc) != 5)
+    {
+        printf("required args: x y xres yres\n");
+        exit(<i32>(1));
+    }
     sdl_scancode_t scancode;
-    sdl_t sdl = sdl_init(640, 480, name);
+    sdl_t sdl = sdl_init(
+        atoll(argv[1]),
+        atoll(argv[2]),
+        atoll(argv[3]),
+        atoll(argv[4]),
+        name);
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     sdl_stream_t stream = sdl_stream_init(&sdl);
     sdl_average_t average = sdl_average_init(30);

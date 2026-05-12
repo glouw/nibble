@@ -5,9 +5,13 @@ ASM = clang -O1
 BIN = tree
 LDFLAGS = -lSDL2 -lm
 TIME = time
+X=0
+Y=0
+XRES=640
+YRES=480
 
 all:
-	$(TIME) $(CC) $(SRC) > $(TEMP) && $(TIME) $(ASM) $(TEMP) $(LDFLAGS) -o $(BIN) && ./$(BIN)
+	$(TIME) $(CC) $(SRC) > $(TEMP) && $(TIME) $(ASM) $(TEMP) $(LDFLAGS) -o $(BIN) && ./$(BIN) $(X) $(Y) $(XRES) $(YRES)
 
 clean:
 	rm -f $(TEMP)
