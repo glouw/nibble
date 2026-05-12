@@ -242,8 +242,10 @@ static char* const g_u8                                 = "u8";
 static char* const g_u16                                = "u16";
 static char* const g_u32                                = "u32";
 static char* const g_u64                                = "u64";
-static char* const g_double                             = "double";
+static char* const g_f32                                = "f32";
 static char* const g_float                              = "float";
+static char* const g_double                             = "double";
+static char* const g_f64                                = "f64";
 static char* const g_ret                                = "ret";
 static char* const g_ptr                                = "ptr";
 static char* const g_if                                 = "if";
@@ -394,8 +396,8 @@ static char* g_builtin_type_keywords[] = {
     g_u16,
     g_u32,
     g_u64,
-    g_double,
-    g_float,
+    g_f64,
+    g_f32,
     g_ptr,
     nullptr
 };
@@ -416,9 +418,9 @@ static char* g_unsigned[] = {
     nullptr
 };
 
-static char* g_floating[] = {
-    g_double,
-    g_float,
+static char* g_f32ing[] = {
+    g_f64,
+    g_f32,
     nullptr
 };
 
@@ -804,7 +806,7 @@ static bool is_boolean(type_t type)
 
 static bool is_floating(type_t type)
 {
-    return is_not_pointer(type) && str_in(type.name, g_floating);
+    return is_not_pointer(type) && str_in(type.name, g_f32ing);
 }
 
 static bool is_size(type_t type)
@@ -883,11 +885,6 @@ static bool is_type_def_keyword(str_t keyword)
 static bool is_include_keyword(str_t keyword)
 {
     return str_equal(keyword.begin, g_include);
-}
-
-static bool is_llvm_type_signed(type_t type)
-{
-    return is_unsigned(type) || is_boolean(type);
 }
 
 static bool is_ret(str_t keyword)
@@ -1187,19 +1184,40 @@ static bool is_aggregate_member_init(char c)
     return c == *g_equals;
 }
 
+static bool is_f64(type_t type)
+{
+    return str_equal(type.name.begin, g_f64);
+}
+
+static bool is_f32(type_t type)
+{
+    return str_equal(type.name.begin, g_f32);
+}
+
 static str_t to_llvm_type(type_t type)
 {
     if(is_pointer(type))
     {
         return str_init(g_ptr);
     }
-    if(is_llvm_type_signed(type))
-    {
-        /* unsigned is signed in llvm IR */
-        type.name.begin[0] = 'i';
-    }
     auto prefix = is_builtin_type_name(type.name) ? g_empty : g_percent;
     auto out = str_init(prefix);
+    if(is_f64(type))
+    {
+        type.name = str_init(g_double);
+    }
+    if(is_f32(type))
+    {
+        type.name = str_init(g_float);
+    }
+    if(is_unsigned(type))
+    {
+        type.name.begin[0] = 'i';
+    }
+    if(is_boolean(type))
+    {
+        type.name.begin[0] = 'i';
+    }
     str_append(&out, type.name.begin);
     return out;
 }
@@ -2254,11 +2272,12 @@ static value_t load_direct()
 {
     auto name = read_numeric();
     bool is_decimal = strchr(name.begin, *g_dot);
-    auto type_name = is_decimal ? g_double : g_i32;
+    auto type_name = is_decimal ? g_f64 : g_i32;
     auto opcode = is_decimal ? g_opcode_load_double : g_opcode_load_signed;
     auto type = scalar_init(str_init(type_name));
     auto value = rvalue(type);
-    emit(opcode, g_file.slot, value.type.name.begin, name.begin);
+    auto llvm_type = to_llvm_type(value.type);
+    emit(opcode, g_file.slot, llvm_type.begin, name.begin);
     return value;
 }
 
@@ -2570,11 +2589,11 @@ static type_power_t type_power(type_t type)
     {
         return g_power_64;
     }
-    if(str_equal(at, g_float))
+    if(str_equal(at, g_f32))
     {
         return g_power_float;
     }
-    if(str_equal(at, g_double))
+    if(str_equal(at, g_f64))
     {
         return g_power_double;
     }

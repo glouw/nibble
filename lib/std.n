@@ -16,13 +16,13 @@ i8* strcpy(i8* dest, i8* source);
 i8* strcat(i8* dest, i8* source);
 i32 strcmp(i8* x, i8* y);
 
-double pow(double, double);
-double exp(double);
-double sqrt(double);
-double cos(double);
-double sin(double);
-double fabs(double);
-double floor(double);
+f64 pow(f64, f64);
+f64 exp(f64);
+f64 sqrt(f64);
+f64 cos(f64);
+f64 sin(f64);
+f64 fabs(f64);
+f64 floor(f64);
 
 void
 assert(i1 condition, i8* message)

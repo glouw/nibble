@@ -5,13 +5,13 @@ include "slice.n";
 include "run.n";
 
 sdl_vec4
-creation(sdl_vec2 res, sdl_vec2 coord, double secs)
+creation(sdl_vec2 res, sdl_vec2 coord, f64 secs)
 {
     sdl_vec2 distance;
     sdl_vec3 color;
-    double time = secs;
-    double step = 0.07;
-    double frequency = 9.0;
+    f64 time = secs;
+    f64 step = 0.07;
+    f64 frequency = 9.0;
     i32 slots = 3;
     i32 slot;
     while(slot < slots)
@@ -28,7 +28,7 @@ creation(sdl_vec2 res, sdl_vec2 coord, double secs)
         sdl_vec2 wave;
         wave.x = wave.y = fabs(sin(distance.x * frequency - 2.0 * time));
         sdl_vec2 sample = sdl_mod2s(uv + ratio / distance * envelope * wave, 1.0);
-        double out = 0.01 / sdl_len2(sample - shift);
+        f64 out = 0.01 / sdl_len2(sample - shift);
         if(slot == 0) color.x = out;
         if(slot == 1) color.y = out;
         if(slot == 2) color.z = out;

@@ -584,11 +584,11 @@ main(i32 argc, i8** argv)
     sprites_t sprites = populate_sprites(&sdl, &glob, &sheets);
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     sdl_average_t fps = sdl_average_init(u64 8);
-    double dt;
+    f64 dt;
     i32 cycle;
     while(i1 1)
     {
-        double t0 = sdl_get_seconds();
+        f64 t0 = sdl_get_seconds();
         if(sdl_is_done())
         {
             break;
@@ -603,7 +603,7 @@ main(i32 argc, i8** argv)
         sdl_write_font(&sdl, &font, sdl.name, sdl.margin, sdl.margin);
         sdl_write_fps(&sdl, &font, &fps);
         sdl_present(&sdl);
-        double t1 = sdl_get_seconds();
+        f64 t1 = sdl_get_seconds();
         dt = t1 - t0;
         if(dt > 0.0)
         {

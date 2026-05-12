@@ -17,10 +17,10 @@ run(i32 argc, i8** argv, sdl_vec4() shader, i8* name)
     sdl_stream_t stream = sdl_stream_init(&sdl);
     sdl_average_t average = sdl_average_init(u64 30);
     i32 cycle;
-    double dt;
+    f64 dt;
     while(i1 1)
     {
-        double t0 = sdl_get_seconds();
+        f64 t0 = sdl_get_seconds();
         if(sdl_is_done())
         {
             ret;
@@ -35,7 +35,7 @@ run(i32 argc, i8** argv, sdl_vec4() shader, i8* name)
         sdl_write_font(&sdl, &font, sdl.name, sdl.margin, sdl.margin);
         sdl_write_fps(&sdl, &font, &average);
         sdl_present(&sdl);
-        double t1 = sdl_get_seconds();
+        f64 t1 = sdl_get_seconds();
         dt = t1 - t0;
         if(dt > 0.0)
         {

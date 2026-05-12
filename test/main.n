@@ -1070,9 +1070,9 @@ i32 test_direct_function_deref()
     ret 1;
 }
 
-type double_t
+type f64_t
 {
-    double value;
+    f64 value;
 };
 
 type int_t
@@ -1194,7 +1194,7 @@ i32 test_postix_increment()
     i32 x = 41;
     i32 y = x++;
 
-    double_t d;
+    f64_t d;
 
     if(y == 41
      & x == 42
@@ -1216,7 +1216,7 @@ i32 test_postix_decrement()
     int.value--;
     i32 x = 42;
     i32 y = x--;
-    double_t d;
+    f64_t d;
     if(y == 42
      & x == 41
      & int.value == 42
@@ -1236,7 +1236,7 @@ i32 test_prefix_increment()
     ++int.value;
     i32 x = 41;
     i32 y = ++x;
-    double_t d;
+    f64_t d;
     if(y == 42
      & x == 42
      & int.value == 42
@@ -1255,7 +1255,7 @@ i32 test_prefix_decrement()
     --int.value;
     i32 x = 43;
     i32 y = --x;
-    double_t d;
+    f64_t d;
     if(y == 42
      & x == 42
      & int.value == 42
@@ -1320,17 +1320,17 @@ i32 test_ascii_char()
 }
 
 i32
-test_double_type_cast()
+test_f64_type_cast()
 {
     i32 a = i32 42.42;
     i32 b = i32 41.42;
     i16 c = i16 40.42;
     i8  d =  i8 39.42;
 
-    double e = double i32 42;
-    double f = double i32 41;
-    double g = double i16 40;
-    double h = double  i8 39;
+    f64 e = f64 i32 42;
+    f64 f = f64 i32 41;
+    f64 g = f64 i16 40;
+    f64 h = f64  i8 39;
 
     if(a == 42
      & b == i32 41
@@ -1348,10 +1348,10 @@ test_double_type_cast()
 }
 
 i32
-test_double_math()
+test_f64_math()
 {
-    double x = 1.0;
-    double y = 1.0;
+    f64 x = 1.0;
+    f64 y = 1.0;
     x = y;
     if(x == y
      & 3.0 * 3.0 == 9.0
@@ -1373,23 +1373,23 @@ test_double_math()
 }
 
 i32
-test_float_math()
+test_f32_math()
 {
-    float x = float 1.0;
-    float y = float 2.0;
+    f32 x = f32 1.0;
+    f32 y = f32 2.0;
     x = y;
     if(x == y
-     & float 3.0  * float 3.0 == float 9.0
-     & float 3.0  / float 3.0 == float 1.0
-     & float 3.0  - float 3.0 == float 0.0
-     & float 3.0  + float 3.0 == float 6.0
-     & float 6.0  > float 0.0
-     & float 6.0 >= float 6.0
-     & float 6.0 <= float 6.0
-     & float 0.0  < float 6.0
-     & float 0.0 <= float 6.0
-     & float 8.0 != float 6.0
-     & float 8.0 == float 8.0
+     & f32 3.0  * f32 3.0 == f32 9.0
+     & f32 3.0  / f32 3.0 == f32 1.0
+     & f32 3.0  - f32 3.0 == f32 0.0
+     & f32 3.0  + f32 3.0 == f32 6.0
+     & f32 6.0  > f32 0.0
+     & f32 6.0 >= f32 6.0
+     & f32 6.0 <= f32 6.0
+     & f32 0.0  < f32 6.0
+     & f32 0.0 <= f32 6.0
+     & f32 8.0 != f32 6.0
+     & f32 8.0 == f32 8.0
     )
     {
         ret 0;
@@ -1437,7 +1437,7 @@ type point_t
     i32 z;
     i1 bool;
     int_t int;
-    double value;
+    f64 value;
 };
 
 i32
@@ -1524,8 +1524,8 @@ type default_init_t
     i32 y = 1;
     i32 z = 2;
     default_internal_init_t internal;
-    double a = 2.0;
-    float b = 1.0;
+    f64 a = 2.0;
+    f32 b = 1.0;
     u1 c = 1;
     i1 d = 1;
 };
@@ -1542,8 +1542,8 @@ i32 test_default_type_init()
      & init.internal.internal.x == 11
      & init.internal.internal.y == 12
      & init.internal.internal.z == 13
-     & init.a == double 2.0
-     & init.b == float 1.0
+     & init.a == f64 2.0
+     & init.b == f32 1.0
      & init.c == u1 1
      & init.d == i1 1
     )
@@ -1789,7 +1789,7 @@ i32 test_str_push()
 
 type person_t
 {
-    double height;
+    f64 height;
 };
 
 person_t* ret_person_pointer(person_t* self)
@@ -1873,9 +1873,9 @@ i32 main()
       | test_prefix_decrement()
       | test_defer_continue()
       | test_ascii_char()
-      | test_double_type_cast()
-      | test_double_math()
-      | test_float_math()
+      | test_f64_type_cast()
+      | test_f64_math()
+      | test_f32_math()
       | test_unsigned()
       | test_aggregate_operations()
       | test_default_type_init()

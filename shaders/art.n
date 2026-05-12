@@ -4,11 +4,11 @@ include "../lib/pthread.n";
 include "slice.n";
 include "run.n";
 
-sdl_vec3 palette(double t)
+sdl_vec3 palette(f64 t)
 {
     sdl_vec3() v3 = sdl_vec3_init;
     sdl_vec3() c3 = sdl_cos3;
-    double pi2 = 2.0 * 3.14159265359;
+    f64 pi2 = 2.0 * 3.14159265359;
     sdl_vec3 a = v3(0.500, 0.500, 0.500);
     sdl_vec3 b = v3(0.500, 0.500, 0.500);
     sdl_vec3 c = v3(1.000, 1.000, 1.000);
@@ -17,22 +17,22 @@ sdl_vec3 palette(double t)
 }
 
 sdl_vec4
-art(sdl_vec2 res, sdl_vec2 coord, double secs)
+art(sdl_vec2 res, sdl_vec2 coord, f64 secs)
 {
     sdl_vec3() m3s = sdl_mul3s;
     sdl_vec2() m2s = sdl_mul2s;
     sdl_vec2() d2s = sdl_div2s;
     sdl_vec2() s2s = sdl_sub2s;
     sdl_vec2() f2 = sdl_fract2;
-    double() l2 = sdl_len2;
+    f64() l2 = sdl_len2;
     sdl_vec2 uv = d2s(m2s(coord, 2.0) - res, res.y);
     sdl_vec2 uv0 = uv;
     sdl_vec3 color;
-    double i;
+    f64 i;
     while(i < 4.0)
     {
         uv = s2s(f2(m2s(uv, 1.5)), 0.5);
-        double d = l2(uv) * exp(-l2(uv0));
+        f64 d = l2(uv) * exp(-l2(uv0));
         sdl_vec3 col = palette(l2(uv0) + 0.4 * (i + secs));
         d = sin(8.0 * d + secs) / 8.0;
         d = fabs(d);

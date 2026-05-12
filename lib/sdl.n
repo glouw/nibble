@@ -37,7 +37,7 @@ ptr SDL_CreateTextureFromSurface(ptr renderer, ptr surface);
 ptr SDL_CreateTexture(ptr renderer, u32 format, i32 access, i32 w, i32 h);
 void SDL_DestroyTexture(ptr texture);
 i32 SDL_RenderCopy(ptr renderer, ptr texture, sdl_rect_t* source, sdl_rect_t* dest);
-i32 SDL_RenderCopyEx(ptr renderer, ptr texture, sdl_rect_t* source, sdl_rect_t* dest, double angle, sdl_point_t* center, i32 flip);
+i32 SDL_RenderCopyEx(ptr renderer, ptr texture, sdl_rect_t* source, sdl_rect_t* dest, f64 angle, sdl_point_t* center, i32 flip);
 u8* SDL_GetKeyboardState(i8* numkeys);
 void SDL_PumpEvents();
 u32 SDL_GetMouseState(i32* x, i32* y);
@@ -263,20 +263,20 @@ sdl_stream_del(sdl_stream_t* self)
     ret;
 }
 
-double
-sdl_mod(double x, double y)
+f64
+sdl_mod(f64 x, f64 y)
 {
     ret x - y * floor(x / y);
 }
 
 type sdl_vec2
 {
-    double x;
-    double y;
+    f64 x;
+    f64 y;
 };
 
 sdl_vec2
-sdl_vec2_init(double x, double y)
+sdl_vec2_init(f64 x, f64 y)
 {
     sdl_vec2 self;
     self.x = x;
@@ -284,7 +284,7 @@ sdl_vec2_init(double x, double y)
     ret self;
 }
 
-double
+f64
 sdl_len2(sdl_vec2 self)
 {
     self = self * self;
@@ -308,7 +308,7 @@ sdl_exp2(sdl_vec2 self)
     ret self;
 }
 
-double sdl_fract(double x)
+f64 sdl_fract(f64 x)
 {
     ret x - floor(x);
 }
@@ -322,7 +322,7 @@ sdl_vec2 sdl_fract2(sdl_vec2 a)
 }
 
 sdl_vec2
-sdl_mod2s(sdl_vec2 self, double scalar)
+sdl_mod2s(sdl_vec2 self, f64 scalar)
 {
     self.x = sdl_mod(self.x, scalar);
     self.y = sdl_mod(self.y, scalar);
@@ -330,7 +330,7 @@ sdl_mod2s(sdl_vec2 self, double scalar)
 }
 
 sdl_vec2
-sdl_mul2s(sdl_vec2 self, double scalar)
+sdl_mul2s(sdl_vec2 self, f64 scalar)
 {
     self.x = self.x * scalar;
     self.y = self.y * scalar;
@@ -338,7 +338,7 @@ sdl_mul2s(sdl_vec2 self, double scalar)
 }
 
 sdl_vec2
-sdl_div2s(sdl_vec2 self, double scalar)
+sdl_div2s(sdl_vec2 self, f64 scalar)
 {
     self.x = self.x / scalar;
     self.y = self.y / scalar;
@@ -346,7 +346,7 @@ sdl_div2s(sdl_vec2 self, double scalar)
 }
 
 sdl_vec2
-sdl_sub2s(sdl_vec2 self, double scalar)
+sdl_sub2s(sdl_vec2 self, f64 scalar)
 {
     self.x = self.x - scalar;
     self.y = self.y - scalar;
@@ -355,13 +355,13 @@ sdl_sub2s(sdl_vec2 self, double scalar)
 
 type sdl_vec3
 {
-    double x;
-    double y;
-    double z;
+    f64 x;
+    f64 y;
+    f64 z;
 };
 
 sdl_vec3
-sdl_vec3_init(double x, double y, double z)
+sdl_vec3_init(f64 x, f64 y, f64 z)
 {
     sdl_vec3 self;
     self.x = x;
@@ -381,7 +381,7 @@ sdl_cos3(sdl_vec3 vec)
 }
 
 sdl_vec3
-sdl_mul3s(sdl_vec3 self, double scalar)
+sdl_mul3s(sdl_vec3 self, f64 scalar)
 {
     self.x = self.x * scalar;
     self.y = self.y * scalar;
@@ -391,14 +391,14 @@ sdl_mul3s(sdl_vec3 self, double scalar)
 
 type sdl_vec4
 {
-    double r;
-    double g;
-    double b;
-    double a;
+    f64 r;
+    f64 g;
+    f64 b;
+    f64 a;
 };
 
 sdl_vec4
-sdl_vec4_init(double r, double g, double b, double a)
+sdl_vec4_init(f64 r, f64 g, f64 b, f64 a)
 {
     sdl_vec4 self;
     self.r = r;
@@ -408,8 +408,8 @@ sdl_vec4_init(double r, double g, double b, double a)
     ret self;
 }
 
-double
-sdl_clamp(double x, double min, double max)
+f64
+sdl_clamp(f64 x, f64 min, f64 max)
 {
     if(x < min) ret min;
     if(x > max) ret max;
@@ -429,7 +429,7 @@ sdl_clamp_vec4(sdl_vec4 color)
 void
 sdl_stream_put(sdl_stream_t* self, sdl_t* sdl, i32 x, i32 y, sdl_vec4 color)
 {
-    double max = 255.0;
+    f64 max = 255.0;
     color = sdl_clamp_vec4(color);
     u8 r = u8 (color.r * max);
     u8 g = u8 (color.g * max);
@@ -443,10 +443,10 @@ sdl_stream_put(sdl_stream_t* self, sdl_t* sdl, i32 x, i32 y, sdl_vec4 color)
     ret;
 }
 
-double
+f64
 sdl_get_seconds()
 {
-    ret double SDL_GetTicks() / 1000.0;
+    ret f64 SDL_GetTicks() / 1000.0;
 }
 
 i32
@@ -457,7 +457,7 @@ sdl_get_cpu_count()
 
 type sdl_average_t
 {
-    double* array;
+    f64* array;
     u64 size;
     u64 cap;
 };
@@ -467,29 +467,29 @@ sdl_average_init(u64 cap)
 {
     sdl_average_t self;
     self.cap = cap;
-    self.array = new double[self.cap];
+    self.array = new f64[self.cap];
     ret self;
 }
 
-double
+f64
 sdl_average_get(sdl_average_t* self)
 {
     if(self.size == u64 0)
     {
         ret 0.0;
     }
-    double total;
+    f64 total;
     u64 i;
     while(i < self.size)
     {
         total = total + self.array[i];
         i++;
     }
-    ret total / double self.size;
+    ret total / f64 self.size;
 }
 
 void
-sdl_average_push(sdl_average_t* self, double value)
+sdl_average_push(sdl_average_t* self, f64 value)
 {
     if(self.size == self.cap)
     {
@@ -615,7 +615,7 @@ void
 sdl_write_fps(sdl_t* self, sdl_font_t* font, sdl_average_t* average)
 {
     i8* buffer = new i8[u64 128];
-    double fps = sdl_average_get(average);
+    f64 fps = sdl_average_get(average);
     i32...() indirect = sprintf; // As a variadic function pointer, just for fun
     i32 chars = indirect(buffer, "FPS %4.1f", fps);
     sdl_rect_t size = sdl_font_get_dest_rect(font, 0, 0);

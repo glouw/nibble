@@ -2,7 +2,7 @@ include "../lib/std.n";
 
 type constants_t
 {
-    float pi = 3.14159265358979323846;
+    f32 pi = 3.14159265358979323846;
     i32 note_attack = 4;
     i32 note_amplification = 15;
     i32 notes_max = 128;
@@ -33,7 +33,7 @@ type meta_t
     u32 tempo;
     i32* instruments;
     i32* bend;
-    float* volume;
+    f32* volume;
 };
 
 type note_t
@@ -43,7 +43,7 @@ type note_t
     i32 progress;
     i32 bend_last;
     i32 cycle;
-    float id;
+    f32 id;
     i1 on;
     i1 wait;
     i1 was_init;
