@@ -3,17 +3,17 @@ include "../lib/std.n";
 type constants_t
 {
     float pi = 3.14159265358979323846;
-    i64 note_attack = 4;
-    i64 note_amplification = 15;
-    i64 notes_max = 128;
-    i64 channel_max = 16;
-    i64 note_decay = 512;
-    i64 bend_default = 8192;
-    i64 sample_freq = 44100;
-    i64 video_samples = 2048;
-    i64 video_grain = 5;
-    i64 modulation_gain = 512;
-    i64 bank_width = 8;
+    i32 note_attack = 4;
+    i32 note_amplification = 15;
+    i32 notes_max = 128;
+    i32 channel_max = 16;
+    i32 note_decay = 512;
+    i32 bend_default = 8192;
+    i32 sample_freq = 44100;
+    i32 video_samples = 2048;
+    i32 video_grain = 5;
+    i32 modulation_gain = 512;
+    i32 bank_width = 8;
 };
 
 type track_t
@@ -23,7 +23,7 @@ type track_t
     u32 size;
     u32 index;
     u32 number;
-    i64 delay;
+    i32 delay;
     u8 running_status;
     i1 run;
 };
@@ -66,13 +66,13 @@ track_next(track_t* self)
 u8
 track_u8(track_t* self)
 {
-    u8 byte = self.data[i64 self.index];
+    u8 byte = self.data[u64 self.index];
     track_next(self);
     ret byte;
 }
 
 void
-track_spin(track_t* self, i64 size)
+track_spin(track_t* self, i32 size)
 {
     while(size-- != 0)
     {
@@ -99,14 +99,14 @@ i8*
 track_str(track_t* self)
 {
     u8 len = track_u8(self);
-    i8* str = new i8[i64 len + 1];
+    i8* str = new i8[u64 len + u64 1];
     u8 i = u8 0;
     while(i < len)
     {
-        str[i64 i] = i8 track_u8(self);
+        str[u64 i] = i8 track_u8(self);
         i++;
     }
-    str[i64 len] = '\0';
+    str[u64 len] = '\0';
     ret str;
 }
 
@@ -121,11 +121,11 @@ track_bytes(track_t* self)
 {
     bytes_t bytes;
     bytes.size = track_var(self);
-    bytes.data = new u8[i64 bytes.size];
+    bytes.data = new u8[u64 bytes.size];
     u32 i;
     while(i < bytes.size)
     {
-        bytes.data[i64 i] = track_u8(self);
+        bytes.data[u64 i] = track_u8(self);
         i++;
     }
     ret bytes;
@@ -160,8 +160,8 @@ track_real_event(track_t* self, meta_t* meta, note_t** notes, u8 leader)
         track_u8(self);
         if(!is_percussive(channel))
         {
-            note_t* note = &notes[i64 channel][i64 note_index];
-            note.gain_setpoint = i32 0;
+            note_t* note = &notes[u64 channel][u64 note_index];
+            note.gain_setpoint = 0;
             //meta->bend[channel] = CONST_BEND_DEFAULT;
         }
     }
@@ -354,7 +354,8 @@ track_real_event(track_t* self, meta_t* meta, note_t** notes, u8 leader)
 //}
 
 
-i32 main()
+i32
+main()
 {
-    ret i32 0;
+    ret 0;
 }

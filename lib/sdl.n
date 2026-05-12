@@ -14,9 +14,9 @@ type sdl_point_t
 
 type sdl_scancode_t
 {
-    i64 escape = 41;
-    i64 capslock = 57;
-    i64 end = 77;
+    i32 escape = 41;
+    i32 capslock = 57;
+    i32 end = 77;
 };
 
 i32 SDL_Init(u32 flags);
@@ -45,22 +45,22 @@ i32 SDL_LockTexture(ptr texture, sdl_rect_t* rect, ptr* pixels, i32* pitch);
 void SDL_UnlockTexture(ptr texture);
 u32 SDL_GetTicks();
 i32 SDL_GetCPUCount();
-i64 SDL_RenderDrawLine(ptr renderer, i64 x1, i64 y1, i64 x2, i64 y2);
+i32 SDL_RenderDrawLine(ptr renderer, i32 x1, i32 y1, i32 x2, i32 y2);
 
 type sdl_t
 {
-    i64 xres;
-    i64 yres;
-    i64 xmid;
-    i64 ymid;
+    i32 xres;
+    i32 yres;
+    i32 xmid;
+    i32 ymid;
     i8* name;
-    i64 margin = 8;
+    i32 margin = 8;
     ptr window;
     ptr renderer;
 };
 
 sdl_t
-sdl_init(i64 x, i64 y, i64 xres, i64 yres, i8* name)
+sdl_init(i32 x, i32 y, i32 xres, i32 yres, i8* name)
 {
     u32 init_video = u32 32;
     SDL_Init(init_video);
@@ -70,17 +70,10 @@ sdl_init(i64 x, i64 y, i64 xres, i64 yres, i8* name)
     self.xmid = xres / 2;
     self.ymid = yres / 2;
     self.name = name;
-    self.window = SDL_CreateWindow(
-        self.name,
-        i32 x,
-        i32 y,
-        i32 xres,
-        i32 yres,
-        u32 0
-    );
+    self.window = SDL_CreateWindow(self.name, x, y, xres, yres, u32 0);
     u32 accelerated = u32 2;
     u32 vsync = u32 4;
-    self.renderer= SDL_CreateRenderer(self.window, i32 -1, accelerated | vsync);
+    self.renderer= SDL_CreateRenderer(self.window, -1, accelerated | vsync);
     ret self;
 }
 
@@ -94,14 +87,14 @@ sdl_del(sdl_t* self)
 }
 
 void
-sdl_set_render_draw_color(sdl_t* self, i64 r, i64 g, i64 b, i64 a)
+sdl_set_render_draw_color(sdl_t* self, u8 r, u8 g, u8 b, u8 a)
 {
-    SDL_SetRenderDrawColor(self.renderer, u8 r, u8 g, u8 b, u8 a);
+    SDL_SetRenderDrawColor(self.renderer, r, g, b, a);
     ret;
 }
 
 void
-sdl_render_draw_line(sdl_t* self, i64 x1, i64 y1, i64 x2, i64 y2)
+sdl_render_draw_line(sdl_t* self, i32 x1, i32 y1, i32 x2, i32 y2)
 {
     SDL_RenderDrawLine(self.renderer, x1, y1, x2, y2);
     ret;
@@ -110,7 +103,7 @@ sdl_render_draw_line(sdl_t* self, i64 x1, i64 y1, i64 x2, i64 y2)
 void
 sdl_clear_screen(sdl_t* self)
 {
-    sdl_set_render_draw_color(self, 0, 0, 0, 0);
+    sdl_set_render_draw_color(self, u8 0, u8 0, u8 0, u8 0);
     SDL_RenderClear(self.renderer);
     ret;
 }
@@ -125,7 +118,7 @@ sdl_present(sdl_t* self)
 void
 sdl_delay(i64 ms)
 {
-    if(ms > 0)
+    if(ms > i64 0)
     {
         SDL_Delay(u32 ms);
     }
@@ -136,12 +129,12 @@ ptr
 sdl_load_bmp(i8* path)
 {
     ptr data = SDL_RWFromFile(path, "rb");
-    i32 close_stream = i32 1; // yes, close it.
+    i32 close_stream = 1;
     ptr bmp = SDL_LoadBMP_RW(data, close_stream);
     if(bmp == ptr 0)
     {
         printf("could not open %s\n", path);
-        exit(i32 1);
+        exit(1);
     }
     ret bmp;
 }
@@ -195,23 +188,18 @@ sdl_get_keyboard_state()
     ret SDL_GetKeyboardState(i8* 0);
 }
 
-i64
-sdl_get_mouse_state(i64* x, i64* y)
+u32
+sdl_get_mouse_state(i32* x, i32* y)
 {
     sdl_pump_events();
-    i32 xx;
-    i32 yy;
-    i64 out = i64 SDL_GetMouseState(&xx, &yy);
-    *x = i64 xx;
-    *y = i64 yy;
-    ret out;
+    ret SDL_GetMouseState(x, y);
 }
 
 i1
-sdl_is_key_down(i64 key)
+sdl_is_key_down(i32 key)
 {
     u8* state = sdl_get_keyboard_state();
-    ret state[key] == u8 1;
+    ret state[u64 key] == u8 1;
 }
 
 i1
@@ -248,14 +236,8 @@ sdl_stream_init(sdl_t* self)
 {
     sdl_stream_t stream;
     u32 pixel_format_argb8888 = u32 372645892;
-    i32 texure_access_streaming = i32 1;
-    stream.texture = SDL_CreateTexture(
-        self.renderer,
-        pixel_format_argb8888,
-        texure_access_streaming,
-        i32 self.xres,
-        i32 self.yres
-    );
+    i32 texure_access_streaming = 1;
+    stream.texture = SDL_CreateTexture(self.renderer, pixel_format_argb8888, texure_access_streaming, self.xres, self.yres);
     ret stream;
 }
 
@@ -445,46 +427,43 @@ sdl_clamp_vec4(sdl_vec4 color)
 }
 
 void
-sdl_stream_put(sdl_stream_t* self, sdl_t* sdl, i64 x, i64 y, sdl_vec4 color)
+sdl_stream_put(sdl_stream_t* self, sdl_t* sdl, i32 x, i32 y, sdl_vec4 color)
 {
     double max = 255.0;
-    i64 a_bit = 24;
-    i64 r_bit = 16;
-    i64 g_bit = 8;
-    i64 b_bit = 0;
     color = sdl_clamp_vec4(color);
-    i64 r = i64 (color.r * max);
-    i64 g = i64 (color.g * max);
-    i64 b = i64 (color.b * max);
-    i64 a = i64 (color.a * max);
-    i64 pixel = (a << a_bit) | (r << r_bit) | (g << g_bit) | (b << b_bit);
-    self.buffer[sdl.xres * y + x] = u32 pixel;
+    u8 r = u8 (color.r * max);
+    u8 g = u8 (color.g * max);
+    u8 b = u8 (color.b * max);
+    u8 a = u8 (color.a * max);
+    u64 index = u64 (sdl.xres * y + x);
+    self.buffer[index] = u32 a << u32 24
+                       | u32 r << u32 16
+                       | u32 g << u32  8
+                       | u32 b << u32  0;
     ret;
 }
 
 double
 sdl_get_seconds()
 {
-    double ms = double SDL_GetTicks();
-    double ms_per_second = 1000.0;
-    ret ms / ms_per_second;
+    ret double SDL_GetTicks() / 1000.0;
 }
 
-i64
+i32
 sdl_get_cpu_count()
 {
-    ret i64 SDL_GetCPUCount();
+    ret SDL_GetCPUCount();
 }
 
 type sdl_average_t
 {
     double* array;
-    i64 size;
-    i64 cap;
+    u64 size;
+    u64 cap;
 };
 
 sdl_average_t
-sdl_average_init(i64 cap)
+sdl_average_init(u64 cap)
 {
     sdl_average_t self;
     self.cap = cap;
@@ -495,12 +474,12 @@ sdl_average_init(i64 cap)
 double
 sdl_average_get(sdl_average_t* self)
 {
-    if(self.size == 0)
+    if(self.size == u64 0)
     {
         ret 0.0;
     }
     double total;
-    i64 i;
+    u64 i;
     while(i < self.size)
     {
         total = total + self.array[i];
@@ -514,13 +493,13 @@ sdl_average_push(sdl_average_t* self, double value)
 {
     if(self.size == self.cap)
     {
-        i64 i;
-        while(i < self.size - 1)
+        u64 i;
+        while(i < self.size - u64 1)
         {
-            self.array[i] = self.array[i + 1];
+            self.array[i] = self.array[i + u64 1];
             i++;
         }
-        self.array[self.size - 1] = value;
+        self.array[self.size - u64 1] = value;
     }
     else
     {
@@ -541,15 +520,15 @@ type sdl_font_t
 {
     ptr surface;
     ptr texture;
-    i64 zoom;
-    i64 xtiles;
-    i64 ytiles;
-    i64 tile_width;
-    i64 tile_height;
+    i32 zoom;
+    i32 xtiles;
+    i32 ytiles;
+    i32 tile_width;
+    i32 tile_height;
 };
 
 sdl_font_t
-sdl_font_init(sdl_t* sdl, i8* path, i64 zoom, i64 xtiles, i64 ytiles, i64 tile_width, i64 tile_height)
+sdl_font_init(sdl_t* sdl, i8* path, i32 zoom, i32 xtiles, i32 ytiles, i32 tile_width, i32 tile_height)
 {
     sdl_font_t self;
     self.surface = sdl_load_bmp(path);
@@ -573,9 +552,9 @@ sdl_font_del(sdl_font_t* self)
 sdl_rect_t
 sdl_font_get_source_rect(sdl_font_t* self, i8 ch)
 {
-    i64 index = i64 ch;
-    i64 x = index % self.xtiles;
-    i64 y = index / self.xtiles;
+    i32 index = i32 ch;
+    i32 x = index % self.xtiles;
+    i32 y = index / self.xtiles;
     sdl_rect_t rect;
     rect.x = i32 (x * self.tile_width);
     rect.y = i32 (y * self.tile_height);
@@ -585,47 +564,47 @@ sdl_font_get_source_rect(sdl_font_t* self, i8 ch)
 }
 
 sdl_rect_t
-sdl_font_get_dest_rect(sdl_font_t* self, i64 x, i64 y)
+sdl_font_get_dest_rect(sdl_font_t* self, i32 x, i32 y)
 {
     sdl_rect_t rect;
-    rect.x = i32 (x);
-    rect.y = i32 (y);
-    rect.w = i32 (self.zoom * self.tile_width);
-    rect.h = i32 (self.zoom * self.tile_height);
+    rect.x = x;
+    rect.y = y;
+    rect.w = self.zoom * self.tile_width;
+    rect.h = self.zoom * self.tile_height;
     ret rect;
 }
 
-i64
-sdl_write_font(sdl_t* sdl, sdl_font_t* self, i8* message, i64 x, i64 y)
+i32
+sdl_write_font(sdl_t* sdl, sdl_font_t* self, i8* message, i32 x, i32 y)
 {
     if(message == i8* 0)
     {
         ret 0;
     }
     i8 ch;
-    i64 i;
-    i64 begin = x;
+    i32 begin = x;
     sdl_rect_t dest;
     sdl_rect_t source;
+    u64 i;
     while(i1 1)
     {
         dest = sdl_font_get_dest_rect(self, x, y);
         ch = message[i];
         if(ch == '\0')
         {
-            y = y + i64 dest.h;
+            y = y + dest.h;
             break;
         }
         source = sdl_font_get_source_rect(self, ch);
         if(ch == '\n')
         {
-            y = y + i64 dest.h;
+            y = y + dest.h;
             x = begin;
         }
         else
         {
-            sdl_render_copy_ex(sdl, self.texture, &source, &dest, i32 0);
-            x = x + i64 dest.w;
+            sdl_render_copy_ex(sdl, self.texture, &source, &dest, 0);
+            x = x + dest.w;
         }
         i++;
     }
@@ -635,22 +614,22 @@ sdl_write_font(sdl_t* sdl, sdl_font_t* self, i8* message, i64 x, i64 y)
 void
 sdl_write_fps(sdl_t* self, sdl_font_t* font, sdl_average_t* average)
 {
-    i8* buffer = new i8[128];
-    defer del buffer;
+    i8* buffer = new i8[u64 128];
     double fps = sdl_average_get(average);
-    i32...() indirect = sprintf;
-    i64 chars = i64 indirect(buffer, "FPS %4.1f", fps);
+    i32...() indirect = sprintf; // As a variadic function pointer, just for fun
+    i32 chars = indirect(buffer, "FPS %4.1f", fps);
     sdl_rect_t size = sdl_font_get_dest_rect(font, 0, 0);
-    i64 x = self.xres - chars * i64 size.w - self.margin;
-    i64 y = self.margin;
+    i32 x = self.xres - chars * size.w - self.margin;
+    i32 y = self.margin;
     sdl_write_font(self, font, buffer, x, y);
+    del buffer;
     ret;
 }
 
 type sdl_scroll_t
 {
-    i64 x;
-    i64 y;
+    i32 x;
+    i32 y;
 };
 
 sdl_scroll_t

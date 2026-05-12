@@ -2,7 +2,7 @@ include "../lib/std.n";
 include "../lib/sdl.n";
 
 void
-draw(sdl_t* self, tree_node_t* node, i1* done, i64 x, i64 y, i64 width, i64 height)
+draw(sdl_t* self, tree_node_t* node, i1* done, i32 x, i32 y, i32 width, i32 height)
 {
     if(node != tree_node_t* 0)
     {
@@ -10,18 +10,17 @@ draw(sdl_t* self, tree_node_t* node, i1* done, i64 x, i64 y, i64 width, i64 heig
         {
             *done = i1 1;
         }
-        i64 half = width / 2;
-        i64 xa = x - half;
-        i64 xb = x + half;
-        i64 ya = y + height;
-        i64 red;
-        i64 green;
-        i64 on = 255;
+        i32 half = width / 2;
+        i32 xa = x - half;
+        i32 xb = x + half;
+        i32 ya = y + height;
+        u8 red;
+        u8 green;
         if(node_is_red(node))
-            red = on;
+            red = u8 255;
         else
-            green = on;
-        sdl_set_render_draw_color(self, red, green, 0, 0);
+            green = u8 255;
+        sdl_set_render_draw_color(self, red, green, u8 0, u8 0);
         sdl_render_draw_line(self, x, y, xa, ya);
         sdl_render_draw_line(self, x, y, xb, ya);
         draw(self, node.l, done, xa, ya, half, height);
@@ -34,32 +33,32 @@ void
 render(sdl_t* self, sdl_font_t* font, tree_t* tree, i1* done)
 {
     sdl_clear_screen(self);
-    i64 border = 32;
-    i64 x = self.xres / 2;
-    i64 y = self.yres / 5;
-    i64 w = self.xres / 2 - border;
-    i64 h = 32;
+    i32 border = 32;
+    i32 x = self.xres / 2;
+    i32 y = self.yres / 5;
+    i32 w = self.xres / 2 - border;
+    i32 h = 32;
     draw(self, tree.root, done, x, y, w, h);
     sdl_write_font(self, font, self.name, self.margin, self.margin);
     sdl_present(self);
     ret;
 }
 
-i64
-compare(i64* x, i64* y)
+i32
+compare(i32* x, i32* y)
 {
     ret *x - *y;
 }
 
 void
-delete(i64* self)
+delete(i32* self)
 {
     ret;
 }
 
-i64* new_int(i64 value)
+i32* new_int(i32 value)
 {
-    i64* self = new i64;
+    i32* self = new i32;
     *self = value;
     ret self;
 }
@@ -67,27 +66,28 @@ i64* new_int(i64 value)
 i32
 main(i32 argc, i8** argv)
 {
-    if(argc != i32 5)
+    if(argc != 5)
     {
         printf("required args: x y xres yres\n");
-        exit(i32 1);
+        exit(1);
     }
     sdl_t sdl = sdl_init(
-        atoll(argv[1]),
-        atoll(argv[2]),
-        atoll(argv[3]),
-        atoll(argv[4]),
+        atoi(argv[u64 1]),
+        atoi(argv[u64 2]),
+        atoi(argv[u64 3]),
+        atoi(argv[u64 4]),
         "tree");
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     tree_t tree = tree_init(compare, delete);
+    tree.verify = i1 1; // This demo is also a good stability test for rb-tree
     i1 done = i1 0;
-    i64 size = 512;
+    i32 size = 512;
     while(!done)
     {
-        i64 i;
+        i32 i;
         while(i < size)
         {
-            tree_insert(&tree, ptr new_int(i64 rand()));
+            tree_insert(&tree, ptr new_int(rand()));
             render(&sdl, &font, &tree, &done);
             i++;
             if(done)
@@ -95,7 +95,7 @@ main(i32 argc, i8** argv)
                 break;
             }
         }
-        while(tree.size > 0)
+        while(tree.size > u64 0)
         {
             tree_remove(&tree, tree.root.key);
             render(&sdl, &font, &tree, &done);
@@ -108,5 +108,5 @@ main(i32 argc, i8** argv)
     sdl_font_del(&font);
     sdl_del(&sdl);
     tree_del(&tree);
-    ret i32 0;
+    ret 0;
 }

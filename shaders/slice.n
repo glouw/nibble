@@ -3,17 +3,17 @@ type slice_t
     sdl_t* sdl;
     sdl_stream_t* stream;
     sdl_vec4() shader;
-    i64 x0;
-    i64 x1;
+    i32 x0;
+    i32 x1;
 };
 
 void
 slice_draw(slice_t* slice)
 {
-    i64 y;
+    i32 y;
     while(y < slice.sdl.yres)
     {
-        i64 x = slice.x0;
+        i32 x = slice.x0;
         while(x < slice.x1)
         {
             sdl_vec2 resolution;
@@ -41,12 +41,12 @@ slice_run(ptr with)
 }
 
 slice_t*
-slice_setup_cores(sdl_t* sdl, sdl_stream_t* stream, sdl_vec4() shader, i64 cores)
+slice_setup_cores(sdl_t* sdl, sdl_stream_t* stream, sdl_vec4() shader, i32 cores)
 {
-    i64 width = sdl.xres / cores;
-    i64 x = 0;
-    slice_t* slices = new slice_t[cores];
-    i64 core;
+    i32 width = sdl.xres / cores;
+    i32 x = 0;
+    slice_t* slices = new slice_t[u64 cores];
+    i32 core;
     while(core < cores)
     {
         slice_t slice;
@@ -55,7 +55,7 @@ slice_setup_cores(sdl_t* sdl, sdl_stream_t* stream, sdl_vec4() shader, i64 cores
         slice.shader = shader;
         slice.x0 = x;
         slice.x1 = slice.x0 + width;
-        slices[core] = slice;
+        slices[u64 core] = slice;
         x = slice.x1;
         core++;
     }
@@ -63,20 +63,20 @@ slice_setup_cores(sdl_t* sdl, sdl_stream_t* stream, sdl_vec4() shader, i64 cores
 }
 
 void
-slice_run_cores(slice_t* slices, i64 cores)
+slice_run_cores(slice_t* slices, i32 cores)
 {
-    u64* threads = new u64[cores];
+    u64* threads = new u64[u64 cores];
     defer del threads;
-    i64 i;
+    i32 i;
     while(i < cores)
     {
-        pthread_create(&threads[i], ptr 0, slice_run, ptr &slices[i]);
+        pthread_create(&threads[u64 i], ptr 0, slice_run, ptr &slices[u64 i]);
         i++;
     }
-    i64 j;
+    i32 j;
     while(j < cores)
     {
-        pthread_join(threads[j], ptr* 0);
+        pthread_join(threads[u64 j], ptr* 0);
         j++;
     }
     ret;

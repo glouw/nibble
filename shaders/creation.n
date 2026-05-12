@@ -12,8 +12,8 @@ creation(sdl_vec2 res, sdl_vec2 coord, double secs)
     double time = secs;
     double step = 0.07;
     double frequency = 9.0;
-    i64 slots = 3;
-    i64 slot;
+    i32 slots = 3;
+    i32 slot;
     while(slot < slots)
     {
         sdl_vec2 ratio = coord / res;
@@ -47,5 +47,5 @@ i32
 main(i32 argc, i8** argv)
 {
     run(argc, argv, creation, "creation\nby danilo guanabara");
-    ret i32 0;
+    ret 0;
 }

@@ -2254,7 +2254,7 @@ static value_t load_direct()
 {
     auto name = read_numeric();
     bool is_decimal = strchr(name.begin, *g_dot);
-    auto type_name = is_decimal ? g_double : g_i64;
+    auto type_name = is_decimal ? g_double : g_i32;
     auto opcode = is_decimal ? g_opcode_load_double : g_opcode_load_signed;
     auto type = scalar_init(str_init(type_name));
     auto value = rvalue(type);
@@ -3108,6 +3108,7 @@ static value_t call_indirect_function(value_t function_pointer)
     auto value = rvalue(function_pointer.type);
     check_function_args(function_pointer, &types);
     value.type.is_function_pointer = false;
+    value.type.is_variadic = false;
     emit_indirect_call(value, function_pointer);
     emit_parameter_slots(&types, &slots);
     return read_postfix(value);

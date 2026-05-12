@@ -1,22 +1,22 @@
 void
 run(i32 argc, i8** argv, sdl_vec4() shader, i8* name)
 {
-    if(argc != i32 5)
+    if(argc != 5)
     {
         printf("required args: x y xres yres\n");
-        exit(i32 1);
+        exit(1);
     }
     sdl_scancode_t scancode;
     sdl_t sdl = sdl_init(
-        atoll(argv[1]),
-        atoll(argv[2]),
-        atoll(argv[3]),
-        atoll(argv[4]),
+        atoi(argv[u64 1]),
+        atoi(argv[u64 2]),
+        atoi(argv[u64 3]),
+        atoi(argv[u64 4]),
         name);
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
     sdl_stream_t stream = sdl_stream_init(&sdl);
-    sdl_average_t average = sdl_average_init(30);
-    i64 cycle;
+    sdl_average_t average = sdl_average_init(u64 30);
+    i32 cycle;
     double dt;
     while(i1 1)
     {
@@ -27,7 +27,7 @@ run(i32 argc, i8** argv, sdl_vec4() shader, i8* name)
         }
         sdl_clear_screen(&sdl);
         sdl_lock_stream(&stream);
-        i64 cores = sdl_get_cpu_count();
+        i32 cores = sdl_get_cpu_count();
         slice_t* slices = slice_setup_cores(&sdl, &stream, shader, cores);
         defer del slices;
         slice_run_cores(slices, cores);

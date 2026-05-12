@@ -2,13 +2,13 @@ ptr malloc(u64 size);
 void free(ptr pointer);
 i32 putchar(i32 value);
 i32 puts(i8* string);
-i64 atoll(i8* string);
+i32 atoi(i8* string);
 i32 printf...(i8* format);
 i32 sprintf...(i8* string, i8* format);
 void qsort(ptr base, u64 size, u64 elem_size, i32() comparator);
 
 i32 rand();
-i64 llabs(i64 value);
+i32 abs(i32 value);
 void exit(i32 status);
 
 u64 strlen(i8* string);
@@ -42,23 +42,23 @@ assert(i1 condition, i8* message)
 type str_t
 {
     i8* data;
-    i64 size;
-    i64 cap;
+    u64 size;
+    u64 cap;
 };
 
 str_t
 str_init(i8* raw)
 {
-    i64 raw_size = i64 strlen(raw);
+    u64 raw_size = strlen(raw);
     str_t self;
-    if(raw_size == 0)
+    if(raw_size == u64 0)
     {
         ret self;
     }
     self.size = raw_size;
-    self.cap = self.size + 1;
+    self.cap = self.size + u64 1;
     self.data = new i8[self.cap];
-    i64 i;
+    u64 i;
     while(i < raw_size)
     {
         self.data[i] = raw[i];
@@ -80,18 +80,18 @@ str_del(str_t* self)
 void
 str_cat(str_t* self, i8* raw)
 {
-    i64 raw_size = i64 strlen(raw);
+    u64 raw_size = strlen(raw);
     str_t cat;
     cat.size = self.size + raw_size;
-    cat.cap = cat.size + 1;
+    cat.cap = cat.size + u64 1;
     cat.data = new i8[cat.cap];
-    i64 i = 0;
+    u64 i = u64 0;
     while(i < self.size)
     {
         cat.data[i] = self.data[i];
         i++;
     }
-    i64 j = 0;
+    u64 j = u64 0;
     while(j < raw_size)
     {
         cat.data[i] = raw[j];
@@ -107,11 +107,11 @@ str_cat(str_t* self, i8* raw)
 i1
 str_equal(str_t* self, i8* raw)
 {
-    if(self.size != i64 strlen(raw))
+    if(self.size != strlen(raw))
     {
         ret i1 0;
     }
-    i64 i;
+    u64 i;
     while(i < self.size)
     {
         if(self.data[i] != raw[i])
@@ -128,17 +128,17 @@ str_push(str_t* self, i8 c)
 {
     if(self.data == i8* 0)
     {
-        self.size = 0;
-        self.cap = 8 + 1;
+        self.size = u64 0;
+        self.cap = u64 (8 + 1);
         self.data = new i8[self.cap];
     }
-    if(self.size == self.cap - 1)
+    if(self.size == self.cap - u64 1)
     {
         str_t str;
         str.size = self.size;
-        str.cap = 2 * self.cap + 1;
+        str.cap = u64 2 * self.cap + u64 1;
         str.data = new i8[str.cap];
-        i64 i = 0;
+        u64 i = u64 0;
         while(i < self.size)
         {
             str.data[i] = self.data[i];
@@ -160,11 +160,11 @@ type arr_t
 {
     i8* data;
     void() delete;
-    i64 size;
-    i64 elem_size;
+    u64 size;
+    u64 elem_size;
 };
 
-i64
+u64
 arr_bytes(arr_t* self)
 {
     ret self.size * self.elem_size;
@@ -173,7 +173,7 @@ arr_bytes(arr_t* self)
 void
 arr_clear(arr_t* self)
 {
-    i64 byte;
+    u64 byte;
     while(byte < arr_bytes(self))
     {
         self.data[byte] = i8 0;
@@ -183,7 +183,7 @@ arr_clear(arr_t* self)
 }
 
 arr_t
-arr_init(i64 size, i64 elem_size, void() delete)
+arr_init(u64 size, u64 elem_size, void() delete)
 {
     arr_t self;
     self.delete = delete;
@@ -195,19 +195,19 @@ arr_init(i64 size, i64 elem_size, void() delete)
 }
 
 i8*
-arr_at(arr_t* self, i64 index)
+arr_at(arr_t* self, u64 index)
 {
-    if(index < 0 | index >= self.size)
+    if(index < u64 0 | index >= self.size)
     {
         printf("arr_t['%d'] out of range: max size is '%d'\n", index, self.size);
         exit(i32 1);
     }
-    i64 byte = index * self.elem_size;
+    u64 byte = index * self.elem_size;
     ret &self.data[byte];
 }
 
 void
-arr_del_elem(arr_t* self, i64 index)
+arr_del_elem(arr_t* self, u64 index)
 {
     if(self.delete == void() 0)
     {
@@ -221,7 +221,7 @@ arr_del_elem(arr_t* self, i64 index)
 void
 arr_del_elems(arr_t* self)
 {
-    i64 index;
+    u64 index;
     while(index < self.size)
     {
         arr_del_elem(self, index);
@@ -250,15 +250,16 @@ type tree_node_t
     tree_node_t* r;
     tree_node_t* p;
     ptr key;
-    i64 color;
+    i32 color;
 };
 
 type tree_t
 {
     tree_node_t* root;
-    i64 size;
-    i64() compare;
+    u64 size;
+    i32() compare;
     void() delete;
+    i1 verify;
 };
 
 void! tree_remove_1(tree_t*, tree_node_t*);
@@ -273,7 +274,7 @@ void! tree_insert_3(tree_t*, tree_node_t*);
 void! tree_insert_4(tree_t*, tree_node_t*);
 void! tree_insert_5(tree_t*, tree_node_t*);
 
-i64
+i32
 node_color(tree_node_t* self)
 {
     if(self == tree_node_t* 0)
@@ -332,7 +333,7 @@ node_property_4(tree_node_t* self)
 }
 
 void
-node_count_black(tree_node_t* self, i64 black_nodes, i64* path_black_nodes)
+node_count_black(tree_node_t* self, i32 black_nodes, i32 * path_black_nodes)
 {
     if(node_is_blk(self))
     {
@@ -360,7 +361,7 @@ node_count_black(tree_node_t* self, i64 black_nodes, i64* path_black_nodes)
 void
 node_property_5(tree_node_t* self)
 {
-    i64 black_count_path = -1;
+    i32 black_count_path = -1;
     node_count_black(self, 0, &black_count_path);
     ret;
 }
@@ -409,7 +410,7 @@ node_uncle(tree_node_t* self)
 }
 
 tree_node_t*
-node_init(ptr key, i64 color)
+node_init(ptr key, i32 color)
 {
     tree_node_t* self = new tree_node_t;
     self.key = key;
@@ -424,7 +425,7 @@ node_find(tree_t* self, ptr key)
     tree_node_t* node = self.root;
     while(node != tree_node_t* 0)
     {
-        i64 diff = self.compare(key, node.key);
+        i32 diff = self.compare(key, node.key);
         if(diff == 0)
         {
             ret node;
@@ -468,7 +469,7 @@ node_replace(tree_t* self, tree_node_t* from, tree_node_t* to)
 }
 
 tree_t
-tree_init(i64() compare, void() delete)
+tree_init(i32() compare, void() delete)
 {
     tree_t self;
     self.compare = compare;
@@ -515,7 +516,7 @@ tree_insert(tree_t* self, ptr key)
         tree_node_t* node = self.root;
         while(i1 1)
         {
-            i64 diff = self.compare(key, node.key);
+            i32 diff = self.compare(key, node.key);
             if(diff == 0)
             {
                 self.delete(insert);
@@ -556,7 +557,10 @@ tree_insert(tree_t* self, ptr key)
     }
     tree_insert_1(self, insert);
     self.size++;
-    tree_verify(self);
+    if(self.verify)
+    {
+        tree_verify(self);
+    }
     ret;
 }
 
@@ -674,7 +678,10 @@ tree_remove(tree_t* self, ptr key)
         self.delete(node);
         del node;
         self.size--;
-        tree_verify(self);
+        if(self.verify)
+        {
+            tree_verify(self);
+        }
     }
     ret;
 }
@@ -792,7 +799,7 @@ tree_remove_6(tree_t* self, tree_node_t* node)
 void
 tree_del(tree_t* self)
 {
-    while(self.size > 0)
+    while(self.size > u64 0)
     {
         tree_remove(self, self.root.key);
     }

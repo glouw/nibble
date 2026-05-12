@@ -9,17 +9,17 @@ include "../lib/std.n";
 
 // comment
 
-i64 add(i64 a, i64 b)
+i32 add(i32 a, i32 b)
 {
     ret a + b;
 }
 
-i64 sub(i64 a, i64 b)
+i32 sub(i32 a, i32 b)
 {
     ret a - b;
 }
 
-i64 test_function()
+i32 test_function()
 {
     if(add(32, add(1, 1)) == 34)
     {
@@ -28,13 +28,13 @@ i64 test_function()
     ret 1;
 }
 
-i64 test_pointers()
+i32 test_pointers()
 {
-    i64* p;
-    i64** pp;
-    i64*** ppp;
+    i32* p;
+    i32** pp;
+    i32*** ppp;
 
-    i64 value;
+    i32 value;
     value = 42;
 
     p = &value;
@@ -52,9 +52,9 @@ i64 test_pointers()
     ret 1;
 }
 
-i64 test_loop_ret()
+i32 test_loop_ret()
 {
-    i64 i;
+    i32 i;
     i = 10;
     while(i >= 0)
     {
@@ -67,7 +67,7 @@ i64 test_loop_ret()
     ret 1;
 }
 
-i64 test_if_0()
+i32 test_if_0()
 {
     if(0 == 0)
     {
@@ -76,7 +76,7 @@ i64 test_if_0()
     ret 1;
 }
 
-i64 test_if_1()
+i32 test_if_1()
 {
     if(0 == 1)
     {
@@ -88,7 +88,7 @@ i64 test_if_1()
     ret 1;
 }
 
-i64 test_if_2()
+i32 test_if_2()
 {
     if(0 == 1)
     {
@@ -103,7 +103,7 @@ i64 test_if_2()
     ret 1;
 }
 
-i64 test_if_3()
+i32 test_if_3()
 {
     if(0 == 1)
     {
@@ -121,7 +121,7 @@ i64 test_if_3()
     ret 1;
 }
 
-i64 test_if_4()
+i32 test_if_4()
 {
     if(0 == 1)
         ret 1;
@@ -134,23 +134,23 @@ i64 test_if_4()
     ret 1;
 }
 
-i64 test_nest()
+i32 test_nest()
 {
     {
         {
             {
-                i64 x;
+                i32 x;
             }
-            i64 x;
+            i32 x;
         }
-        i64 x;
+        i32 x;
     }
-    i64 x;
+    i32 x;
     x = 0;
     ret x;
 }
 
-i64 test_recursion(i64 x)
+i32 test_recursion(i32 x)
 {
     if(x == 0)
     {
@@ -159,39 +159,39 @@ i64 test_recursion(i64 x)
     ret test_recursion(x - 1);
 }
 
-void set_to_zero(i64* x)
+void set_to_zero(i32* x)
 {
     *x = 0;
     ret;
 }
 
-void dont_set_to_zero(i64 x)
+void dont_set_to_zero(i32 x)
 {
     x = 42;
     ret;
 }
 
-i64 test_pointer_arg_0()
+i32 test_pointer_arg_0()
 {
-    i64 x;
+    i32 x;
     x = 42;
     set_to_zero(&x);
     ret x;
 }
 
-i64 test_pointer_arg_1()
+i32 test_pointer_arg_1()
 {
-    i64 x;
+    i32 x;
     x = 0;
     dont_set_to_zero(x);
     ret x;
 }
 
-i64 test_chain()
+i32 test_chain()
 {
-    i64 x;
-    i64 y;
-    i64 z;
+    i32 x;
+    i32 y;
+    i32 z;
 
     x = y = z = 42;
 
@@ -202,15 +202,15 @@ i64 test_chain()
     ret 1;
 }
 
-i64 test_pointer_chain()
+i32 test_pointer_chain()
 {
-    i64 x;
-    i64 y;
-    i64 z;
+    i32 x;
+    i32 y;
+    i32 z;
 
-    i64* px;
-    i64* py;
-    i64* pz;
+    i32* px;
+    i32* py;
+    i32* pz;
 
     px = &x;
     py = &y;
@@ -225,18 +225,18 @@ i64 test_pointer_chain()
     ret 1;
 }
 
-i64 test_bitwise()
+i32 test_bitwise()
 {
-    i64 x;
+    i32 x;
     x = 1 & 2 & 3 & 4;
 
-    i64 y;
+    i32 y;
     y = 1 | 2 | 3 | 4;
 
-    i64 z;
+    i32 z;
     z = 1 ^ 2 ^ 3 ^ 4;
 
-    i64 a;
+    i32 a;
     a = ~255;
 
     if(x == 0 & y == 7 & z == 4 & a == -256)
@@ -246,20 +246,20 @@ i64 test_bitwise()
     ret 1;
 }
 
-i64 test_shift()
+i32 test_shift()
 {
-    i64 x;
+    i32 x;
     x = 1 << 8;
 
-    i64 y;
+    i32 y;
     y = 8;
     y = y >> 1;
 
-    i64 z;
+    i32 z;
     z = -8;
     z = z >> 1;
 
-    i64 a;
+    i32 a;
     a = -8;
     a = a << 1;
 
@@ -270,10 +270,10 @@ i64 test_shift()
     ret 1;
 }
 
-i64 test_comparison()
+i32 test_comparison()
 {
-    i64 x;
-    i64 y;
+    i32 x;
+    i32 y;
 
     x = 1;
     y = 2;
@@ -285,10 +285,10 @@ i64 test_comparison()
     ret 1;
 }
 
-i64 test_equality()
+i32 test_equality()
 {
-    i64 x;
-    i64 y;
+    i32 x;
+    i32 y;
 
     x = 1;
     y = 2;
@@ -300,16 +300,16 @@ i64 test_equality()
     ret 1;
 }
 
-i64 test_complex_expression()
+i32 test_complex_expression()
 {
-    i64 x;
-    i64 y;
-    i64 z;
-    i64 w;
-    i64 e;
-    i64 f;
-    i64 g;
-    i64 result;
+    i32 x;
+    i32 y;
+    i32 z;
+    i32 w;
+    i32 e;
+    i32 f;
+    i32 g;
+    i32 result;
 
     x = 5;
     y = 2;
@@ -319,7 +319,7 @@ i64 test_complex_expression()
     f = 1;
     g = 2;
 
-    i64* px;
+    i32* px;
     px = &x;
 
     result = (((*px * y / z + w - 1) << 2) >> 1) & e ^ f | g;
@@ -330,9 +330,9 @@ i64 test_complex_expression()
     ret 1;
 }
 
-i64 test_negative()
+i32 test_negative()
 {
-    i64 x;
+    i32 x;
     x = -5;
     x = -x;
     x = -x;
@@ -351,12 +351,12 @@ i64 test_negative()
     ret 1;
 }
 
-i64 test_negative_loop()
+i32 test_negative_loop()
 {
-    i64 loops;
+    i32 loops;
     loops = 0;
 
-    i64 i;
+    i32 i;
     i = -5;
     while(i < 10)
     {
@@ -371,12 +371,12 @@ i64 test_negative_loop()
     ret 1;
 }
 
-i64 test_generic_ptr()
+i32 test_generic_ptr()
 {
     ptr p;
-    p = malloc(sizeof i64);
+    p = malloc(sizeof i32);
 
-    i64* as = i64* p;
+    i32* as = i32* p;
 
     *as = 42;
 
@@ -390,10 +390,10 @@ i64 test_generic_ptr()
     ret 1;
 }
 
-i64 test_llabs()
+i32 test_abs()
 {
-    i64 out;
-    out = llabs(-1);
+    i32 out;
+    out = abs(-1);
     if(out == 1)
     {
         ret 0;
@@ -401,7 +401,7 @@ i64 test_llabs()
     ret 1;
 }
 
-i64 test_bool_param(i1 x, i1 y, i1 z)
+i32 test_bool_param(i1 x, i1 y, i1 z)
 {
     if(x & y & z)
     {
@@ -410,25 +410,25 @@ i64 test_bool_param(i1 x, i1 y, i1 z)
     ret 1;
 }
 
-i64 test_array_index()
+i32 test_array_index()
 {
-    i64 elems;
-    i64 size_per;
-    i64* as;
+    i32 elems;
+    i32 size_per;
+    i32* as;
 
     elems = 4;
-    size_per = i64 sizeof *as;
-    as = i64* malloc(u64 (elems * size_per));
+    size_per = i32 sizeof *as;
+    as = i32* malloc(u64 (elems * size_per));
 
-    as[0] = 1;
-    as[1] = 2;
-    as[2] = 3;
-    as[3] = 4;
+    as[u64 0] = 1;
+    as[u64 1] = 2;
+    as[u64 2] = 3;
+    as[u64 3] = 4;
 
-    if(as[0] == 1
-     & as[1] == 2
-     & as[2] == 3
-     & as[3] == 4)
+    if(as[u64 0] == 1
+     & as[u64 1] == 2
+     & as[u64 2] == 3
+     & as[u64 3] == 4)
     {
         free(ptr as);
         ret 0;
@@ -438,24 +438,24 @@ i64 test_array_index()
     ret 1;
 }
 
-i64 test_array_loop_index()
+i32 test_array_loop_index()
 {
-    i64 elems;
-    i64 size_per;
-    i64* as;
-    i64 i;
-    i64 sum;
-    i64 fill;
+    i32 elems;
+    i32 size_per;
+    i32* as;
+    i32 i;
+    i32 sum;
+    i32 fill;
 
     elems = 32;
-    size_per = i64 sizeof *as;
-    as = i64* malloc(u64 elems * u64 size_per);
+    size_per = i32 sizeof *as;
+    as = i32* malloc(u64 elems * u64 size_per);
 
     fill = 1;
     i = 0;
     while(i < elems)
     {
-        as[i] = fill;
+        as[u64 i] = fill;
         i = i + 1;
     }
 
@@ -463,7 +463,7 @@ i64 test_array_loop_index()
     i = 0;
     while(i < elems)
     {
-        sum = sum + as[i];
+        sum = sum + as[u64 i];
         i = i + 1;
     }
 
@@ -477,7 +477,7 @@ i64 test_array_loop_index()
     ret 1;
 }
 
-i64 test_generic_indirect()
+i32 test_generic_indirect()
 {
     ptr p;
     ptr* pp;
@@ -500,7 +500,7 @@ type type_size_8 { i32 a; i8 b; };
 type type_size_16 { i64 a; i8 b; };
 type type_size_16_2 { i64 a; i8 b; i8 c; i8 d; i8 e; };
 
-i64 test_sizeof()
+i32 test_sizeof()
 {
     ptr p;
     i1  a;
@@ -544,21 +544,21 @@ i64 test_sizeof()
     ret 1;
 }
 
-i64 test_new()
+i32 test_new()
 {
-    del new i64;
-    del new i64;
-    del new i64;
-    del new i64;
-    del new i64;
-    del new i64;
-    del new i64;
-    del new i64;
-    del new i64;
-    del new i64;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
+    del new i32;
 
-    i64* x;
-    x = new i64;
+    i32* x;
+    x = new i32;
     *x = 1;
     if(*x == 1)
     {
@@ -569,16 +569,16 @@ i64 test_new()
     ret 1;
 }
 
-i64 test_new_indirect()
+i32 test_new_indirect()
 {
-    i64* x;
-    x = new i64;
+    i32* x;
+    x = new i32;
 
-    i64** y;
-    y = new i64*;
+    i32** y;
+    y = new i32*;
 
-    i64*** z;
-    z = new i64**;
+    i32*** z;
+    z = new i32**;
 
     *x = 42;
     *y = x;
@@ -598,36 +598,36 @@ i64 test_new_indirect()
     ret 1;
 }
 
-i64 test_new_many()
+i32 test_new_many()
 {
-    i64 value;
+    i32 value;
     value = 4;
 
-    i64 elems;
+    i32 elems;
     elems = 512;
 
-    i64 total;
+    i32 total;
     total = elems * value;
 
-    i64* array;
-    array = new i64 [elems];
+    i32* array;
+    array = new i32 [u64 elems];
 
-    i64 sum;
+    i32 sum;
 
     {
-        i64 i;
+        i32 i;
         while(i < elems)
         {
-            array[i] = value;
+            array[u64 i] = value;
             i = i + 1;
         }
     }
 
     {
-        i64 i;
+        i32 i;
         while(i < elems)
         {
-            sum = sum + array[i];
+            sum = sum + array[u64 i];
             i = i + 1;
         }
     }
@@ -644,36 +644,36 @@ i64 test_new_many()
 
 type zero_t
 {
-    i64 a;
+    i32 a;
     i32 b;
     i16 c;
     i8 d;
     i1 e;
 };
 
-i64 test_zero_init()
+i32 test_zero_init()
 {
     i1 a;
     i8 b;
     i16 c;
-    i64 d;
-    i64 e;
+    i32 d;
+    i32 e;
     ptr p;
-    i64* pp;
-    i64** ppp;
-    i64* pppp;
+    i32* pp;
+    i32** ppp;
+    i32* pppp;
     zero_t zero;
 
     if(
        b      == i8   0
      & c      == i16  0
-     & d      == i64  0
-     & e      == i64  0
+     & d      == i32  0
+     & e      == i32  0
      & p      == ptr  0
-     & pp     == i64* 0
-     & ppp    == i64**0
-     & pppp   == i64* 0
-     & zero.a == i64  0
+     & pp     == i32* 0
+     & ppp    == i32**0
+     & pppp   == i32* 0
+     & zero.a == i32  0
      & zero.b == i32  0
      & zero.c == i16  0
      & zero.d == i8   0
@@ -684,18 +684,18 @@ i64 test_zero_init()
     ret 1;
 }
 
-i64 test_init()
+i32 test_init()
 {
-    i64 elems = 512;
-    i64* array = new i64[elems];
+    i32 elems = 512;
+    i32* array = new i32[u64 elems];
     del array;
     ret 0;
 }
 
-i64 test_continue()
+i32 test_continue()
 {
-    i64 sum = 0;
-    i64 i = 0;
+    i32 sum = 0;
+    i32 i = 0;
     while(i < 32)
     {
         i = i + 1;
@@ -712,9 +712,9 @@ i64 test_continue()
     ret 1;
 }
 
-i64 test_break()
+i32 test_break()
 {
-    i64 i = 0;
+    i32 i = 0;
     while(i < 512)
     {
         if(i == 32)
@@ -730,12 +730,12 @@ i64 test_break()
     ret 1;
 }
 
-i64 test_defer_0()
+i32 test_defer_0()
 {
-    i64 elems = 512;
-    i64* x = new i64[elems];
-    i64* y = new i64[elems];
-    i64* z = new i64[elems];
+    i32 elems = 512;
+    i32* x = new i32[u64 elems];
+    i32* y = new i32[u64 elems];
+    i32* z = new i32[u64 elems];
     defer del x;
     defer del y;
     defer del z;
@@ -746,21 +746,21 @@ i64 test_defer_0()
     ret 0;
 }
 
-i64 test_defer_1()
+i32 test_defer_1()
 {
-    i64 elems = 512;
-    i64* x = new i64[elems];
+    i32 elems = 512;
+    i32* x = new i32[u64 elems];
     defer del x;
     1 == 1;
     {
-        i64* y = new i64[elems];
+        i32* y = new i32[u64 elems];
         defer del y;
         1 == 1;
         {
             {
                 {
                     {
-                        i64* z = new i64[elems];
+                        i32* z = new i32[u64 elems];
                         defer del z;
                         1 == 1;
                         {
@@ -773,50 +773,50 @@ i64 test_defer_1()
     ret 0;
 }
 
-i64 test_defer_2()
+i32 test_defer_2()
 {
-    i64 elems = 512;
+    i32 elems = 512;
     if(1 == 1)
     {
-        i64* x = new i64[elems];
+        i32* x = new i32[u64 elems];
         defer del x;
         1 == 1;
     }
     else
     {
-        i64* y = new i64[elems];
+        i32* y = new i32[u64 elems];
         defer del y;
         1 == 1;
     }
     ret 0;
 }
 
-void do_a_thing(i64* array)
+void do_a_thing(i32* array)
 {
     ret;
 }
 
-i64 test_defer_3()
+i32 test_defer_3()
 {
-    i64 elems = 512;
-    i64* x = new i64[elems];
+    i32 elems = 512;
+    i32* x = new i32[u64 elems];
     defer del x;
     do_a_thing(x);
     ret 0;
 }
 
-i64 test_defer_4()
+i32 test_defer_4()
 {
-    i64 elems = 512;
-    i64* x = new i64[elems];
+    i32 elems = 512;
+    i32* x = new i32[u64 elems];
     defer del x;
     1 == 1;
     {
-        i64* y = new i64[elems];
+        i32* y = new i32[u64 elems];
         defer del y;
         1 == 1;
         {
-            i64* z = new i64[elems];
+            i32* z = new i32[u64 elems];
             defer del z;
             1 == 1;
             {
@@ -826,16 +826,16 @@ i64 test_defer_4()
     }
 }
 
-i64 test_defer_5()
+i32 test_defer_5()
 {
-    i64 elems = 512;
+    i32 elems = 512;
     if(1 == 2)
     {
     }
     else
     if(1 == 1)
     {
-        i64* x = new i64[elems];
+        i32* x = new i32[u64 elems];
         defer del x;
         1 == 1;
     }
@@ -845,30 +845,30 @@ i64 test_defer_5()
     ret 0;
 }
 
-i64 test_defer_6()
+i32 test_defer_6()
 {
-    i64* v = new i64[32];
+    i32* v = new i32[u64 32];
     defer del v;
-    i64 i = 0;
-    i64 j = 0;
-    i64* w;
-    i64* x;
-    i64* y;
-    i64* z;
+    i32 i = 0;
+    i32 j = 0;
+    i32* w;
+    i32* x;
+    i32* y;
+    i32* z;
     while(j < 1)
     {
-        w = new i64[32];
+        w = new i32[u64 32];
         defer del w;
         while(i < 512)
         {
-            x = new i64[32];
+            x = new i32[u64 32];
             defer del x;
-            y = new i64[32];
+            y = new i32[u64 32];
             defer del y;
             if(i == 32)
             {
                 {
-                    z = new i64[32];
+                    z = new i32[u64 32];
                     defer del z;
                     {
                         break;
@@ -886,13 +886,13 @@ i64 test_defer_6()
     ret 1;
 }
 
-i64 test_defer_7()
+i32 test_defer_7()
 {
-    i64 i = 0;
-    i64* x;
+    i32 i = 0;
+    i32* x;
     while(i < 512)
     {
-        x = new i64[32];
+        x = new i32[u64 32];
         defer del x;
         if(i == 32)
         {
@@ -907,11 +907,11 @@ i64 test_defer_7()
     ret 1;
 }
 
-i64 test_defer_8()
+i32 test_defer_8()
 {
-    i64* x = new i64[32];
+    i32* x = new i32[u64 32];
     defer del x;
-    i64 i = 0;
+    i32 i = 0;
     while(i < 512)
     {
         if(i == 32)
@@ -927,15 +927,15 @@ i64 test_defer_8()
     ret 1;
 }
 
-i64 test_defer_9()
+i32 test_defer_9()
 {
-    i64 i = 0;
-    i64* x;
+    i32 i = 0;
+    i32* x;
     while(i < 512)
     {
         if(i == 32)
         {
-            x = new i64[32];
+            x = new i32[u64 32];
             defer del x;
             break;
         }
@@ -948,9 +948,9 @@ i64 test_defer_9()
     ret 1;
 }
 
-i64 test_defer_10(i64 loops)
+i32 test_defer_10(i32 loops)
 {
-    i64* x = new i64[32];
+    i32* x = new i32[u64 32];
     *x = loops;
     defer del x;
     if(loops == 0)
@@ -964,43 +964,43 @@ i64 test_defer_10(i64 loops)
     ret -1;
 }
 
-i64** new_2d_array(i64 ysize, i64 xsize)
+i32** new_2d_array(i32 ysize, i32 xsize)
 {
-    i64** y = new i64*[ysize];
-    i64 i = 0;
+    i32** y = new i32*[u64 ysize];
+    i32 i = 0;
     while(i < ysize)
     {
-        y[i] = new i64[xsize];
+        y[u64 i] = new i32[u64 xsize];
         i = i + 1;
     }
-    y[0][0] = y[0][0];
+    y[u64 0][u64 0] = y[u64 0][u64 0];
     ret y;
 }
 
-void del_2d_array(i64** array, i64 ysize)
+void del_2d_array(i32** array, i32 ysize)
 {
-    i64 i = 0;
+    i32 i = 0;
     while(i < ysize)
     {
-        del array[i];
+        del array[u64 i];
         i = i + 1;
     }
     del array;
     ret;
 }
 
-i64 test_2d_array()
+i32 test_2d_array()
 {
-    i64 ysize = 128;
-    i64 xsize = 32;
-    i64** array = new_2d_array(ysize, xsize);
+    i32 ysize = 128;
+    i32 xsize = 32;
+    i32** array = new_2d_array(ysize, xsize);
     defer del_2d_array(array, ysize);
     ret 0;
 }
 
 type type_a
 {
-    i64 a;
+    i32 a;
     i32 b;
     i8 c;
 };
@@ -1008,45 +1008,45 @@ type type_a
 type type_b
 {
     type_a a;
-    i64 b;
+    i32 b;
 };
 
 type type_c
 {
     type_a a;
     type_b b;
-    i64 c;
-    i64 d;
+    i32 c;
+    i32 d;
     i8 e;
     i1 f;
 };
 
-i64 test_types()
+i32 test_types()
 {
     type_c stack;
     type_c* heap = new type_c;
-    type_c* heaps = new type_c[32];
+    type_c* heaps = new type_c[u64 32];
     defer del heap;
     defer del heaps;
     ret 0;
 }
 
-i64* pass_pointer(i64* p)
+i32* pass_pointer(i32* p)
 {
     ret p;
 }
 
-i64** pass_pointer_pointer(i64** pp)
+i32** pass_pointer_pointer(i32** pp)
 {
     ret pp;
 }
 
-i64 test_direct_function_deref()
+i32 test_direct_function_deref()
 {
     i1 true = 1 == 1;
     i1 false = !true;
 
-    i64* p = new i64;
+    i32* p = new i32;
     defer del p;
 
     i1 okay = true;
@@ -1077,7 +1077,7 @@ type double_t
 
 type int_t
 {
-    i64 value;
+    i32 value;
 };
 
 type array_t
@@ -1091,12 +1091,12 @@ type blob_t
     i1 c;
     i8 d;
     i16 e;
-    i64 f;
+    i32 f;
     int_t int;
     array_t array;
 };
 
-i64 test_type_copy()
+i32 test_type_copy()
 {
     blob_t a;
     blob_t b;
@@ -1111,18 +1111,18 @@ i64 test_type_copy()
     b = *p;
 
     blob_t c;
-    c.array.value = new int_t[32];
+    c.array.value = new int_t[u64 32];
     defer del c.array.value;
 
     int_t* temp = c.array.value;
-    temp[4].value = 42;
+    temp[u64 4].value = 42;
 
     if(a.f == 42
      & b.f == 42
      & other.value == 42
      & a.int.value == 42
-     & temp[4].value == 42
-     & c.array.value[4].value == 42
+     & temp[u64 4].value == 42
+     & c.array.value[u64 4].value == 42
      )
     {
         ret 0;
@@ -1131,7 +1131,7 @@ i64 test_type_copy()
     ret 1;
 }
 
-i64 test_type_access()
+i32 test_type_access()
 {
     blob_t* heap = new blob_t;
     defer del heap;
@@ -1161,7 +1161,7 @@ void type_change(int_t* int)
     ret;
 }
 
-i64 test_type_pass()
+i32 test_type_pass()
 {
     int_t int;
     type_no_change(int);
@@ -1177,7 +1177,7 @@ i64 test_type_pass()
     ret 0;
 }
 
-i64 test_mod()
+i32 test_mod()
 {
     if(9 % 8 == 1)
     {
@@ -1186,13 +1186,13 @@ i64 test_mod()
     ret 1;
 }
 
-i64 test_postix_increment()
+i32 test_postix_increment()
 {
     int_t int;
     int.value = 41;
     int.value++;
-    i64 x = 41;
-    i64 y = x++;
+    i32 x = 41;
+    i32 y = x++;
 
     double_t d;
 
@@ -1209,13 +1209,13 @@ i64 test_postix_increment()
     ret 1;
 }
 
-i64 test_postix_decrement()
+i32 test_postix_decrement()
 {
     int_t int;
     int.value = 43;
     int.value--;
-    i64 x = 42;
-    i64 y = x--;
+    i32 x = 42;
+    i32 y = x--;
     double_t d;
     if(y == 42
      & x == 41
@@ -1229,13 +1229,13 @@ i64 test_postix_decrement()
     ret 1;
 }
 
-i64 test_prefix_increment()
+i32 test_prefix_increment()
 {
     int_t int;
     int.value = 41;
     ++int.value;
-    i64 x = 41;
-    i64 y = ++x;
+    i32 x = 41;
+    i32 y = ++x;
     double_t d;
     if(y == 42
      & x == 42
@@ -1248,13 +1248,13 @@ i64 test_prefix_increment()
     ret 1;
 }
 
-i64 test_prefix_decrement()
+i32 test_prefix_decrement()
 {
     int_t int;
     int.value = 43;
     --int.value;
-    i64 x = 43;
-    i64 y = --x;
+    i32 x = 43;
+    i32 y = --x;
     double_t d;
     if(y == 42
      & x == 42
@@ -1267,9 +1267,9 @@ i64 test_prefix_decrement()
     ret 1;
 }
 
-i64 test_defer_continue()
+i32 test_defer_continue()
 {
-    i64 i;
+    i32 i;
     while(i < 32)
     {
         defer i++;
@@ -1285,7 +1285,7 @@ i64 test_defer_continue()
     ret 1;
 }
 
-i64 test_ascii_char()
+i32 test_ascii_char()
 {
     if(
        '\a'    == i8  7
@@ -1301,17 +1301,17 @@ i64 test_ascii_char()
      &  '"'    == i8 34
      & '\?'    == i8 63
      & 'A'     == i8 65
-     & "\a"[0] == i8  7
-     & "\b"[0] == i8  8
-     & "\f"[0] == i8 12
-     & "\n"[0] == i8 10
-     & "\r"[0] == i8 13
-     & "\t"[0] == i8  9
-     & "\v"[0] == i8 11
-     & "\\"[0] == i8 92
-     & "\'"[0] == i8 39
-     & "\?"[0] == i8 63
-     &  "A"[0] == i8 65
+     & "\a"[u64 0] == i8  7
+     & "\b"[u64 0] == i8  8
+     & "\f"[u64 0] == i8 12
+     & "\n"[u64 0] == i8 10
+     & "\r"[u64 0] == i8 13
+     & "\t"[u64 0] == i8  9
+     & "\v"[u64 0] == i8 11
+     & "\\"[u64 0] == i8 92
+     & "\'"[u64 0] == i8 39
+     & "\?"[u64 0] == i8 63
+     &  "A"[u64 0] == i8 65
     )
     {
         ret 0;
@@ -1319,15 +1319,15 @@ i64 test_ascii_char()
     ret 1;
 }
 
-i64
+i32
 test_double_type_cast()
 {
-    i64 a = i64 42.42;
+    i32 a = i32 42.42;
     i32 b = i32 41.42;
     i16 c = i16 40.42;
     i8  d =  i8 39.42;
 
-    double e = double i64 42;
+    double e = double i32 42;
     double f = double i32 41;
     double g = double i16 40;
     double h = double  i8 39;
@@ -1347,7 +1347,7 @@ test_double_type_cast()
     ret 1;
 }
 
-i64
+i32
 test_double_math()
 {
     double x = 1.0;
@@ -1372,7 +1372,7 @@ test_double_math()
     ret 1;
 }
 
-i64
+i32
 test_float_math()
 {
     float x = float 1.0;
@@ -1397,7 +1397,7 @@ test_float_math()
     ret 1;
 }
 
-i64
+i32
 test_unsigned()
 {
     u8  a =  u8 42;
@@ -1432,15 +1432,15 @@ test_unsigned()
 
 type point_t
 {
-    i64 x;
-    i64 y;
-    i64 z;
+    i32 x;
+    i32 y;
+    i32 z;
     i1 bool;
     int_t int;
     double value;
 };
 
-i64
+i32
 test_aggregate_operations()
 {
     point_t a;
@@ -1479,12 +1479,12 @@ test_aggregate_operations()
 
 type value_t
 {
-    i64 x = 1;
-    i64 y = 2;
-    i64 z = 3;
+    i32 x = 1;
+    i32 y = 2;
+    i32 z = 3;
 };
 
-i64
+i32
 test_complex_aggregate_operations()
 {
     value_t a;
@@ -1505,24 +1505,24 @@ test_complex_aggregate_operations()
 
 type default_internal_internal_init_t
 {
-    i64 x = 11;
-    i64 y = 12;
-    i64 z = 13;
+    i32 x = 11;
+    i32 y = 12;
+    i32 z = 13;
 };
 
 type default_internal_init_t
 {
-    i64 x = 88;
-    i64 y = 48;
+    i32 x = 88;
+    i32 y = 48;
     default_internal_internal_init_t internal;
-    i64 z = 28;
+    i32 z = 28;
 };
 
 type default_init_t
 {
-    i64 x = 0;
-    i64 y = 1;
-    i64 z = 2;
+    i32 x = 0;
+    i32 y = 1;
+    i32 z = 2;
     default_internal_init_t internal;
     double a = 2.0;
     float b = 1.0;
@@ -1530,7 +1530,7 @@ type default_init_t
     i1 d = 1;
 };
 
-i64 test_default_type_init()
+i32 test_default_type_init()
 {
     default_init_t init;
     if(init.x == 0
@@ -1553,9 +1553,9 @@ i64 test_default_type_init()
     ret 1;
 }
 
-i64 test_boolean_type_cast()
+i32 test_boolean_type_cast()
 {
-    u1 okay = u1 i1 u1 i16 u16 i32 u32 i64 u64 1;
+    u1 okay = u1 i1 u1 i16 u16 i32 u32 i32 u64 1;
     while(okay)
     {
         break;
@@ -1567,27 +1567,27 @@ i64 test_boolean_type_cast()
     ret 1;
 }
 
-i64 call_indirect(i64() f, i64 x, i64 y)
+i32 call_indirect(i32() f, i32 x, i32 y)
 {
     ret f(x, y);
 }
 
-i64 test_function_pointer()
+i32 test_function_pointer()
 {
     if(call_indirect(add, 1, 2) == 3
      & call_indirect(sub, 8, 2) == 6
-     & call_indirect(i64() add, 1, 2) == 3
-     & call_indirect(i64() sub, 8, 2) == 6)
+     & call_indirect(i32() add, 1, 2) == 3
+     & call_indirect(i32() sub, 8, 2) == 6)
     {
         ret 0;
     }
     ret 1;
 }
 
-i64 test_conversion()
+i32 test_conversion()
 {
     i1 okay = i1 1;
-    i64 x = 18446744073709551615;
+    i32 x = 18446744073709551615;
     u64 y = u64 18446744073709551615;
     u32 z = u32 4294967295;
     if(x != 18446744073709551615)
@@ -1598,7 +1598,7 @@ i64 test_conversion()
     {
         okay = okay & i1 0;
     }
-    if(i64 y != i64 18446744073709551615)
+    if(i32 y != i32 18446744073709551615)
     {
         okay = okay & i1 0;
     }
@@ -1613,21 +1613,21 @@ i64 test_conversion()
     ret 1;
 }
 
-i32 compare_i64(i64* left, i64* rite)
+i32 compare_i32(i32* left, i32* rite)
 {
     ret i32 (*left > *rite);
 }
 
 type pointer_in_type_t
 {
-    i64() add;
+    i32() add;
 };
 
-i64 test_pointer_in_type()
+i32 test_pointer_in_type()
 {
     pointer_in_type_t self;
     self.add = add;
-    i64 out = self.add(1, 2);
+    i32 out = self.add(1, 2);
     if(out == 3 & self.add(1, 2) == 3)
     {
         ret 0;
@@ -1635,20 +1635,20 @@ i64 test_pointer_in_type()
     ret 1;
 }
 
-i64 test_qsort()
+i32 test_qsort()
 {
-    i64 size = 4;
-    i64* array = new i64[size];
+    i32 size = 4;
+    i32* array = new i32[u64 size];
     defer del array;
-    array[0] = 9;
-    array[1] = 3;
-    array[2] = 1;
-    array[3] = 8;
-    qsort(ptr array, u64 size, sizeof *array, compare_i64);
-    if(array[0] == 1
-     & array[1] == 3
-     & array[2] == 8
-     & array[3] == 9)
+    array[u64 0] = 9;
+    array[u64 1] = 3;
+    array[u64 2] = 1;
+    array[u64 3] = 8;
+    qsort(ptr array, u64 size, sizeof *array, compare_i32);
+    if(array[u64 0] == 1
+     & array[u64 1] == 3
+     & array[u64 2] == 8
+     & array[u64 3] == 9)
     {
         ret 0;
     }
@@ -1660,7 +1660,7 @@ i8* ret_string()
     ret "test";
 }
 
-i64 test_string_return()
+i32 test_string_return()
 {
     if(strcmp(ret_string(), "test") == i32 0)
     {
@@ -1669,10 +1669,10 @@ i64 test_string_return()
     ret 1;
 }
 
-i64 test_variadic_function_pointer()
+i32 test_variadic_function_pointer()
 {
     i32...() s = sprintf;
-    i8* buffer = new i8[32];
+    i8* buffer = new i8[u64 32];
     defer del buffer;
     s(buffer, "test%d", 42);
     if(strcmp(buffer, "test42") == i32 0)
@@ -1682,12 +1682,12 @@ i64 test_variadic_function_pointer()
     ret 1;
 }
 
-i64 test_type_cast_postfix_access()
+i32 test_type_cast_postfix_access()
 {
-    i64* array = new i64[32];
+    i32* array = new i32[u64 32];
     defer del array;
-    array[0] = 42;
-    if(array[0] == 42)
+    array[u64 0] = 42;
+    if(array[u64 0] == 42)
     {
         ret 0;
     }
@@ -1704,7 +1704,7 @@ int_t* ret_pointer(int_t* integer)
     ret integer;
 }
 
-i64 test_type_cast_postfix_function()
+i32 test_type_cast_postfix_function()
 {
     int_t integer;
     integer.value = 42;
@@ -1715,32 +1715,32 @@ i64 test_type_cast_postfix_function()
     ret 1;
 }
 
-void i64_delete(i64* self)
+void i32_delete(i32* self)
 {
     *self = 0;
     ret;
 }
 
-i64 test_arr_t()
+i32 test_arr_t()
 {
-    arr_t arr = arr_init(4, i64 sizeof i64, i64_delete);
+    arr_t arr = arr_init(u64 4, sizeof i32, i32_delete);
     defer arr_del(&arr);
-    i64 index;
+    u64 index;
     while(index < arr.size)
     {
-        * i64* arr_at(&arr, index) = index;
+        * i32* arr_at(&arr, index) = i32 index;
         index++;
     }
     i1 okay = i1 1;
-    okay = okay & *i64* arr_at(&arr, 0) == 0;
-    okay = okay & *i64* arr_at(&arr, 1) == 1;
-    okay = okay & *i64* arr_at(&arr, 2) == 2;
-    okay = okay & *i64* arr_at(&arr, 3) == 3;
+    okay = okay & *i32* arr_at(&arr, u64 0) == 0;
+    okay = okay & *i32* arr_at(&arr, u64 1) == 1;
+    okay = okay & *i32* arr_at(&arr, u64 2) == 2;
+    okay = okay & *i32* arr_at(&arr, u64 3) == 3;
     arr_del_elems(&arr);
-    okay = okay & *i64* arr_at(&arr, 0) == 0;
-    okay = okay & *i64* arr_at(&arr, 1) == 0;
-    okay = okay & *i64* arr_at(&arr, 2) == 0;
-    okay = okay & *i64* arr_at(&arr, 3) == 0;
+    okay = okay & *i32* arr_at(&arr, u64 0) == 0;
+    okay = okay & *i32* arr_at(&arr, u64 1) == 0;
+    okay = okay & *i32* arr_at(&arr, u64 2) == 0;
+    okay = okay & *i32* arr_at(&arr, u64 3) == 0;
     if(okay)
     {
         ret 0;
@@ -1758,7 +1758,7 @@ void stack_defer_exits(str_t* str )
     ret;
 }
 
-i64 test_defer_prints()
+i32 test_defer_prints()
 {
     str_t str = str_init("");
     stack_defer_exits(&str);
@@ -1770,7 +1770,7 @@ i64 test_defer_prints()
     ret 1;
 }
 
-i64 test_str_push()
+i32 test_str_push()
 {
     str_t str = str_init("");
     str_push(&str, 'A');
@@ -1797,7 +1797,7 @@ person_t* ret_person_pointer(person_t* self)
     ret self;
 }
 
-i64 test_person_modify()
+i32 test_person_modify()
 {
     person_t person;
     person.height = 42.0;
@@ -1814,7 +1814,7 @@ i64 test_person_modify()
 
 i32 main()
 {
-    i64 result =
+    i32 result =
         test_function()
       | test_pointers()
       | test_if_0()
@@ -1837,7 +1837,7 @@ i32 main()
       | test_negative()
       | test_negative_loop()
       | test_generic_ptr()
-      | test_llabs()
+      | test_abs()
       | test_bool_param(1 == 1, 2 == 2, 3 == 3)
       | test_array_index()
       | test_array_loop_index()
