@@ -77,6 +77,21 @@ sdl_init(i32 x, i32 y, i32 xres, i32 yres, i8* name)
     ret self;
 }
 
+sdl_t
+sdl_demo_init(i32 argc, i8** argv, i8* name)
+{
+    if(argc != 5)
+    {
+        printf("sdl demo: required args: x y xres yres\n");
+        exit(1);
+    }
+    i32 x = atoi(argv[u64 1]);
+    i32 y = atoi(argv[u64 2]);
+    i32 xres = atoi(argv[u64 3]);
+    i32 yres = atoi(argv[u64 4]);
+    ret sdl_init(x, y, xres, yres, name);
+}
+
 void
 sdl_del(sdl_t* self)
 {

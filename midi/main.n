@@ -1,4 +1,5 @@
 include "../lib/std.n";
+include "../lib/sdl.n";
 
 type constants_t
 {
@@ -353,9 +354,22 @@ track_real_event(track_t* self, meta_t* meta, note_t** notes, u8 leader)
 //    return track;
 //}
 
-
 i32
-main()
+main(i32 argc, i8** argv)
 {
+    sdl_t sdl = sdl_demo_init(argc, argv, "midi");
+    sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
+    while(i1 1)
+    {
+        if(sdl_is_done())
+        {
+            break;
+        }
+        sdl_clear_screen(&sdl);
+        sdl_write_font(&sdl, &font, sdl.name, sdl.margin, sdl.margin);
+        sdl_present(&sdl);
+    }
+    sdl_font_del(&font);
+    sdl_del(&sdl);
     ret 0;
 }
