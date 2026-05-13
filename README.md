@@ -23,8 +23,10 @@ then compile and run the graphical demos. Of these four demos, two demos are mul
 of popular shader-toy demos, one demo is a demonstration of a red-black tree implementation, and the final
 demo demonstrates a basic setup for game programming.
 
+![](img/chickens.gif)
+
 Please note, Nibble compiles top down in a single pass and allocas freely, even within loops,
-by design. This simplified front-end design greatly improves `main.c` readability, but causes
-stack overflows when Nibble compiles Nibble programs with Clang's `-O0` optimization flag enabled.
-Clang's back-end optimizer is (probably too eagerly) relied upon in this regard, but readability
-of `main.c` and `.n` programs was the design goal.
+by design. This simplified front-end design greatly and improved `main.c` readability, but causes
+stack overflows with lower (and sometimes even higher) clang back-end optimization entablement.
+As a fix, I have been meaning to explore stacksave/stackrestore, but my LLVM curiosity has more
+or less been satisfied with this project.
