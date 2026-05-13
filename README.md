@@ -1,6 +1,8 @@
-![screenshot](img/logo.png)
+![](img/logo.png)
 
 Nibble is C-like systems programming language.
+
+![](img/1.gif)
 
 Nibble was written in 3000 lines of C to demonstrate an approach to LLVM IR
 generation without relying on external dependencies or heap allocations.
