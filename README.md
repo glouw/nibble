@@ -27,9 +27,9 @@ demo demonstrates a basic setup for game programming.
 
 ### Thoughts
 
-Please note, Nibble compiles top down in a single pass and allocas freely, even within loops,
+Nibble compiles top down in a single pass and allocas freely, even within loops,
 by design. This simplified front-end design greatly improves `main.c` readability but causes
-stack overflows with lower (and sometimes even higher) clang back-end optimization entablement.
-I was under the impression clang's back-end optimizer would hoist all allocas to a function's top level,
-but so we learn that's not the case. I have been meaning to explore stacksave/stackrestore but my LLVM
+stack overflows with lower (and sometimes even higher) clang back-end optimizations.
+I _was_ under the impression clang's back-end optimizer would hoist all allocas to a function's top level,
+but so we learn in life. I have been meaning to explore stacksave/stackrestore but my LLVM
 curiosity has more or less been satisfied, and I deem this compiler momentarily complete.
