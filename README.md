@@ -25,6 +25,8 @@ demo demonstrates a basic setup for game programming.
 
 ![](img/chickens.gif)
 
+### Thoughts
+
 Please note, Nibble compiles top down in a single pass and allocas freely, even within loops,
 by design. This simplified front-end design greatly improves `main.c` readability but causes
 stack overflows with lower (and sometimes even higher) clang back-end optimization entablement.
