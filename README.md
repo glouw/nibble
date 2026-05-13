@@ -3,15 +3,18 @@
 Nibble is C-like systems programming language.
 
 ![](img/art.gif)
-![](img/tree.gif)
 
 Nibble was written in 3000 lines of C to demonstrate an approach to LLVM IR
 generation without relying on external dependencies or heap allocations.
+
+![](img/tree.gif)
 
 Nibble supports features such as defer, recursion, integer, floating, and boolean types,
 structs (simply named types), GLSL-like struct operators, pointers,
 function pointers, branching, loops, type checking, basic C interoperability via generic pointers,
 and reasonable error messages.
+
+![](img/creation.gif)
 
 Included are four graphical demos demonstrating Nibble's ability. To try
 them out, ensure SDL2 is first installed, as well as Clang, and then run `make`.
