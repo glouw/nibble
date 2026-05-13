@@ -1,7 +1,7 @@
 CC = ../nibble
 SRC = main.n
 TEMP = out.ll
-ASM = clang -O1
+ASM = clang -O2
 BIN = midi
 LDFLAGS = -lSDL2 -lm
 TIME = time

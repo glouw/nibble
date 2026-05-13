@@ -1525,7 +1525,6 @@ type default_init_t
     i32 z = 2;
     default_internal_init_t internal;
     f64 a = 2.0;
-    f32 b = 1.0;
     u1 c = 1;
     i1 d = 1;
 };
@@ -1543,7 +1542,6 @@ i32 test_default_type_init()
      & init.internal.internal.y == 12
      & init.internal.internal.z == 13
      & init.a == f64 2.0
-     & init.b == f32 1.0
      & init.c == u1 1
      & init.d == i1 1
     )

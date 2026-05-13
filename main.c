@@ -418,7 +418,7 @@ static char* g_unsigned[] = {
     nullptr
 };
 
-static char* g_f32ing[] = {
+static char* g_floating[] = {
     g_f64,
     g_f32,
     nullptr
@@ -806,7 +806,7 @@ static bool is_boolean(type_t type)
 
 static bool is_floating(type_t type)
 {
-    return is_not_pointer(type) && str_in(type.name, g_f32ing);
+    return is_not_pointer(type) && str_in(type.name, g_floating);
 }
 
 static bool is_size(type_t type)
@@ -1883,6 +1883,10 @@ static void default_init_aggregate(value_t value)
             {
                 if(!is_void(init))
                 {
+                    if(is_f32(type))
+                    {
+                        quit("'%s' can not be constant init", g_f32);
+                    }
                     auto llvm_type = to_llvm_type(type);
                     emit(g_opcode_store_direct, llvm_type.begin, init.begin, field.slot);
                 }
@@ -3127,9 +3131,9 @@ static value_t call_indirect_function(value_t function_pointer)
     auto value = rvalue(function_pointer.type);
     check_function_args(function_pointer, &types);
     value.type.is_function_pointer = false;
-    value.type.is_variadic = false;
     emit_indirect_call(value, function_pointer);
     emit_parameter_slots(&types, &slots);
+    value.type.is_variadic = false;
     return read_postfix(value);
 }
 

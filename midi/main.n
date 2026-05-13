@@ -3,18 +3,11 @@ include "../lib/sdl.n";
 
 type constants_t
 {
-    f32 pi = 3.14159265358979323846;
-    i32 note_attack = 4;
-    i32 note_amplification = 15;
-    i32 notes_max = 128;
-    i32 channel_max = 16;
-    i32 note_decay = 512;
-    i32 bend_default = 8192;
-    i32 sample_freq = 44100;
-    i32 video_samples = 2048;
-    i32 video_grain = 5;
-    i32 modulation_gain = 512;
-    i32 bank_width = 8;
+    u32 u32max = 4294967295;
+    f64 pi = 3.1415926535;
+    f64 sample_rate = 44800.0;
+    i32 notes = 128;
+    i32 channels = 16;
 };
 
 type track_t
@@ -22,52 +15,201 @@ type track_t
     u8* data;
     u32 id;
     u32 size;
-    u32 index;
+    u32 at;
     u32 number;
     i32 delay;
-    u8 running_status;
-    i1 run;
+    u8 status;
+    i1 running;
 };
 
 type meta_t
 {
     u32 tempo;
     i32* instruments;
-    i32* bend;
     f32* volume;
+    ptr mutex;
 };
 
 type note_t
 {
-    i32 gain;
-    i32 gain_setpoint;
-    i32 progress;
-    i32 bend_last;
-    i32 cycle;
-    f32 id;
     i1 on;
-    i1 wait;
-    i1 was_init;
+    f64 at;
+    i32 id;
 };
+
+type notes_t
+{
+    note_t** note;
+    u64 xsize;
+    u64 ysize;
+    ptr mutex;
+};
+
+type midi_t
+{
+    track_t* track;
+    u32 id;
+    u32 size;
+    u16 format_type;
+    u16 track_count;
+    u16 time_division;
+};
+
+type bytes_t
+{
+    u8* data;
+    u64 size;
+};
+
+type needle_t
+{
+    midi_t* midi;
+    notes_t* notes;
+    meta_t* meta;
+    constants_t* constants;
+    ptr thread;
+};
+
+note_t
+notes_get_note(notes_t* self, u64 channel, u64 id)
+{
+    sdl_lock_mutex(self.mutex);
+    note_t note = self.note[channel][id];
+    sdl_unlock_mutex(self.mutex);
+    ret note;
+}
+
+void
+notes_set_note(notes_t* self, u64 channel, u64 id, note_t note)
+{
+    sdl_lock_mutex(self.mutex);
+    self.note[channel][id] = note;
+    sdl_unlock_mutex(self.mutex);
+    ret;
+}
+
+note_t
+note_init(i32 id)
+{
+    note_t self;
+    self.id = id;
+    ret self;
+}
+
+notes_t
+notes_init(constants_t* constants)
+{
+    notes_t self;
+    self.ysize = u64 constants.channels;
+    self.xsize = u64 constants.notes;
+    self.note = new note_t*[self.ysize];
+    u64 channel = u64 0;
+    while(channel < self.ysize)
+    {
+        self.note[u64 channel] = new note_t[u64 self.xsize];
+        u64 id = u64 0;
+        while(id < self.xsize)
+        {
+            self.note[channel][id] = note_init(i32 id);
+            id++;
+        }
+        channel++;
+    }
+    self.mutex = sdl_create_mutex();
+    ret self;
+}
+
+void
+notes_del(notes_t* self)
+{
+    u64 i = u64 0;
+    while(i < self.ysize)
+    {
+        del self.note[u64 i];
+        i++;
+    }
+    sdl_destroy_mutex(self.mutex);
+    del self.note;
+    ret;
+}
+
+bytes_t
+bytes_init(u64 size)
+{
+    bytes_t bytes;
+    bytes.size = size;
+    bytes.data = new u8[bytes.size];
+    ret bytes;
+}
+
+u16
+bytes_be_u16(bytes_t* self, u64 i)
+{
+    u16 a = u16 self.data[i + u64 0] << u16 8;
+    u16 b = u16 self.data[i + u64 1] << u16 0;
+    ret a | b;
+}
+
+u32
+bytes_be_u32(bytes_t* self, u64 i)
+{
+    u32 a = u32 bytes_be_u16(self, i + u64 0) << u32 16;
+    u32 b = u32 bytes_be_u16(self, i + u64 2) << u32  0;
+    ret a | b;
+}
+
+void
+bytes_del(bytes_t* self)
+{
+    del self.data;
+    bytes_t zero;
+    *self = zero;
+    ret;
+}
+
+track_t
+track_init(bytes_t* bytes, u32 offset, u32 number)
+{
+    track_t self;
+    self.id = bytes_be_u32(bytes, u64 offset);
+    self.size = bytes_be_u32(bytes, u64 offset + u64 4);
+    self.data = new u8[u64 self.size];
+    self.running = i1 1;
+    self.number = number;
+    u32 i = u32 0;
+    while(i < self.size)
+    {
+        self.data[u64 i] = bytes.data[u64 offset + u64 8 + u64 i];
+        i++;
+    }
+    ret self;
+}
+
+void
+track_del(track_t* self)
+{
+    del self.data;
+    ret;
+}
 
 void
 track_back(track_t* self)
 {
-    self.index = self.index - u32 1;
+    self.at = self.at - u32 1;
     ret;
 }
 
 void
 track_next(track_t* self)
 {
-    self.index = self.index + u32 1;
+    self.at = self.at + u32 1;
     ret;
 }
 
 u8
 track_u8(track_t* self)
 {
-    u8 byte = self.data[u64 self.index];
+    u8 byte = self.data[u64 self.at];
     track_next(self);
     ret byte;
 }
@@ -86,50 +228,42 @@ u32
 track_var(track_t* self)
 {
     u32 var = u32 0;
-    i1 run = i1 1;
-    while(run)
+    i1 more = i1 1;
+    while(more)
     {
         u8 byte = track_u8(self);
         var = u32 (var << u32 7) | u32 (byte & u8 127);
-        run = i1 (byte >> u8 7);
+        more = i1 (byte >> u8 7);
     }
     ret var;
 }
 
-i8*
-track_str(track_t* self)
-{
-    u8 len = track_u8(self);
-    i8* str = new i8[u64 len + u64 1];
-    u8 i = u8 0;
-    while(i < len)
-    {
-        str[u64 i] = i8 track_u8(self);
-        i++;
-    }
-    str[u64 len] = '\0';
-    ret str;
-}
-
-type bytes_t
-{
-    u8* data;
-    u32 size;
-};
-
 bytes_t
-track_bytes(track_t* self)
+bytes_from_track(track_t* self)
 {
-    bytes_t bytes;
-    bytes.size = track_var(self);
-    bytes.data = new u8[u64 bytes.size];
-    u32 i;
+    u32 size = track_var(self);
+    bytes_t bytes = bytes_init(u64 size);
+    u64 i;
     while(i < bytes.size)
     {
-        bytes.data[u64 i] = track_u8(self);
+        bytes.data[i] = track_u8(self);
         i++;
     }
     ret bytes;
+}
+
+str_t
+track_str(track_t* self)
+{
+    u8 len = track_u8(self);
+    str_t str = str_init("");
+    u8 i = u8 0;
+    while(i < len)
+    {
+        str_push(&str, i8 track_u8(self));
+        i++;
+    }
+    ret str;
 }
 
 u8
@@ -137,11 +271,11 @@ track_status(track_t* self, u8 status)
 {
     if((status >> u8 3) == u8 1)
     {
-        self.running_status = status;
+        self.status = status;
         ret status;
     }
     track_back(self);
-    ret self.running_status;
+    ret self.status;
 }
 
 i1
@@ -151,214 +285,521 @@ is_percussive(u8 channel)
 }
 
 void
-track_real_event(track_t* self, meta_t* meta, note_t** notes, u8 leader)
+track_real_event(track_t* self, meta_t* meta, notes_t* notes, u8 leader, constants_t* constants)
 {
     u8 channel = leader & u8 15;
-    u8 status = track_status(self, leader >> u8 4);
-    if(status == u8 8)
+    u8 event = track_status(self, leader >> u8 4);
+    if(event == u8 8)
     {
-        u8 note_index = track_u8(self);
+        // Note off
+        u8 id = track_u8(self);
         track_u8(self);
-        if(!is_percussive(channel))
+        if(is_percussive(channel))
         {
-            note_t* note = &notes[u64 channel][u64 note_index];
-            note.gain_setpoint = 0;
-            //meta->bend[channel] = CONST_BEND_DEFAULT;
+            ret;
+        }
+        note_t note = notes_get_note(notes, u64 channel, u64 id);
+        note.on = i1 0;
+        notes_set_note(notes, u64 channel, u64 id, note);
+    }
+    else
+    if(event == u8 9)
+    {
+        // Note on
+        u8 id = track_u8(self);
+        u8 velocity = track_u8(self);
+        if(is_percussive(channel))
+        {
+            ret;
+        }
+        note_t note = notes_get_note(notes, u64 channel, u64 id);
+        if(velocity > u8 0)
+        {
+            note.on = i1 1;
+        }
+        else
+        {
+            note.on = i1 0;
+        }
+        notes_set_note(notes, u64 channel, u64 id, note);
+    }
+    else
+    if(event == u8 10)
+    {
+        // Note aftertouch
+        track_spin(self, 2);
+    }
+    else
+    if(event == u8 11)
+    {
+        // Controller
+        u8 of = track_u8(self);
+        u8 value = track_u8(self);
+        if(of == u8 7)
+        {
+            meta.volume[u64 channel] = f32 value / f32 127.0;
         }
     }
-    // Note On.
-    //case 0x9:
-    //{
-    //    uint8_t note_index = Track_U8(track);
-    //    uint8_t note_velocity = Track_U8(track);
-    //    if(!IsPercussive(channel))
-    //    {
-    //        Note* note = &notes->note[channel][note_index];
-    //        note->gain_setpoint = CONST_NOTE_ATTACK * note_velocity * meta->volume[channel];
-    //        note->on = true;
-    //        meta->bend[channel] = CONST_BEND_DEFAULT;
-    //    }
-    //    break;
-    //}
-    //// Note Aftertouch.
-    //case 0xA:
-    //{
-    //    Track_Spin(track, 2);
-    //    break;
-    //}
-    //// Controller.
-    //case 0xB:
-    //{
-    //    uint8_t type = Track_U8(track);
-    //    uint8_t value = Track_U8(track);
-    //    switch(type)
-    //    {
-    //        case 0x07:
-    //            meta->volume[channel] = value / 127.0f;
-    //            break;
-    //        default:
-    //            break;
-    //    }
-    //    break;
-    //}
-    //// Program Change.
-    //case 0xC:
-    //{
-    //    uint8_t program = Track_U8(track);
-    //    meta->instruments[channel] = program;
-    //    break;
-    //}
-    //// Channel Aftertouch.
-    //case 0xD:
-    //{
-    //    Track_U8(track);
-    //    break;
-    //}
-    //// Pitch Bend.
-    //case 0xE:
-    //{
-    //    uint8_t lsb = Track_U8(track);
-    //    uint8_t msb = Track_U8(track);
-    //    uint16_t bend = (msb << 7) | lsb;
-    //    meta->bend[channel] = bend;
-    //    break;
-    //}
-    //default:
-    //{
-    //    Track_Crash(track);
-    //    break;
-    //}
+    else
+    if(event == u8 12)
+    {
+        // Program change
+        u8 program = track_u8(self);
+        meta.instruments[u64 channel] = i32 program;
+    }
+    else
+    if(event == u8 13)
+    {
+        // Channel aftertouch
+        track_u8(self);
+    }
+    else
+    if(event == u8 14)
+    {
+        // Pitch bend
+        track_u8(self);
+        track_u8(self);
+    }
+    else
+    {
+        printf("unknown real track event '%d' found\n", event);
+        exit(1);
+    }
     ret;
 }
-//
-//static void
-//Track_MetaEvent(Track* track, Meta* meta)
-//{
-//    switch(Track_U8(track))
-//    {
-//        default:
-//        {
-//            Track_Crash(track);
-//            break;
-//        }
-//        // Sequence Number.
-//        case 0x00:
-//        {
-//            Track_Spin(track, 3);
-//            break;
-//        }
-//        case 0x01: // Text Event.
-//        case 0x02: // Copyright Notice.
-//        case 0x03: // Track Name.
-//        case 0x04: // Instrument Name.
-//        case 0x05: // Lyric.
-//        case 0x06: // Marker.
-//        case 0x07: // Cue Point.
-//        case 0x08: // Program Name.
-//        case 0x09: // Device Name.
-//        {
-//            free(Track_Str(track));
-//            break;
-//        }
-//        // Channel Prefix.
-//        case 0x20:
-//        {
-//            Track_Spin(track, 2);
-//            break;
-//        }
-//        // Midi Port.
-//        case 0x21:
-//        {
-//            Track_Spin(track, 2);
-//            break;
-//        }
-//        // End of Track.
-//        case 0x2F:
-//        {
-//            track->run = Track_U8(track);
-//            break;
-//        }
-//        // Tempo.
-//        case 0x51:
-//        {
-//            Track_U8(track);
-//            uint8_t a = Track_U8(track);
-//            uint8_t b = Track_U8(track);
-//            uint8_t c = Track_U8(track);
-//            meta->tempo = (a << 16) | (b << 8) | c;
-//            break;
-//        }
-//        // SMPTE Offset.
-//        case 0X54:
-//        {
-//            Track_Spin(track, 6);
-//            break;
-//        }
-//        // Time Signature.
-//        case 0x58:
-//        {
-//            Track_Spin(track, 5);
-//            break;
-//        }
-//        // Key Signature.
-//        case 0x59:
-//        {
-//            Track_Spin(track, 3);
-//            break;
-//        }
-//        case 0xF0: // Sysex Start.
-//        case 0xF7: // Sysex End.
-//        case 0x7F: // Systex Running Status.
-//        {
-//            Bytes bytes = Track_Bytes(track);
-//            Bytes_Free(&bytes);
-//            break;
-//        }
-//    }
-//}
-//
-//static void
-//Track_Play(Track* track, Notes* notes, Meta* meta)
-//{
-//    int end = -1;
-//    if(track->run)
-//    {
-//        if(track->delay > end)
-//            track->delay -= 1;
-//        if(track->delay == end)
-//            track->delay = Track_Var(track);
-//        if(track->delay == 0)
-//        {
-//            uint8_t leader = Track_U8(track);
-//            leader == 0xFF
-//                ? Track_MetaEvent(track, meta)
-//                : Track_RealEvent(track, meta, notes, leader);
-//            // Notes with zero delay must immediately process
-//            // the next note before moving onto the next track.
-//            Track_Play(track, notes, meta);
-//        }
-//    }
-//}
-//
-//static Track
-//Track_Init(Bytes* bytes, uint32_t offset, uint32_t number)
-//{
-//    Track track = { 0 };
-//    track.id = Bytes_U32(bytes, offset);
-//    track.size = Bytes_U32(bytes, offset + 4);
-//    track.data = calloc(track.size, sizeof(*track.data));
-//    track.run = true;
-//    track.number = number;
-//    for(uint32_t i = 0; i < track.size; i++)
-//        track.data[i] = Bytes_U8(bytes, offset + 8 + i);
-//    return track;
-//}
+
+void
+track_meta_event(track_t* self, meta_t* meta)
+{
+    u8 event = track_u8(self);
+    if(event == u8 0)
+    {
+        // Sequence Number.
+        track_spin(self, 3);
+    }
+    else
+    if(event == u8 1  // Text event
+     | event == u8 2  // Copyright notice
+     | event == u8 3  // Track name
+     | event == u8 4  // Instrument name
+     | event == u8 5  // Lyric
+     | event == u8 6  // Marker
+     | event == u8 7  // Cue point
+     | event == u8 8  // Program name
+     | event == u8 9) // Device name
+    {
+        str_t str = track_str(self);
+        str_del(&str);
+    }
+    else
+    if(event == u8 32)
+    {
+        // Channel prefix
+        track_spin(self, 2);
+    }
+    else
+    if(event == u8 33)
+    {
+        // MIDI port
+        track_spin(self, 2);
+    }
+    else
+    if(event == u8 47)
+    {
+        // End of track
+        self.running = i1 track_u8(self);
+    }
+    else
+    if(event == u8 81)
+    {
+        // Tempo
+        track_u8(self);
+        u8 a = track_u8(self);
+        u8 b = track_u8(self);
+        u8 c = track_u8(self);
+        meta.tempo = (u32 a << u32 16) | (u32 b << u32 8) | u32 c;
+    }
+    else
+    if(event == u8 84)
+    {
+        // SMPTE offset
+        track_spin(self, 6);
+    }
+    else
+    if(event == u8 88)
+    {
+        // Time Signature.
+        track_spin(self, 5);
+    }
+    else
+    if(event == u8 89)
+    {
+        // Key Signature.
+        track_spin(self, 3);
+    }
+    else
+    if(event == u8 240  // Sysex start
+     | event == u8 247  // Sysex end
+     | event == u8 127) // Systex running status
+    {
+        bytes_t bytes = bytes_from_track(self);
+        bytes_del(&bytes);
+    }
+    else
+    {
+        printf("unknown meta track event '%d' found\n", event);
+        exit(1);
+    }
+    ret;
+}
+
+void
+track_play(track_t* self, notes_t* notes, meta_t* meta, constants_t* constants)
+{
+    i32 end = -1;
+    if(self.running)
+    {
+        if(self.delay > end)
+        {
+            self.delay--;
+        }
+        if(self.delay == end)
+        {
+            self.delay = i32 track_var(self);
+            printf("%d\n", self.delay);
+        }
+        if(self.delay == 0)
+        {
+            u8 leader = track_u8(self);
+            if(leader == u8 255)
+            {
+                track_meta_event(self, meta);
+            }
+            else
+            {
+                track_real_event(self, meta, notes, leader, constants);
+            }
+            // Notes with zero delay must immediately process
+            // the next note before moving onto the next track
+            track_play(self, notes, meta, constants);
+        }
+    }
+    ret;
+}
+
+bytes_t
+bytes_from_file(i8* path)
+{
+    ptr file = fopen(path, "rb");
+    defer fclose(file);
+    fseek(file, i64 0, i32 2);
+    i64 size = ftell(file);
+    fseek(file, i64 0, i32 0);
+    bytes_t bytes = bytes_init(u64 size);
+    u64 i = u64 0;
+    while(i < bytes.size)
+    {
+        bytes.data[i] = u8 getc(file);
+        i++;
+    }
+    ret bytes;
+}
+
+midi_t
+midi_init(bytes_t* bytes)
+{
+    midi_t self;
+    self.id = bytes_be_u32(bytes, u64  0);
+    self.size = bytes_be_u32(bytes, u64  4);
+    self.format_type = bytes_be_u16(bytes, u64  8);
+    self.track_count = bytes_be_u16(bytes, u64 10);
+    self.time_division = bytes_be_u16(bytes, u64 12);
+    self.track = new track_t[u64 self.track_count];
+    u32 offset = u32 14;
+    u32 number = u32 0;
+    while(number < u32 self.track_count)
+    {
+        if(number > u32 0)
+        {
+            offset = offset + u32 8;
+            offset = offset + self.track[u64 number - u64 1].size;
+        }
+        self.track[u64 number] = track_init(bytes, offset, number);
+        number++;
+    }
+    ret self;
+}
+
+void
+midi_del(midi_t* self)
+{
+    u32 number = u32 0;
+    while(number < u32 self.track_count)
+    {
+        track_del(&self.track[u64 number]);
+        number++;
+    }
+    del self.track;
+    ret;
+}
+
+i1
+midi_done(midi_t* self)
+{
+    u32 count = u32 0;
+    u32 i = u32 0;
+    while(i < u32 self.track_count)
+    {
+        if(self.track[u64 i].running)
+        {
+            count = count + u32 1;
+        }
+        i++;
+    }
+    ret count == u32 0;
+}
+
+void
+midi_delay(midi_t* self, meta_t* meta, constants_t* constants)
+{
+    u32 ticks = constants.u32max;
+    u32 i = u32 0;
+    while(i < u32 self.track_count)
+    {
+        track_t* track = &self.track[u64 i];
+        if(track.running)
+        {
+            if(u32 track.delay < ticks)
+            {
+                ticks = u32 track.delay;
+            }
+        }
+        i++;
+    }
+    u32 j = u32 0;
+    while(j < u32 self.track_count)
+    {
+        track_t* track = &self.track[u64 j];
+        if(track.running)
+        {
+            i32 step = i32 ticks - 1;
+            track.delay = i32 track.delay - step;
+        }
+        j++;
+    }
+    u32 us = ticks * meta.tempo / u32 self.time_division;
+    i64 ms = i64 (f64 us / 1000.0);
+    sdl_delay(ms);
+    ret;
+}
+
+void
+midi_play(midi_t* self, notes_t* notes, meta_t* meta, constants_t* constants)
+{
+    i1 done = i1 0;
+    while(!done)
+    {
+        if(midi_done(self))
+        {
+            done = i1 1;
+        }
+        if(sdl_is_done())
+        {
+            done = i1 1;
+        }
+        u32 i = u32 0;
+        while(i < u32 self.track_count)
+        {
+            track_play(&self.track[u64 i], notes, meta, constants);
+            i++;
+        }
+        midi_delay(self, meta, constants);
+    }
+    ret;
+}
+
+meta_t
+meta_init(constants_t* constants)
+{
+    meta_t self;
+    self.instruments = new i32[u64 constants.channels];
+    self.volume = new f32[u64 constants.channels];
+    self.mutex = sdl_create_mutex();
+    ret self;
+}
+
+void
+meta_del(meta_t* self)
+{
+    del self.instruments;
+    del self.volume;
+    sdl_destroy_mutex(self.mutex);
+    ret;
+}
+
+needle_t
+needle_init(midi_t* midi, notes_t* notes, meta_t* meta, constants_t* constants)
+{
+    needle_t self;
+    self.midi = midi;
+    self.notes = notes;
+    self.meta = meta;
+    self.constants = constants;
+    ret self;
+}
+
+i32
+thread_needle(ptr with)
+{
+    needle_t* thread = needle_t* with;
+    midi_play(thread.midi, thread.notes, thread.meta, thread.constants);
+    ret 0;
+}
+
+void
+needle_sow(needle_t* self)
+{
+    self.thread = sdl_create_thread(thread_needle, i8* 0, ptr self);
+    ret;
+}
+
+i32
+needle_wait(needle_t* self)
+{
+    ret sdl_wait_thread(self.thread);
+}
+
+void
+render_notes(sdl_t* sdl, notes_t* notes)
+{
+    sdl_rect_t rect;
+    rect.w = 4;
+    rect.h = 4;
+    i32 x0 = sdl.margin;
+    i32 y0 = i32 sdl.yres - i32 rect.h * i32 notes.ysize - i32 sdl.margin;
+    u64 y;
+    while(y < notes.ysize)
+    {
+        u64 x;
+        while(x < notes.xsize)
+        {
+            rect.x = i32 x * i32 rect.w + x0;
+            rect.y = i32 y * i32 rect.h + y0;
+            note_t note = notes_get_note(notes, y, x);
+            u8 red = u8 25;
+            if(note.on)
+            {
+                red = u8 255;
+            }
+            sdl_set_render_draw_color(sdl, red, u8 0, u8 0, u8 0);
+            sdl_render_fill_rect(sdl, &rect);
+            x++;
+        }
+        y++;
+    }
+    ret;
+}
+
+f32
+sin_sound(f64 amp, f64 at, f64 freq, constants_t* constants)
+{
+    f64 phase = 2.0 * constants.pi * freq * at / constants.sample_rate;
+    ret f32 (amp * sin(phase));
+}
+
+f32
+square_sound(f64 amp, f64 at, f64 freq, constants_t* constants)
+{
+    if(sin_sound(amp, at, freq, constants) >= f32 0.0)
+        ret f32 +amp;
+    else
+        ret f32 -amp;
+    ret f32 0.0;
+}
+
+f32
+sawtooth_sound(f64 amp, f64 at, f64 freq, constants_t* constants)
+{
+    f64 cycle = freq * at / constants.sample_rate;
+    cycle = cycle - floor(cycle);
+    ret f32 (amp * (2.0 * cycle - 1.0));
+}
+
+f32
+triangle_sound(f64 amp, f64 at, f64 freq, constants_t* constants)
+{
+    f64 cycle = freq * at / constants.sample_rate;
+    cycle = cycle - floor(cycle);
+    ret f32 (amp * (4.0 * fabs(cycle - 0.5) - 1.0));
+}
+
+f64
+note_freq(note_t* self)
+{
+    ret 440.0 * pow(2.0, (f64 self.id - 69.0) / 12.0);
+}
+
+f32 note_sound(note_t* self, constants_t* constants)
+{
+    i32 instrument = 0;
+    f64 freq = note_freq(self);
+    f64 gain;
+    if(self.on)
+    {
+        gain = 0.1;
+    }
+    if(instrument == 0) ret sin_sound      (gain, self.at, freq, constants);
+    if(instrument == 1) ret square_sound   (gain, self.at, freq, constants);
+    if(instrument == 2) ret sawtooth_sound (gain, self.at, freq, constants);
+    if(instrument == 3) ret triangle_sound (gain, self.at, freq, constants);
+    printf("unknown instrument '%d' found", instrument);
+    exit(1);
+    ret f32 0.0;
+}
+
+void gen_audio(notes_t* self, constants_t* constants)
+{
+    note_t note;
+    u64 samples = u64 1024;
+    u64 sample = u64 0;
+    while(sample < samples)
+    {
+        u64 channel = u64 0;
+        while(channel < self.ysize)
+        {
+            u64 id = u64 0;
+            while(id < self.xsize)
+            {
+                note = notes_get_note(self, u64 channel, u64 id);
+                if(note.on)
+                {
+                    printf("%d %d %d %d\n", sample, samples, channel, id);
+                    //f32 sound = note_sound(&note, constants);
+                    //note.at++;
+                    //printf(".. %f %f\n", sound, note.at);
+                    //notes_set_note(self, u64 channel, u64 id, note);
+                }
+                id++;
+            }
+            channel++;
+        }
+        sample++;
+    }
+    ret;
+}
 
 i32
 main(i32 argc, i8** argv)
 {
     sdl_t sdl = sdl_demo_init(argc, argv, "midi");
     sdl_font_t font = sdl_font_init(&sdl, "../lib/font.bmp", 2, 16, 8, 8, 8);
+    bytes_t bytes = bytes_from_file("chrono.mid");
+    midi_t midi = midi_init(&bytes);
+    constants_t constants;
+    notes_t notes = notes_init(&constants);
+    meta_t meta = meta_init(&constants);
+    needle_t needle = needle_init(&midi, &notes, &meta, &constants);
+    needle_sow(&needle);
     while(i1 1)
     {
         if(sdl_is_done())
@@ -366,9 +807,16 @@ main(i32 argc, i8** argv)
             break;
         }
         sdl_clear_screen(&sdl);
+        render_notes(&sdl, &notes);
+        gen_audio(&notes, &constants);
         sdl_write_font(&sdl, &font, sdl.name, sdl.margin, sdl.margin);
         sdl_present(&sdl);
     }
+    needle_wait(&needle);
+    notes_del(&notes);
+    meta_del(&meta);
+    bytes_del(&bytes);
+    midi_del(&midi);
     sdl_font_del(&font);
     sdl_del(&sdl);
     ret 0;

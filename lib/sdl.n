@@ -1,3 +1,59 @@
+type sdl_audio_spec_t
+{
+    i32 freq;
+    u16 format;
+    u8 channels;
+    u8 silence;
+    u16 samples;
+    u16 padding;
+    u32 size;
+    void() callback;
+    ptr userdata;
+};
+
+u32 SDL_OpenAudioDevice(
+    i8* device,
+    i32 iscapture,
+    sdl_audio_spec_t* desired,
+    sdl_audio_spec_t* obtained,
+    i32 allowed_changes
+);
+
+void SDL_CloseAudioDevice(u32 dev);
+i32 SDL_QueueAudio(u32 dev, ptr data, u32 len);
+
+type sdl_audio_t
+{
+    sdl_audio_spec_t spec;
+    u32 device;
+};
+
+sdl_audio_t
+sdl_audio_init(i32 freq, u16 samples)
+{
+    sdl_audio_t self;
+    self.spec.freq = freq;
+    self.spec.format = u16 33056; // f32
+    self.spec.channels = u8 2;
+    self.spec.samples = samples;
+    self.device = SDL_OpenAudioDevice(i8* 0, 0, &self.spec, sdl_audio_spec_t* 0, 0);
+    ret self;
+}
+
+void
+sdl_audio_del(sdl_audio_t* self)
+{
+    SDL_CloseAudioDevice(self.device);
+    ret;
+}
+
+void
+sdl_queue_audio(sdl_audio_t* self, ptr data, u32 len)
+{
+    SDL_QueueAudio(self.device, data, len);
+    ret;
+}
+
 type sdl_rect_t
 {
     i32 x;
@@ -24,6 +80,7 @@ i32 SDL_SetRenderDrawColor(ptr renderer, u8 r, u8 g, u8 b, u8 a);
 i32 SDL_RenderClear(ptr renderer);
 ptr SDL_CreateWindow(i8* title, i32 x, i32 y, i32 w, i32 h, u32 flags);
 ptr SDL_CreateRenderer(ptr window, i32 index, u32 flags);
+i32 SDL_RenderDrawRect(ptr renderer, sdl_rect_t* rect);
 i32 SDL_RenderFillRect(ptr renderer, sdl_rect_t* rect);
 void SDL_DestroyWindow(ptr window);
 void SDL_Quit();
@@ -46,6 +103,14 @@ void SDL_UnlockTexture(ptr texture);
 u32 SDL_GetTicks();
 i32 SDL_GetCPUCount();
 i32 SDL_RenderDrawLine(ptr renderer, i32 x1, i32 y1, i32 x2, i32 y2);
+
+ptr SDL_CreateThread(i32() fn, i8* name, ptr data);
+void SDL_WaitThread(ptr thread, i32* status);
+ptr SDL_CreateMutex();
+i32 SDL_LockMutex(ptr mutex);
+i32 SDL_UnlockMutex(ptr mutex);
+i32 SDL_TryLockMutex(ptr mutex);
+void SDL_DestroyMutex(ptr mutex);
 
 type sdl_t
 {
@@ -112,6 +177,20 @@ void
 sdl_render_draw_line(sdl_t* self, i32 x1, i32 y1, i32 x2, i32 y2)
 {
     SDL_RenderDrawLine(self.renderer, x1, y1, x2, y2);
+    ret;
+}
+
+void
+sdl_render_fill_rect(sdl_t* self, sdl_rect_t* rect)
+{
+    SDL_RenderFillRect(self.renderer, rect);
+    ret;
+}
+
+void
+sdl_render_draw_rect(sdl_t* self, sdl_rect_t* rect)
+{
+    SDL_RenderDrawRect(self.renderer, rect);
     ret;
 }
 
@@ -660,5 +739,50 @@ void
 sdl_scroll_write(sdl_scroll_t* self, sdl_t* sdl, sdl_font_t* font, i8* message)
 {
     self.y = sdl_write_font(sdl, font, message, self.x, self.y);
+    ret;
+}
+
+ptr
+sdl_create_thread(i32() fn, i8* name, ptr data)
+{
+    ret SDL_CreateThread(fn, name, data);
+}
+
+i32
+sdl_wait_thread(ptr thread)
+{
+    i32 status;
+    SDL_WaitThread(ptr thread, &status);
+    ret status;
+}
+
+ptr
+sdl_create_mutex()
+{
+    ret SDL_CreateMutex();
+}
+
+i32
+sdl_lock_mutex(ptr mutex)
+{
+    ret SDL_LockMutex(mutex);
+}
+
+i32
+sdl_unlock_mutex(ptr mutex)
+{
+    ret SDL_UnlockMutex(mutex);
+}
+
+i32
+sdl_try_lock_mutex(ptr mutex)
+{
+    ret SDL_TryLockMutex(mutex);
+}
+
+void
+sdl_destroy_mutex(ptr mutex)
+{
+    SDL_DestroyMutex(mutex);
     ret;
 }
