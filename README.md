@@ -9,7 +9,7 @@ generation without relying on external dependencies or heap allocations.
 
 ![](img/tree.gif)
 
-Nibble supports features such as defer, recursion, integer, floating, and boolean types,
+Nibble supports defer, recursion, integer, floating, and boolean types,
 structs (simply named types), GLSL-like struct operators, pointers,
 function pointers, branching, loops, type checking, basic C interoperability via generic pointers,
 and reasonable error messages.
