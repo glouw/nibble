@@ -3449,7 +3449,7 @@ static value_t read_expression()
     return read_p9();
 }
 
-void static read_code(str_t path)
+static void read_code(str_t path)
 {
     auto mode = "r";
     auto fp = fopen(path.begin, mode);
