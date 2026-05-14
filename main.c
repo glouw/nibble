@@ -1577,7 +1577,9 @@ static type_t pointer_init(str_t name, int stars)
 
 static type_t read_type()
 {
-    auto type = type_init(read_alnum(), read_stars());
+    auto alnum = read_alnum();
+    auto stars = read_stars();
+    auto type = type_init(alnum, stars);
     auto operator = peek_operator();
     if(is_variadic_decl(operator))
     {
