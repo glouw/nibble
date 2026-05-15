@@ -3368,13 +3368,15 @@ static value_t read_rtol(value_t with(), precedence_t precedence)
         auto rite = read_rtol(with, precedence);
         left = operate(left, rite, operator);
     }
-    return to_rvalue(left);
+    return left;
 }
+
+static value_t read_lvalue_expression();
 
 static value_t read_grouped_expression()
 {
     match(g_left_paren);
-    auto value = read_expression();
+    auto value = read_lvalue_expression();
     match(g_rite_paren);
     return value;
 }
@@ -3446,9 +3448,14 @@ static value_t read_p9()
     return read_rtol(read_p8, g_precedence_assignment);
 }
 
-static value_t read_expression()
+static value_t read_lvalue_expression()
 {
     return read_p9();
+}
+
+static value_t read_expression()
+{
+    return to_rvalue(read_lvalue_expression());
 }
 
 static void read_code(str_t path)
